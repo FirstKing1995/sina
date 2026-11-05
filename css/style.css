@@ -320,3 +320,10 @@ img { image-rendering: pixelated; }
 .dlg-face.retrato { width: 112px; height: 112px; image-rendering: auto; border: 2px solid #6b5a3a; border-radius: 6px; box-shadow: 0 0 0 2px #1a1410, 0 6px 18px #000a; object-fit: cover; }
 @media (max-width: 640px) { .dlg-face.retrato { width: 84px; height: 84px; } }
 .boss-face { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #a8302c; vertical-align: middle; margin-right: 8px; image-rendering: auto; }
+/* 0.3.3: carta de apresentação do chefe */
+.boss-intro { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; opacity: 0; pointer-events: none; z-index: 5; }
+.boss-intro img { width: min(300px, 46vh, 70vw); height: auto; aspect-ratio: 1; display: block; margin: 0 auto; border: 3px solid #a8302c; border-radius: 8px; box-shadow: 0 0 0 3px #1a1410, 0 0 40px #c8423a88, 0 12px 40px #000c; image-rendering: auto; }
+.boss-intro .bi-tag { margin-top: 12px; font-size: 13px; letter-spacing: 6px; text-transform: uppercase; color: var(--red); text-shadow: 0 2px 0 #000; }
+.boss-intro .bi-name { font-family: var(--story); font-size: clamp(24px, 4.4vw, 40px); font-weight: 700; color: var(--gold2); text-shadow: 0 3px 0 #000, 0 0 18px #000; }
+.boss-intro.show { animation: bossintro 3.2s ease-out forwards; }
+@keyframes bossintro { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; transform: translate(-50%, -50%) scale(0.98); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.94); } }

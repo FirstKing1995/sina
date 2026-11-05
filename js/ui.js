@@ -36,7 +36,21 @@
     b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
   };
   let boss = null;
-  UI.bossBar = function (e) { boss = e; $('#bossbar').hidden = false; $('#boss-name').innerHTML = (UI.RETRATOS.includes(e.mon) ? '<img class="boss-face" src="img/retratos/' + e.mon + '.jpg" alt="">' : '') + esc(e.name || e.def.name); G.Audio.boss(true); };
+  // 0.3.3: ilustrações dos chefes (geradas no Gemini, ver CREDITOS.md)
+  UI.CHEFES = ['saci', 'curupira', 'rei_pedra', 'yeti', 'escorpiao_rei', 'lobisomem', 'capitao_ticao', 'almirante', 'mapinguari', 'cuca', 'boitata', 'rainha_armadeira'];
+  UI.bossArt = function (mon) { return UI.CHEFES.includes(mon) ? 'img/chefes/' + mon + '.jpg' : UI.RETRATOS.includes(mon) ? 'img/retratos/' + mon + '.jpg' : null; };
+  UI.bossBar = function (e) {
+    boss = e; $('#bossbar').hidden = false;
+    const art = UI.bossArt(e.mon), nm = e.name || e.def.name;
+    $('#boss-name').innerHTML = (art ? '<img class="boss-face" src="' + art + '" alt="">' : '') + esc(nm);
+    G.Audio.boss(true);
+    if (art && !e.introShown) {
+      e.introShown = true;
+      const box = $('#boss-intro');
+      box.innerHTML = '<img src="' + art + '" alt=""><div class="bi-tag">Chefe</div><div class="bi-name">' + esc(nm) + '</div>';
+      box.classList.remove('show'); void box.offsetWidth; box.classList.add('show');
+    }
+  };
   let prog = null;
   UI.progress = function (label, dur, cb) { if (prog) return; prog = { t: 0, dur, cb, x: S.P.x, y: S.P.y }; UI.toast(label); };
   UI.progressOn = () => !!prog;
