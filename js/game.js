@@ -19,7 +19,7 @@
       lvl: 1, xp: 0, perkPts: 0, attrPts: 0, picks: { hp: 0, mp: 0, st: 0 }, perks: {},
       skills: {}, gold: O.gold || 30, inv: [], stack: {}, tools: {}, equip: {}, spells: (O.spells || []).slice(), slots: [null, null, null, null],
       q: {}, minis: [], flags: {}, found: { cities: {}, dungeons: {}, altars: {} }, blessing: null, kills: {}, dg: {}, opened: {}, taken: {},
-      x: 0, y: 0, map: 'world', hp: 1, mp: 1, st: 1, buffs: {}, deaths: 0, played: 0, ending: null, uniqDead: {}, version: D.VERSION,
+      x: 0, y: 0, r: 0.3, map: 'world', hp: 1, mp: 1, st: 1, buffs: {}, deaths: 0, played: 0, ending: null, uniqDead: {}, version: D.VERSION,
     };
     for (const k of D.SKILL_ORDER) P.skills[k] = { lv: 15 + (R.skills[k] || 0) + (O.skills[k] || 0), xp: 0 };
     for (const [base, mat] of O.kit) { const it = Gm.makeItem(base, mat, 0, 1); Gm.equip(P, it, true); }
@@ -374,6 +374,7 @@
   // ---------- começar ----------
   Gm.boot = function (P) {
     if (!S.world) S.world = W.generate(Gm.SEED);
+    P.r = 0.3;
     S.P = P; S.ents = []; S.projs = []; S.fx = []; S.floats = []; S.hazards = []; S.tele = []; S.dead = false;
     S.st = Gm.stats(P);
     if (P.hp <= 1) { P.hp = S.st.maxHp; P.mp = S.st.maxMp; P.st = S.st.maxSt; }

@@ -159,7 +159,7 @@
     for (const [mon, ux, uy, lvl] of uniq) { const [x, y] = freeNear(w, ux, uy, 4); w.spawns.push({ x, y, list: [mon], lvl, rg: D.REGION_ORDER[w.reg[idx(x, y)]], id: w.spawns.length, unique: mon }); }
     // bloqueio final
     for (let i = 0; i < n; i++) if (BLOCK_T[w.tile[i]]) w.block[i] = 1;
-    for (const o of w.objs) markBlock(w, o);
+    for (const o of w.objs) if (!o.gone) markBlock(w, o);
     return w;
   };
   function pickW(weights, rng) {

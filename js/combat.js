@@ -10,6 +10,8 @@
 
   // ---------- efeitos visuais ----------
   Fx.burst = function (x, y, col, n, spd, up) {
+    if (G.MOBILE) n = Math.ceil(n / 2);
+    if (S.fx.length > (G.MOBILE ? 160 : 320)) return;
     for (let i = 0; i < n; i++) { const a = rnd() * Math.PI * 2, s = (0.5 + rnd()) * (spd || 2); S.fx.push({ kind: 'p', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.7 - (up || 0), t: 0, life: 0.35 + rnd() * 0.4, col, g: 4 }); }
   };
   Fx.float = function (x, y, txt, col, big) { S.floats.push({ x: x + (rnd() - 0.5) * 0.3, y, txt: String(txt), col, t: 0, big }); };
@@ -51,7 +53,7 @@
 
   // ---------- movimento com colisão ----------
   function tryMove(e, dx, dy, fly) {
-    const r = e.r * 0.8;
+    const r = (e.r || 0.3) * 0.8;
     const blocked = (x, y) => {
       if (Gm.mapBlocked(x, y)) {
         if (fly && S.map.kind === 'world') { const t = S.world.tile[Math.floor(y) * S.world.N + Math.floor(x)]; return t === G.World.T.WALL || t === G.World.T.MOUNTAIN || t === G.World.T.VEU; }
@@ -134,6 +136,7 @@
     if (o.poison) P.poison = { t: 4, dps: o.poison };
     if (o.slow) P.slowT = 1.5;
     if (o.burn) P.burn = { t: 3, dps: o.burn };
+    if (P.hp <= 0) return Cb.playerDie();
     Gm.skillXp('defesa', dmg * 0.25 * (st.arm > 20 ? 1 : 0.4));
     if (P.perks.segundo_folego && P.hp > 0 && P.hp < S.st.maxHp * 0.2 && !(P.sfT > 0)) { P.hp += S.st.maxHp * 0.35; P.sfT = 120; G.UI.toast('Segundo fôlego!', 'gold'); }
     if (P.hp <= 0) Cb.playerDie();
@@ -429,14 +432,14 @@
     S.dead = true; S.deadT = 0; P.hp = 0; P.deaths++;
     G.Audio.sfx('morte_heroi');
     Fx.burst(P.x, P.y - 0.5, '#8a2a2c', 30, 3);
-    setTimeout(() => G.UI.deathScreen(), 900);
+    P.roll = 0; P.kx = P.ky = 0; P.poison = P.burn = null;
   };
   Cb.respawn = function () {
     const P = S.P;
     const lost = Math.floor(P.gold * 0.1);
     P.gold -= lost;
     const c = S.world.cities[P.lastMarco || 'alvorada'];
-    S.dead = false;
+    S.dead = false; S.deadT = 0; P.iframes = 1.5; P.hurtT = 0;
     Gm.refresh();
     P.hp = S.st.maxHp; P.mp = S.st.maxMp; P.st = S.st.maxSt; P.poison = P.burn = null;
     Gm.enterWorld(c.cx + 0.5, c.cy + 1.5);

@@ -29,8 +29,8 @@ kbd { font-family: var(--ui); font-size: 11px; padding: 0 4px; border: 1px solid
 .btn.small { padding: 6px 10px; font-size: 13px; }
 
 /* título */
-.screen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: radial-gradient(ellipse at 50% 30%, #2a1e34 0%, #120e16 70%); overflow-y: auto; overflow-x: hidden; }
-.title-card { position: relative; text-align: center; width: min(560px, 100%); }
+.screen { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding: 16px; background: radial-gradient(ellipse at 50% 30%, #2a1e34 0%, #120e16 70%); overflow-y: auto; overflow-x: hidden; }
+.title-card { margin: auto 0; position: relative; text-align: center; width: min(560px, 100%); }
 .sky { position: absolute; inset: -40vh -40vw; background-image: radial-gradient(1px 1px at 20% 30%, #fff8 50%, transparent 51%), radial-gradient(1px 1px at 70% 20%, #fff6 50%, transparent 51%), radial-gradient(1.5px 1.5px at 40% 70%, #fffa 50%, transparent 51%), radial-gradient(1px 1px at 85% 60%, #fff7 50%, transparent 51%), radial-gradient(1px 1px at 10% 80%, #fff5 50%, transparent 51%); background-size: 260px 260px; opacity: 0.7; pointer-events: none; animation: tw 8s ease-in-out infinite alternate; }
 @keyframes tw { to { opacity: 0.35; } }
 .wordmark { position: relative; font-size: clamp(72px, 16vw, 140px); letter-spacing: 0.18em; margin: 0; color: var(--gold2); text-shadow: 0 4px 0 #6e3a1c, 0 0 40px #f7762255; }
@@ -42,7 +42,7 @@ kbd { font-family: var(--ui); font-size: 11px; padding: 0 4px; border: 1px solid
 .foot { position: relative; margin-top: 26px; }
 
 /* criação */
-.create-card { width: min(1080px, 100%); background: #1a1520ee; border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; }
+.create-card { margin: auto 0; width: min(1080px, 100%); background: #1a1520ee; border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; }
 .create-card h2 { margin: 0 0 6px; color: var(--gold2); }
 .create-card h3 { margin: 14px 0 8px; font-size: 15px; color: var(--parch2); font-weight: 500; }
 .c-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
@@ -229,9 +229,9 @@ kbd { font-family: var(--ui); font-size: 11px; padding: 0 4px; border: 1px solid
 .death, .final { text-align: center; }
 
 /* toque */
-.tpad { position: absolute; left: 22px; bottom: 34px; width: 130px; height: 130px; border-radius: 50%; background: #ffffff10; border: 2px solid #ffffff28; touch-action: none; }
+.tpad { pointer-events: auto; position: absolute; left: 22px; bottom: 34px; width: 130px; height: 130px; border-radius: 50%; background: #ffffff10; border: 2px solid #ffffff28; touch-action: none; }
 .tknob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px; border-radius: 50%; background: #ffffff38; border: 2px solid #ffffff60; }
-.tbtns { position: absolute; right: 14px; bottom: 26px; width: 210px; height: 210px; touch-action: none; }
+.tbtns { pointer-events: auto; position: absolute; right: 14px; bottom: 26px; width: 210px; height: 210px; touch-action: none; }
 .tb { position: absolute; width: 58px; height: 58px; border-radius: 50%; background: #1f1a24cc; border: 2px solid #ffffff40; color: var(--parch); font-size: 12px; touch-action: none; }
 .tb.big { width: 86px; height: 86px; right: 0; bottom: 0; font-size: 15px; background: #6e3a1ccc; border-color: var(--gold); }
 #t-pow { right: 92px; bottom: 6px; } #t-roll { right: 20px; bottom: 94px; } #t-use { right: 96px; bottom: 74px; background: #2a4a6ecc; } #t-pot { right: 150px; bottom: 136px; width: 50px; height: 50px; background: #8a2a2ccc; }
@@ -259,6 +259,8 @@ body.touch .toasts { bottom: 180px; }
   body.touch .slot { width: 46px; height: 42px; }
   .hud-tr { top: 8px; right: 8px; }
   #minimap { width: 96px; height: 96px; }
+  .bossbar { top: 66px; width: 70vw; }
+  #boss-name { font-size: 13px; }
   .story { font-size: 17px; }
 }
 #title { overflow: hidden; }

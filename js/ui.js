@@ -43,7 +43,7 @@
   UI.progressK = () => (prog ? Math.min(1, prog.t / prog.dur) : 0);
 
   // ---------- HUD ----------
-  let hudT = 0;
+  let hudT = 0, lastTrack = '', mmT = 0;
   UI.frame = function (dt) {
     if (prog) { prog.t += dt; if (Math.hypot(S.P.x - prog.x, S.P.y - prog.y) > 0.4 || S.dead) { prog = null; UI.toast('Interrompido.'); } else if (prog.t >= prog.dur) { const cb = prog.cb; prog = null; cb(); } }
     hudT -= dt; if (hudT > 0) return; hudT = 0.1;
@@ -71,7 +71,7 @@
     let html = qs ? '<div class="qt-main"><b>A Sina Partida</b><br>' + esc(qs.txt) + '</div>' : '<div class="qt-main"><b>A Sina Partida</b><br>Concluída.</div>';
     const side = Object.keys(P.q).filter((k) => k !== 'main' && P.q[k].s !== 'done').slice(0, 2);
     for (const k of side) { const s2 = D.QUESTS[k].stages[P.q[k].s]; const g = s2.goal; html += '<div class="qt-side"><b>' + esc(D.QUESTS[k].name) + '</b><br>' + esc(s2.txt) + (g.type === 'kill' ? ' (' + Math.min(P.q[k].n, g.n) + '/' + g.n + ')' : g.type === 'item' ? ' (' + Math.min(Gm.count(g.item), g.n) + '/' + g.n + ')' : '') + '</div>'; }
-    $('#tracker').innerHTML = html;
+    if (html !== lastTrack) { $('#tracker').innerHTML = html; lastTrack = html; }
     // aviso de interação
     const t = G.Acts.target();
     const pr = $('#prompt');
@@ -84,7 +84,7 @@
     $('#clock').textContent = 'Dia ' + S.day + ' · ' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
     $('#where').textContent = where;
     $('#buffs').innerHTML = (P.blessing ? '<span class="buff" title="' + esc(D.ALTARS[P.blessing].desc) + '">' + esc(D.ALTARS[P.blessing].name.replace('Altar d', 'Bênção d')) + '</span>' : '') + Object.keys(P.buffs).map((b) => '<span class="buff">' + ({ forca: 'Força', pedra: 'Pedra', antifogo: 'Brasa' }[b] || b) + ' ' + Math.ceil(P.buffs[b]) + 's</span>').join('') + (P.poison ? '<span class="buff bad">Veneno</span>' : '') + (P.burn ? '<span class="buff bad">Queimando</span>' : '') + (P.ward > 0 ? '<span class="buff">Égide ' + Math.round(P.ward) + '</span>' : '');
-    UI.minimap();
+    if (++mmT % 2 === 0) UI.minimap();
   };
   function bar(sel, v, max) { const e = $(sel); e.querySelector('i').style.width = (100 * Math.max(0, v) / max) + '%'; e.querySelector('span').textContent = Math.ceil(Math.max(0, v)) + ' / ' + Math.round(max); }
 

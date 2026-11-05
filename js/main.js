@@ -30,6 +30,8 @@
   // um passo do jogo (o laço chama; os testes também podem chamar à mão)
   M.step = function (dt) {
     if (S.mode === 'play' && S.P) {
+      // morreu: depois de um instante, a tela de voltar (pelo laço, não por temporizador)
+      if (S.dead) { S.deadT = (S.deadT || 0) + dt; if (S.deadT > 1 && UI.kind() !== 'dead') { touch.atk = false; mouse.l = false; UI.deathScreen(); } }
       const paused = UI.isOpen();
       if (S.hitstop > 0) { S.hitstop -= dt; dt *= 0.08; }
       if (!paused) {
@@ -141,6 +143,21 @@
     pad.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (t.identifier === touch.jid) move(t); e.preventDefault(); }, { passive: false });
     const end = (e) => { for (const t of e.changedTouches) if (t.identifier === touch.jid) { touch.jid = null; touch.jx = touch.jy = 0; knob.style.transform = ''; } };
     pad.addEventListener('touchend', end); pad.addEventListener('touchcancel', end);
+    // joystick flutuante: qualquer toque na metade esquerda da tela vira o centro do controle
+    const cvs = $('#view');
+    cvs.addEventListener('touchstart', (e) => {
+      G.Audio.unlock();
+      for (const t of e.changedTouches) {
+        if (touch.jid != null || t.clientX > innerWidth * 0.5) continue;
+        touch.jid = t.identifier; touch.ox = t.clientX; touch.oy = t.clientY;
+        pad.style.left = (t.clientX - 65) + 'px'; pad.style.top = (t.clientY - 65) + 'px'; pad.style.bottom = 'auto';
+        move(t);
+      }
+      e.preventDefault();
+    }, { passive: false });
+    cvs.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (t.identifier === touch.jid) move(t); e.preventDefault(); }, { passive: false });
+    const endC = (e) => { for (const t of e.changedTouches) if (t.identifier === touch.jid) { touch.jid = null; touch.jx = touch.jy = 0; knob.style.transform = ''; pad.style.left = ''; pad.style.top = ''; pad.style.bottom = ''; } };
+    cvs.addEventListener('touchend', endC); cvs.addEventListener('touchcancel', endC);
     function move(t) { let dx = (t.clientX - touch.ox) / 50, dy = (t.clientY - touch.oy) / 50; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } touch.jx = dx; touch.jy = dy; knob.style.transform = 'translate(' + dx * 34 + 'px,' + dy * 34 + 'px)'; }
     const btn = (id, down, up) => { const b = $(id); b.addEventListener('touchstart', (e) => { G.Audio.unlock(); e.preventDefault(); down(); }, { passive: false }); if (up) b.addEventListener('touchend', (e) => { e.preventDefault(); up(); }); };
     btn('#t-atk', () => { touch.atk = true; }, () => { touch.atk = false; });
