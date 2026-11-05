@@ -316,3 +316,7 @@ img { image-rendering: pixelated; }
 .ld-bar { width: 200px; height: 4px; margin: 0 auto; background: #0008; border-radius: 2px; overflow: hidden; }
 .ld-bar i { display: block; height: 100%; width: 40%; background: linear-gradient(90deg, #8a5a1c, #f2da72); animation: ld 1.1s ease-in-out infinite; }
 @keyframes ld { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+/* retratos pintados nas conversas */
+.dlg-face.retrato { width: 112px; height: 112px; image-rendering: auto; border: 2px solid #6b5a3a; border-radius: 6px; box-shadow: 0 0 0 2px #1a1410, 0 6px 18px #000a; object-fit: cover; }
+@media (max-width: 640px) { .dlg-face.retrato { width: 84px; height: 84px; } }
+.boss-face { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #a8302c; vertical-align: middle; margin-right: 8px; image-rendering: auto; }

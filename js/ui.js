@@ -36,7 +36,7 @@
     b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
   };
   let boss = null;
-  UI.bossBar = function (e) { boss = e; $('#bossbar').hidden = false; $('#boss-name').textContent = e.name || e.def.name; G.Audio.boss(true); };
+  UI.bossBar = function (e) { boss = e; $('#bossbar').hidden = false; $('#boss-name').innerHTML = (UI.RETRATOS.includes(e.mon) ? '<img class="boss-face" src="img/retratos/' + e.mon + '.jpg" alt="">' : '') + esc(e.name || e.def.name); G.Audio.boss(true); };
   let prog = null;
   UI.progress = function (label, dur, cb) { if (prog) return; prog = { t: 0, dur, cb, x: S.P.x, y: S.P.y }; UI.toast(label); };
   UI.progressOn = () => !!prog;
@@ -175,6 +175,7 @@
     return p;
   }
   UI.panel = open;
+  UI.RETRATOS = ['benta', 'ilane', 'durgo', 'raua', 'iolanda', 'morvan', 'taliel', 'zefa'];
   UI.close = function (quiet) {
     if (panel) panel.remove();
     panel = null; const was = panelKind; panelKind = null;
@@ -399,10 +400,13 @@
     const pv = document.createElement('canvas'); pv.width = 48; pv.height = 72; pv.className = 'dlg-face';
     const sh = e.npc || e.look ? SP.personSheet(e.look) : null;
     if (sh) { const x = pv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(sh.img, 0, 0, 12, 18, 0, 0, 48, 72); }
+    // retrato pintado (gerado no Gemini do autor), quando o personagem tem um
+    let face = pv;
+    if (e.npc && UI.RETRATOS.includes(e.npc)) { face = el('img', 'dlg-face retrato'); face.src = 'img/retratos/' + e.npc + '.jpg'; face.alt = e.name; }
     open('dlg', e.name, body);
     const show = (node) => {
       body.innerHTML = '';
-      const top = el('div', 'dlg-top'); top.appendChild(pv); top.appendChild(el('p', 'dlg-text', esc(node.t))); body.appendChild(top);
+      const top = el('div', 'dlg-top'); top.appendChild(face); top.appendChild(el('p', 'dlg-text', esc(node.t))); body.appendChild(top);
       const opts = el('div', 'dlg-opts');
       (node.o || [{ t: 'Até mais.' }]).forEach((o, i) => {
         if (o.if && !o.if()) return;
