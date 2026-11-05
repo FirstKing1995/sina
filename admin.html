@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do Mestre</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Pixelify+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  html, body { overflow: auto; -webkit-user-select: text; user-select: text; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { color: var(--gold2); margin: 0 0 4px; }
+  .mbox { background: linear-gradient(#211b28, #17131c); border: 1px solid #5e5468; border-radius: 8px; padding: 14px 16px; margin: 14px 0; }
+  .mbox h2 { margin: 0 0 6px; font-size: 18px; color: var(--gold2); font-weight: 500; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 10px 0; }
+  label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--parch2); }
+  input, select, textarea { background: var(--ink); color: var(--parch); border: 1px solid var(--line); border-radius: 4px; padding: 7px; font-family: var(--ui); font-size: 14px; }
+  textarea { width: 100%; min-height: 120px; font-size: 12px; }
+  .row2 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .note { font-family: var(--story); font-size: 16px; color: var(--parch); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Painel do Mestre</h1>
+  <p class="note">Aqui você mexe nos jogos salvos <b>deste navegador</b>: ouro, nível, missão principal, cidades descobertas, itens e onde o herói está. Feche o jogo antes de salvar mudanças, senão o jogo aberto grava por cima.</p>
+  <div id="list"></div>
+  <div class="mbox">
+    <h2>Importar um jogo</h2>
+    <p class="muted">Cole o texto exportado de outro aparelho e escolha o espaço.</p>
+    <textarea id="imp"></textarea>
+    <div class="row2"><select id="impSlot"><option>1</option><option>2</option><option>3</option></select><button class="btn" id="impBtn">Importar</button></div>
+  </div>
+  <p class="muted"><a href="./" style="color:var(--gold2)">Voltar ao jogo</a></p>
+</main>
+<script src="js/core.js"></script>
+<script src="js/data.js"></script>
+<script src="js/story.js"></script>
+<script>
+(function () {
+  const D = G.D, $ = (s, r) => (r || document).querySelector(s);
+  const KEY = 'sina.save.';
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function read(s) { try { return JSON.parse(localStorage.getItem(KEY + s)); } catch (e) { return null; } }
+  function write(s, d) { localStorage.setItem(KEY + s, JSON.stringify(d)); }
+  const uid = () => 'm' + Math.random().toString(36).slice(2, 10);
+  function draw() {
+    const list = $('#list'); list.innerHTML = '';
+    for (let s = 1; s <= 3; s++) {
+      const d = read(s), box = document.createElement('div'); box.className = 'mbox';
+      if (!d || !d.P) { box.innerHTML = '<h2>Espaço ' + s + '</h2><p class="muted">Vazio.</p>'; list.appendChild(box); continue; }
+      const P = d.P, st = P.q.main ? P.q.main.s : 1;
+      const stages = Object.keys(D.QUESTS.main.stages).map((k) => '<option value="' + k + '"' + (String(st) === k ? ' selected' : '') + '>' + k + ': ' + esc(D.QUESTS.main.stages[k].txt.slice(0, 60)) + '</option>').join('') + '<option value="done"' + (st === 'done' ? ' selected' : '') + '>Concluída</option>';
+      box.innerHTML = '<h2>Espaço ' + s + ': ' + esc(P.name) + '</h2><p class="muted">' + D.RACES[P.race].name + ' · ' + D.ORIGINS[P.origin].name + ' · nível ' + P.lvl + ' · dia ' + d.day + ' · ' + Math.round(P.played / 60) + ' min de jogo · ' + P.deaths + ' mortes · salvo em ' + new Date(d.at).toLocaleString('pt-BR') + '</p>' +
+        '<div class="grid2"><label>Nome<input data-k="name" value="' + esc(P.name) + '"></label><label>Ouro<input type="number" data-k="gold" value="' + P.gold + '"></label><label>Nível<input type="number" min="1" max="60" data-k="lvl" value="' + P.lvl + '"></label><label>Pontos de talento<input type="number" min="0" data-k="perkPts" value="' + P.perkPts + '"></label><label>Pontos de atributo<input type="number" min="0" data-k="attrPts" value="' + P.attrPts + '"></label>' +
+        '<label>Onde acordar<select data-k="where"><option value="">(onde está)</option>' + D.CITY_ORDER.map((c) => '<option value="' + c + '">' + D.CITIES[c].name + '</option>').join('') + '</select></label></div>' +
+        '<label>Missão principal<select data-k="main">' + stages + '</select></label>' +
+        '<div class="row2"><button class="btn gold" data-a="save">Salvar mudanças</button><button class="btn" data-a="cities">Descobrir todas as cidades</button><button class="btn" data-a="heal">Curar e encher poções</button><button class="btn" data-a="loot">Dar 3 itens raros</button><button class="btn" data-a="tools">Dar todas as ferramentas</button><button class="btn" data-a="spells">Ensinar todas as magias</button><button class="btn ghost" data-a="export">Exportar</button><button class="btn ghost" data-a="del">Apagar</button></div><textarea data-k="out" hidden readonly></textarea>';
+      box.addEventListener('click', (e) => {
+        const a = e.target.dataset && e.target.dataset.a; if (!a) return;
+        const cur = read(s); const Q = cur.P;
+        if (a === 'save') {
+          const v = (k) => $('[data-k="' + k + '"]', box).value;
+          Q.name = v('name').slice(0, 18) || Q.name; Q.gold = Math.max(0, +v('gold') | 0); Q.perkPts = Math.max(0, +v('perkPts') | 0); Q.attrPts = Math.max(0, +v('attrPts') | 0);
+          const nl = Math.max(1, Math.min(60, +v('lvl') | 0)); if (nl !== Q.lvl) { Q.lvl = nl; Q.xp = 0; }
+          const m = v('main'); Q.q.main = { s: m === 'done' ? 'done' : +m, n: 0 };
+          const w = v('where'); if (w) { const c = D.CITIES[w]; Q.x = c.at[0] + 0.5; Q.y = c.at[1] + 1.6; Q.lastMarco = w; Q.found.cities[w] = 1; cur.inDg = null; }
+        }
+        if (a === 'cities') for (const c of D.CITY_ORDER) Q.found.cities[c] = 1;
+        if (a === 'heal') { Q.hp = 9999; Q.mp = 9999; Q.st = 9999; Q.stack.pocao_vida = (Q.stack.pocao_vida || 0) + 10; Q.stack.pocao_mana = (Q.stack.pocao_mana || 0) + 10; }
+        if (a === 'tools') for (const t in D.TOOLS) Q.tools[t] = 1;
+        if (a === 'spells') { for (const sp of D.SPELL_ORDER) if (Q.spells.indexOf(sp) < 0) Q.spells.push(sp); }
+        if (a === 'loot') {
+          const tier = Math.min(6, 1 + Math.floor(Q.lvl / 4));
+          for (let i = 0; i < 3; i++) {
+            const base = ['espada', 'arco', 'corpo_pesada', 'cajado', 'montante', 'anel'][Math.floor(Math.random() * 6)];
+            const mat = D.ARMORS[base] && D.ARMORS[base].jewel ? 'ferro' : D.MAT_BY_TIER[tier];
+            const it = { uid: uid(), base, mat, rar: 2, lvl: Q.lvl, up: 0, aff: { dano: 4 + Q.lvl, vida: 20 + Q.lvl * 3, critico: 8 } };
+            it.name = (D.WEAPONS[base] || D.ARMORS[base]).name + ' do Mestre';
+            Q.inv.push(it);
+          }
+        }
+        if (a === 'export') { const t = $('[data-k="out"]', box); t.hidden = false; t.value = JSON.stringify(cur); t.select(); return; }
+        if (a === 'del') { if (confirm('Apagar o jogo de ' + Q.name + '? Não tem volta.')) { localStorage.removeItem(KEY + s); draw(); } return; }
+        cur.at = Date.now(); write(s, cur); draw();
+        alert('Pronto. Abra o jogo de novo para ver.');
+      });
+      list.appendChild(box);
+    }
+  }
+  $('#impBtn').onclick = () => { try { const d = JSON.parse($('#imp').value); if (!d.P) throw 0; write($('#impSlot').value, d); draw(); alert('Importado.'); } catch (e) { alert('Esse texto não é um jogo salvo do SINA.'); } };
+  draw();
+})();
+</script>
+</body>
+</html>
