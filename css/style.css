@@ -305,3 +305,14 @@ img { image-rendering: pixelated; }
 .wordmark { animation: brilho 5s ease-in-out infinite alternate; }
 @keyframes brilho { to { text-shadow: 0 4px 0 #6e3a1c, 0 0 60px #f7762288; } }
 .vol select { background: var(--ink); color: var(--parch); border: 1px solid var(--line); font-family: var(--ui); padding: 3px; }
+/* capa (gerada no Canva do usuário): título, tela de carregar */
+#title.screen { background: linear-gradient(180deg, #0c0a1066 0%, #0c0a10aa 45%, #0c0a10f0 100%), url(../img/capa.jpg) center 22% / cover no-repeat; }
+#create.screen { background: linear-gradient(#0c0a10d8, #0c0a10f4), url(../img/capa.jpg) center / cover no-repeat; }
+.loading { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; padding: 0 16px 12vh; background: linear-gradient(180deg, #0c0a1000 40%, #0c0a10ee 100%), url(../img/capa.jpg) center 25% / cover no-repeat #0c0a10; transition: opacity 0.6s; }
+.loading.out { opacity: 0; pointer-events: none; }
+.ld-card { text-align: center; }
+.wordmark.small { font-size: clamp(56px, 12vw, 96px); }
+.ld-msg { font-family: var(--story); font-size: 19px; color: var(--parch); text-shadow: 0 2px 0 #000; margin: 4px 0 10px; }
+.ld-bar { width: 200px; height: 4px; margin: 0 auto; background: #0008; border-radius: 2px; overflow: hidden; }
+.ld-bar i { display: block; height: 100%; width: 40%; background: linear-gradient(90deg, #8a5a1c, #f2da72); animation: ld 1.1s ease-in-out infinite; }
+@keyframes ld { from { transform: translateX(-100%); } to { transform: translateX(260%); } }

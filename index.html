@@ -6,6 +6,16 @@
 <title>SINA</title>
 <meta name="description" content="SINA: RPG de ação em mundo aberto, em pixel art, com o folclore brasileiro. Raças, magias, masmorras, cidades e uma estrela que partiu o destino.">
 <meta name="theme-color" content="#120e16">
+<meta property="og:title" content="SINA">
+<meta property="og:description" content="Uma estrela partiu o destino de todos. Menos o seu. RPG de ação em mundo aberto com o folclore brasileiro, no navegador e no celular.">
+<meta property="og:image" content="https://firstking1995.github.io/sina/img/capa-social.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://firstking1995.github.io/sina/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://firstking1995.github.io/sina/img/capa-social.jpg">
+<link rel="preload" as="image" href="img/capa.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Pixelify+Sans:wght@400;500;600;700&display=swap">
@@ -15,6 +25,7 @@
 <body data-mode="title">
 <canvas id="view" aria-label="Mundo do jogo"></canvas>
 
+<div id="loading" class="loading"><div class="ld-card"><div class="wordmark small">SINA</div><p class="ld-msg">Abrindo Aruanã...</p><div class="ld-bar"><i></i></div></div></div>
 <div id="ui">
   <!-- título -->
   <section id="title" class="screen">
@@ -24,7 +35,7 @@
       <p class="pitch">Uma estrela partiu o destino de todos. Menos o seu.</p>
       <div id="slots" class="slots"></div>
       <div id="acct" class="acct"></div>
-      <p class="small muted foot">RPG de ação em mundo aberto · v0.3 · W A S D, mouse, E, Espaço · também no celular</p>
+      <p class="small muted foot">RPG de ação em mundo aberto · v0.3.1 · W A S D, mouse, E, Espaço · também no celular</p>
     </div>
   </section>
 

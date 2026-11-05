@@ -17,7 +17,7 @@
     M.title();
     requestAnimationFrame(loop);
     // pré-gerar o mundo enquanto o título aparece
-    setTimeout(() => { if (!S.world) { S.world = G.World.generate(Gm.SEED); S.seen = new Uint8Array(S.world.N * S.world.N); } }, 50);
+    setTimeout(() => { if (!S.world) { S.world = G.World.generate(Gm.SEED); S.seen = new Uint8Array(S.world.N * S.world.N); } const ld = document.getElementById('loading'); if (ld) { ld.classList.add('out'); setTimeout(() => ld.remove(), 700); } }, 60);
   };
 
   // ---------- laço ----------

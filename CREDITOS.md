@@ -31,3 +31,6 @@ todas **CC0 (domínio público)**: livres para uso comercial, sem obrigação de
   - "80 CC0 RPG SFX", rubberduck, https://opengameart.org/content/80-cc0-rpg-sfx
 - **Música de chefe** `som/musica/batalha.mp3`: "Battle Theme A", cynicmusic, https://opengameart.org/content/battle-theme-a
 - **Ambiente das masmorras** `som/amb/masmorra.mp3`: "Loopable Dungeon Ambience", JaggedStone, https://opengameart.org/content/loopable-dungeon-ambience
+
+## Capa (0.3.1)
+- `img/capa.jpg` e `img/capa-social.jpg`: arte gerada pelo autor no Canva (IA do Canva), design "SINA · capa" na conta dele.
