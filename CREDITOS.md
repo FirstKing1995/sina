@@ -33,6 +33,6 @@ todas **CC0 (domínio público)**: livres para uso comercial, sem obrigação de
 - **Ambiente das masmorras** `som/amb/masmorra.mp3`: "Loopable Dungeon Ambience", JaggedStone, https://opengameart.org/content/loopable-dungeon-ambience
 
 ## Capa (0.3.1)
-- `img/capa.jpg` e `img/capa-social.jpg`: arte gerada pelo autor no Canva (IA do Canva), design "SINA · capa" na conta dele.
+- `img/capa.jpg`, `img/capa-fundo.jpg` e `img/capa-social.jpg`: capa gerada pelo autor no ChatGPT (versão 0.3.3; a anterior, feita no Canva, ficou guardada em `arte-ia/`, fora do repositório).
 - `img/retratos/`: 8 retratos (Benta, Ilanê, Durgo, Rauã, Iolanda, Morvan, Taliel, Zefa) gerados pelo autor no Gemini (originais 1024x1024 em `arte-ia/`, fora do repositório).
 - `img/chefes/`: 12 ilustrações de chefes (Saci, Curupira, Rei de Pedra, Pé-de-gelo, Escorpião-rei, Lobisomem, Capitão Tição, Almirante Afogado, Mapinguari, Cuca, Boitatá, Rainha-armadeira) geradas pelo autor no Gemini, mesmo estilo dos retratos.
