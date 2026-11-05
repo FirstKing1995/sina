@@ -1,4 +1,4 @@
-# SINA · v0.1
+# SINA · v0.2
 
 RPG de ação em mundo aberto, em pixel art feita por código, com monstros do folclore brasileiro.
 Roda no navegador (computador e celular), sem instalar nada.
@@ -90,8 +90,18 @@ O jogo salva sozinho a cada minuto, ao entrar e sair de masmorra, ao dormir e no
 O **Painel do Mestre** (`admin.html`) edita os jogos salvos do navegador: ouro, nível, pontos, etapa da missão,
 cidades descobertas, itens, ferramentas, magias, exportar e importar entre aparelhos.
 
+## Conta, nuvem e ranking (0.2)
+
+Com o servidor ligado (planilha + Apps Script, o mesmo esquema do Gods), a tela de título mostra **Entrar**, **Criar conta**
+e **Ranking**. Com conta, os 3 espaços sobem para a nuvem a cada salvamento (no máximo a cada 45 s, e na hora quando você
+salva na mão, dorme ou usa o Marco) e descem em qualquer aparelho com **Sincronizar** (vale o mais novo). O ranking
+**Heróis de Aruanã** ordena quem terminou a história, depois o nível, as missões e as masmorras.
+O servidor fica fora do site (pasta `apps-script` ao lado de `site/`, para não ir ao repositório); o passo a passo está em `apps-script/SETUP.md`.
+Sem servidor, nada disso aparece e o jogo segue só no navegador.
+
 ## O que veio do Gods
 
+- `js/net.js` e o servidor (`apps-script/Code.gs`): conta, sessão e save no Drive, adaptados para 3 espaços e o ranking de heróis.
 - `js/core.js`: semente, ruído Simplex, fila de prioridade (caminhos).
 - `js/art.js` e `js/pacote.js`: toda a natureza (árvores, ipê, araucária, jequitibá, mangue, cacto, junco, pedras),
   as casas pequenas, a estátua (vira os Altares), a fogueira, os lobos, a onça, o queixada, o caranguejo e o jacaré,
@@ -120,7 +130,6 @@ Testar no computador: `node tools/serve.js` (na pasta acima de `site/`) e abrir 
 
 ## Próximos passos sugeridos
 
-- Salvar na nuvem e ranking pela planilha + Apps Script (o mesmo esquema do Gods).
 - Interiores das casas e masmorras desenhadas à mão para as etapas da história.
 - Montaria, companheiros e casamento; mais regiões além da Cratera.
 - Vozes e narração dos momentos importantes pela IA (Groq), como no Gods.

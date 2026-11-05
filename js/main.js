@@ -167,7 +167,7 @@
       if (info) {
         row.innerHTML = '<button class="btn gold">Continuar: ' + esc(info.name) + ' · ' + D.RACES[info.race].name + ' nível ' + info.lvl + '</button><button class="btn ghost small" title="Apagar">Apagar</button>';
         row.children[0].onclick = () => { G.Audio.unlock(); loadSlot(s); };
-        row.children[1].onclick = () => { if (confirm('Apagar o jogo salvo de ' + info.name + '? Não tem volta.')) { Gm.wipe(s); M.title(); } };
+        row.children[1].onclick = () => { if (confirm('Apagar o jogo salvo de ' + info.name + '? Não tem volta (some também da nuvem).')) { Gm.wipe(s); G.Cloud.wipe(s); M.title(); } };
       } else {
         row.innerHTML = '<button class="btn">Novo jogo (espaço ' + s + ')</button>';
         row.children[0].onclick = () => { G.Audio.unlock(); M.create(s); };
@@ -175,7 +175,10 @@
       list.appendChild(row);
     }
     G.Audio.title();
+    G.Cloud.refreshTitle();
+    if (!pulled && G.Cloud.user()) { pulled = true; G.Cloud.pull().then((n) => { if (n > 0) M.title(); }); }
   };
+  let pulled = false;
   function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
   function ensureWorld() { if (!S.world) { S.world = G.World.generate(Gm.SEED); } if (!S.seen) S.seen = new Uint8Array(S.world.N * S.world.N); }
   function loadSlot(s) {

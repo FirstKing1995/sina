@@ -262,3 +262,11 @@ body.touch .toasts { bottom: 180px; }
   .story { font-size: 17px; }
 }
 #title { overflow: hidden; }
+/* conta e ranking */
+.acct { position: relative; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 14px; }
+.acct-line { font-size: 13px; }
+.acct-line b { color: var(--gold2); font-weight: 500; }
+.acct-form .field input { font-size: 15px; }
+.rank-t th { text-align: left; font-weight: 500; color: var(--parch2); padding: 4px; border-bottom: 1px solid var(--line); }
+.rank-t td:last-child { text-align: left; }
+.rank-t tr:nth-child(2) b { color: var(--gold2); }

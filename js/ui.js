@@ -172,6 +172,7 @@
     G.Audio.sfx('abrir');
     return p;
   }
+  UI.panel = open;
   UI.close = function (quiet) {
     if (panel) panel.remove();
     panel = null; const was = panelKind; panelKind = null;
