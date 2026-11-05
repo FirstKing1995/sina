@@ -3,7 +3,7 @@
 (function (G) {
   'use strict';
   const D = G.D = {};
-  D.VERSION = '0.3.3';
+  D.VERSION = '0.3.4';
   D.MAP = 320;
 
   // ---------- povos (herdados do Gods, agora jogáveis) ----------

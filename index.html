@@ -15,28 +15,35 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://firstking1995.github.io/sina/img/capa-social.jpg">
-<link rel="preload" as="image" href="img/capa.jpg">
-<link rel="preload" as="image" href="img/capa-fundo.jpg">
+<link rel="preload" as="image" href="img/capa-pc.jpg" media="(min-aspect-ratio: 4/5)">
+<link rel="preload" as="image" href="img/capa.jpg" media="(max-aspect-ratio: 4/5)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Pixelify+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Pixelify+Sans:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="css/digits.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-mode="title">
 <canvas id="view" aria-label="Mundo do jogo"></canvas>
 
-<div id="loading" class="loading"><div class="ld-card"><div class="wordmark small">SINA</div><p class="ld-msg">Abrindo Aruanã...</p><div class="ld-bar"><i></i></div></div></div>
+<div id="loading" class="loading">
+  <div class="ld-card">
+    <div class="ld-wait"><p class="ld-msg">Abrindo Aruanã...</p><div class="ld-bar"><i></i></div></div>
+    <div class="jogar-wrap"><button id="btn-jogar" class="btn-jogar" type="button" disabled><span><b>Jogar</b></span></button></div>
+    <p class="jogar-dica"><span class="so-pc">Clique ou aperte Enter</span><span class="so-toque">Toque para começar</span></p>
+  </div>
+  <div class="brasas" aria-hidden="true"></div>
+</div>
 <div id="ui">
   <!-- título -->
   <section id="title" class="screen">
     <div class="title-card">
       <div class="sky" aria-hidden="true"></div>
-      <h1 class="wordmark">SINA</h1>
+      <h1 class="wordmark logo"><img src="img/logo.webp" alt="SINA: A Cauda do Cometa" width="820" height="371"></h1>
       <p class="pitch">Uma estrela partiu o destino de todos. Menos o seu.</p>
       <div id="slots" class="slots"></div>
       <div id="acct" class="acct"></div>
-      <p class="small muted foot">RPG de ação em mundo aberto · v0.3.3 · W A S D, mouse, E, Espaço · também no celular</p>
+      <p class="small muted foot">RPG de ação em mundo aberto · v0.3.4 · W A S D, mouse, E, Espaço · também no celular</p>
     </div>
   </section>
 

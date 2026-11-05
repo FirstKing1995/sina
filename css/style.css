@@ -327,4 +327,45 @@ img { image-rendering: pixelated; }
 .boss-intro .bi-name { font-family: var(--story); font-size: clamp(24px, 4.4vw, 40px); font-weight: 700; color: var(--gold2); text-shadow: 0 3px 0 #000, 0 0 18px #000; }
 .boss-intro.show { animation: bossintro 3.2s ease-out forwards; }
 @keyframes bossintro { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; transform: translate(-50%, -50%) scale(0.98); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.94); } }
-.loading .ld-card .wordmark { display: none; }
+/* 0.3.4: abertura (capa no PC, capa vertical no celular) e botão Jogar no estilo da logo */
+.loading { background: linear-gradient(180deg, #0c0a1000 55%, #0c0a10cc 100%), url(../img/capa-pc.jpg) center top / cover no-repeat #0c0a10; padding-bottom: 9vh; }
+@media (max-aspect-ratio: 4/5) {
+  .loading { background: linear-gradient(180deg, #0c0a1000 45%, #0c0a10 72%), url(../img/capa.jpg) center top / 100% auto no-repeat, linear-gradient(#0c0a10d0, #0c0a10d0), url(../img/capa-fundo.jpg) center bottom / cover no-repeat #0c0a10; padding-bottom: max(10vh, env(safe-area-inset-bottom)); }
+}
+.loading .ld-card { position: relative; z-index: 1; display: grid; justify-items: center; }
+.loading .ld-wait, .loading .jogar-wrap { grid-area: 1 / 1; transition: opacity 0.5s, transform 0.5s; }
+.loading .jogar-dica { grid-area: 2 / 1; transition: opacity 0.5s 0.3s; }
+.loading .jogar-wrap, .loading .jogar-dica { opacity: 0; pointer-events: none; }
+.loading .jogar-wrap { transform: translateY(10px); }
+.loading.ready .ld-wait { opacity: 0; transform: translateY(-6px); pointer-events: none; }
+.loading.ready .jogar-wrap, .loading.ready .jogar-dica { opacity: 1; transform: none; pointer-events: auto; }
+.jogar-wrap { position: relative; display: flex; align-items: center; gap: 14px; animation: jogar-pulso 2.6s ease-in-out infinite; }
+/* linhas douradas dos lados, como na logo */
+.jogar-wrap::before, .jogar-wrap::after { content: ''; width: clamp(36px, 12vw, 150px); height: 2px; background: linear-gradient(90deg, transparent, #f2c25a 70%, #fff0b0); box-shadow: 0 0 6px #ff8a2a; }
+.jogar-wrap::after { transform: scaleX(-1); }
+.btn-jogar { position: relative; border: 0; padding: 3px; cursor: pointer; background: linear-gradient(180deg, #fff0b0, #e8a83a 35%, #9a4a14 70%, #f2c25a); clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%); transition: transform 0.15s; -webkit-tap-highlight-color: transparent; }
+.btn-jogar span { position: relative; display: block; padding: 0.42em 1.5em 0.42em 1.82em; font-family: 'Cinzel', var(--story); font-weight: 900; font-size: clamp(26px, 3.4vw, 40px); letter-spacing: 0.32em; text-transform: uppercase; color: #ffd36a; background: radial-gradient(120% 140% at 50% 120%, #ff6a1a66, transparent 60%), repeating-linear-gradient(115deg, transparent 0 22px, #ff7a1a22 22px 24px, transparent 24px 46px), linear-gradient(180deg, #4a2414, #1c0d08); clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0 50%); text-shadow: 0 2px 0 #5a2008, 0 0 12px #ff7a1a, 0 0 2px #fff3c0; overflow: hidden; }
+/* reflexo que passa pelo botão */
+.btn-jogar span::after { content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(100deg, transparent, #fff3c055, transparent); transform: skewX(-20deg); animation: jogar-brilho 3.2s ease-in-out infinite; }
+.btn-jogar:hover { transform: scale(1.05); }
+.btn-jogar:active { transform: scale(0.97); }
+.btn-jogar:focus-visible { outline: none; }
+.btn-jogar:focus-visible span { color: #fff0b0; }
+.jogar-dica { margin: 14px 0 0; font-family: var(--story); font-size: 16px; color: var(--parch2); text-shadow: 0 2px 0 #000; letter-spacing: 0.04em; }
+.so-toque { display: none; }
+@media (hover: none) { .so-pc { display: none; } .so-toque { display: inline; } }
+@keyframes jogar-pulso { 0%, 100% { filter: drop-shadow(0 0 10px #ff6a1a55) drop-shadow(0 8px 18px #000c); } 50% { filter: drop-shadow(0 0 22px #ff7a1aaa) drop-shadow(0 8px 18px #000c); } }
+@keyframes jogar-brilho { 0%, 55% { left: -40%; } 100% { left: 130%; } }
+/* brasas subindo */
+.brasas { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.brasas i { position: absolute; bottom: -10px; width: 3px; height: 3px; background: #ffb347; box-shadow: 0 0 6px 2px #ff6a1a; opacity: 0; animation: brasa linear infinite; }
+@keyframes brasa { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translate(var(--dx), -70vh); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .jogar-wrap, .btn-jogar span::after, .brasas i { animation: none; } }
+/* logo no título */
+.wordmark.logo { font-size: 0; letter-spacing: 0; text-shadow: none; animation: none; margin: 0 0 4px; }
+.wordmark.logo::after { display: none; }
+.wordmark.logo img { width: min(440px, 84vw); height: auto; filter: drop-shadow(0 6px 18px #000d) drop-shadow(0 0 24px #ff6a1a33); }
+.btn-jogar span { text-shadow: none; }
+.btn-jogar b { font-weight: 900; background: linear-gradient(180deg, #fff6c8 0%, #f8c95a 42%, #e8801e 70%, #b0440e 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 0 #3a1206) drop-shadow(0 0 7px #ff7a1acc); }
+.jogar-wrap::before, .jogar-wrap::after { -webkit-mask: linear-gradient(90deg, transparent, #000 30%); mask: linear-gradient(90deg, transparent, #000 30%); }
+.wordmark.logo + .pitch { margin-top: 12px; }

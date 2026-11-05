@@ -17,7 +17,7 @@
     M.title();
     requestAnimationFrame(loop);
     // pré-gerar o mundo enquanto o título aparece
-    setTimeout(() => { if (!S.world) { S.world = G.World.generate(Gm.SEED); S.seen = new Uint8Array(S.world.N * S.world.N); } const ld = document.getElementById('loading'); if (ld) { ld.classList.add('out'); setTimeout(() => ld.remove(), 700); } }, 60);
+    setTimeout(() => { if (!S.world) { S.world = G.World.generate(Gm.SEED); S.seen = new Uint8Array(S.world.N * S.world.N); } abertura(); }, 60);
   };
 
   // ---------- laço ----------
@@ -174,6 +174,16 @@
   }
 
   // ---------- título ----------
+  // 0.3.4: tela de abertura (capa + botão Jogar); o mundo carrega por trás
+  function abertura() {
+    const ld = document.getElementById('loading'); if (!ld) return;
+    const btn = document.getElementById('btn-jogar'), brasas = ld.querySelector('.brasas');
+    for (let i = 0; i < 18; i++) { const b = document.createElement('i'); b.style.left = (10 + Math.random() * 80) + '%'; b.style.animationDelay = (-Math.random() * 6).toFixed(2) + 's'; b.style.animationDuration = (4 + Math.random() * 4).toFixed(2) + 's'; b.style.setProperty('--dx', (Math.random() * 60 - 30).toFixed(0) + 'px'); brasas.appendChild(b); }
+    ld.classList.add('ready'); btn.disabled = false; btn.focus({ preventScroll: true });
+    const go = () => { if (ld.classList.contains('out')) return; G.Audio.unlock(); ld.classList.add('out'); window.removeEventListener('keydown', key); setTimeout(() => ld.remove(), 700); };
+    const key = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+    btn.onclick = go; window.addEventListener('keydown', key);
+  }
   M.title = function () {
     S.mode = 'title';
     document.body.dataset.mode = 'title';
