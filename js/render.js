@@ -5,7 +5,16 @@
   const D = G.D, Gm = G.Game, S = Gm.S, W = G.World, T = W.T, A = G.Art, SP = G.Spr, Dg = G.Dungeon;
   const R = G.Render = {};
   const TS = 16, CH = 32;
-  let cv, cx, scr, low, Z = 3, VW = 0, VH = 0, light, lx;
+  let cv, cx, scr, low, Z = 3, VW = 0, VH = 0, SW = 0, SH = 0, light, lx, tilt = null, vig = null, tiny = null, crtPat = null;
+  // ---------- preferências de imagem (câmera, filtro retrô) ----------
+  const PK = 'sina.video';
+  let video = { cam: 'padrao', crt: false, nomes: true };
+  try { Object.assign(video, JSON.parse(localStorage.getItem(PK) || '{}')); } catch (e) { /* sem acesso */ }
+  R.video = video;
+  R.camMode = () => video.cam;
+  R.CAMS = [['padrao', 'Padrão'], ['perto', 'Perto'], ['longe', 'Longe'], ['inclinada', 'Inclinada (Mode 7)']];
+  R.setVideo = function (k, v) { video[k] = v; try { localStorage.setItem(PK, JSON.stringify(video)); } catch (e) { /* nada */ } if (k === 'cam') { R.resize(); R.transition(); } };
+  R.nextCam = function () { const i = R.CAMS.findIndex((c) => c[0] === video.cam); R.setVideo('cam', R.CAMS[(i + 1) % R.CAMS.length][0]); return R.CAMS.find((c) => c[0] === video.cam)[1]; };
   const MOBILE = G.MOBILE = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   const cam = { x: 0, y: 0 };
   R.cam = cam;
@@ -26,15 +35,41 @@
     cv.width = Math.floor(innerWidth * dpr); cv.height = Math.floor(innerHeight * dpr);
     cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
     const target = innerWidth < 700 ? 15 : 26;   // quantos tiles de largura
-    Z = Math.max(2, Math.round(cv.width / (target * TS)));
-    VW = Math.ceil(cv.width / Z); VH = Math.ceil(cv.height / Z);
+    const base = Math.max(2, Math.round(cv.width / (target * TS)));
+    const mode = R.camMode();
+    Z = mode === 'perto' ? base + 1 : mode === 'longe' ? Math.max(1, base - 1) : base;
+    SW = cv.width; SH = cv.height;
+    VW = Math.ceil(SW / Z); VH = Math.ceil(SH / Z);
+    tilt = null;
+    if (mode === 'inclinada') {
+      // Mode 7 (SNES): cada faixa da tela pega uma linha da imagem, mais longe em cima. A imagem de baixo é maior
+      const band = Math.max(1, Math.round(SH / 260)), rows = [];
+      let acc = 0;
+      for (let y = SH; y > 0; y -= band) { const v = (y - band / 2) / SH, sc = 0.5 + 0.5 * v; acc += band / (Z * sc); rows.push({ y: y - band, h: band, sc, src: acc }); }
+      const LH = Math.ceil(acc) + 2, LW = Math.ceil(SW / (Z * 0.5)) + 2;
+      for (const r of rows) r.src = LH - r.src;
+      tilt = { rows, LW, LH, anchor: 0 };
+      // onde fica o herói: na faixa a 68% da altura da tela
+      const ar = rows.find((r) => r.y <= SH * 0.68) || rows[0];
+      tilt.anchor = ar.src;
+      VW = LW; VH = LH;
+    }
     low.width = VW; low.height = VH;
+    if (!vig || vig.width !== VW || vig.height !== VH) vig = makeVignette(VW, VH);
     light.width = Math.ceil(VW / (MOBILE ? 3 : 2)); light.height = Math.ceil(VH / (MOBILE ? 3 : 2));
     R.Z = Z; R.VW = VW; R.VH = VH;
   };
   let fresh = true;
   R.invalidate = function () { chunks.clear(); dgKey = ''; fresh = true; };
-  R.toWorld = function (sx, sy) { const dpr = cv.width / innerWidth; return [(sx * dpr / Z + cam.x) / TS, (sy * dpr / Z + cam.y) / TS]; };
+  R.toWorld = function (sx, sy) {
+    const dpr = cv.width / innerWidth, px = sx * dpr, py = sy * dpr;
+    if (tilt) {
+      const r = tilt.rows.find((q) => py >= q.y && py < q.y + q.h) || tilt.rows[tilt.rows.length - 1];
+      const lx2 = tilt.LW / 2 + (px - SW / 2) / (Z * r.sc), ly2 = r.src + (py - r.y) / (Z * r.sc);
+      return [(lx2 + cam.x) / TS, (ly2 + cam.y) / TS];
+    }
+    return [(px / Z + cam.x) / TS, (py / Z + cam.y) / TS];
+  };
 
   // ---------- cores do chão ----------
   const GODS_REG = { campo: 0, mata: 5, litoral: 1, serra: 3, mangue: 2, sertao: 4, pantano: 6 };
@@ -71,6 +106,12 @@
       const nb = (dx, dy) => { const xx = gx + dx, yy = gy + dy; return xx < 0 || yy < 0 || xx >= N || yy >= N ? t : w.tile[yy * N + xx]; };
       const wN = nb(0, -1), wS = nb(0, 1), wE = nb(1, 0), wWst = nb(-1, 0);
       const watery = (q) => q === T.DEEP || q === T.SHALLOW || q === T.RIVER;
+      // cantos arredondados (o autotile dos jogos antigos): água e estrada fazem curva em vez de escada
+      const grp = (q) => (watery(q) ? 1 : q === T.ROAD ? 2 : 0), me = grp(t);
+      const cut = [];   // [cantoX, cantoY, cor] dos cantos a trocar
+      const cornerCol = (q) => rgb(tones(q, rg)[1]);
+      if (me) { if (grp(wN) !== me && grp(wWst) !== me && grp(wN) === grp(wWst)) cut.push([0, 0, cornerCol(wN)]); if (grp(wN) !== me && grp(wE) !== me && grp(wN) === grp(wE)) cut.push([1, 0, cornerCol(wN)]); if (grp(wS) !== me && grp(wWst) !== me && grp(wS) === grp(wWst)) cut.push([0, 1, cornerCol(wS)]); if (grp(wS) !== me && grp(wE) !== me && grp(wS) === grp(wE)) cut.push([1, 1, cornerCol(wS)]); }
+      else if (t !== T.WALL && t !== T.PAVE && t !== T.BOARD) for (const [cx2, cy2, qa, qb] of [[0, 0, wN, wWst], [1, 0, wN, wE], [0, 1, wS, wWst], [1, 1, wS, wE]]) { const ga = grp(qa); if (ga && ga === grp(qb)) cut.push([cx2, cy2, cornerCol(qa)]); }
       for (let b = 0; b < 16; b++) lo4[b] = nz.noise((gx * TS + (b & 3) * 4 + 2) * 0.025, (gy * TS + (b >> 2) * 4 + 2) * 0.025);
       for (let py = 0; py < TS; py++) for (let px = 0; px < TS; px++) {
         const wx = gx * TS + px, wy = gy * TS + py;
@@ -96,6 +137,7 @@
           // a estrada se desfaz no capim
           if (t === T.ROAD) { const edge = (py < 2 && wN !== T.ROAD) || (py > 13 && wS !== T.ROAD) || (px > 13 && wE !== T.ROAD) || (px < 2 && wWst !== T.ROAD); if (edge && h < 0.5) col = rgb(tones(wN !== T.ROAD ? wN : wS !== T.ROAD ? wS : wE !== T.ROAD ? wE : wWst, rg)[1]); }
         }
+        for (const [cx2, cy2, cc] of cut) { const dx = cx2 ? TS - 1 - px : px, dy = cy2 ? TS - 1 - py : py; if (dx + dy < 6) col = h > 0.85 ? mixC(cc, [255, 255, 255], 0.12) : cc; }
         const o = (ty * TS + py) * c.width * 4 + (tx * TS + px) * 4;
         d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
       }
@@ -202,20 +244,63 @@
 
   // ---------- o quadro ----------
   let T0 = 0;
+  let transT = 0;
+  R.transition = function () { transT = 0.55; };
   R.frame = function (dt) {
     frame0(dt);
     scr.imageSmoothingEnabled = false;
-    scr.drawImage(low, 0, 0, VW * Z, VH * Z);
+    let src = low, sw = VW, sh = VH;
+    // mosaico (o efeito do Super Nintendo ao trocar de lugar)
+    if (transT > 0) {
+      transT = Math.max(0, transT - dt);
+      const p = Math.max(1, Math.round(transT / 0.55 * 14));
+      if (p > 1) {
+        if (!tiny) tiny = document.createElement('canvas');
+        tiny.width = Math.ceil(VW / p); tiny.height = Math.ceil(VH / p);
+        const tx2 = tiny.getContext('2d'); tx2.imageSmoothingEnabled = false; tx2.drawImage(low, 0, 0, tiny.width, tiny.height);
+        src = tiny; sw = tiny.width; sh = tiny.height;
+      }
+    }
+    if (tilt && S.mode === 'play') {
+      scr.fillStyle = '#0c0a10'; scr.fillRect(0, 0, SW, SH);
+      const k = sw / VW;
+      for (const r of tilt.rows) {
+        const w2 = SW / (Z * r.sc);
+        scr.drawImage(src, (tilt.LW / 2 - w2 / 2) * k, r.src * k, w2 * k, Math.max(1, r.h / (Z * r.sc)) * k, 0, r.y, SW, r.h);
+      }
+      // névoa no horizonte
+      const g = horizon || (horizon = (() => { const gg = scr.createLinearGradient(0, 0, 0, SH * 0.35); gg.addColorStop(0, 'rgba(12,10,16,0.85)'); gg.addColorStop(1, 'rgba(12,10,16,0)'); return gg; })());
+      scr.fillStyle = g; scr.fillRect(0, 0, SW, SH * 0.35);
+    } else scr.drawImage(src, 0, 0, sw, sh, 0, 0, VW * Z, VH * Z);
+    if (video.crt) crt();
+    if (transT > 0) { scr.fillStyle = 'rgba(0,0,0,' + Math.min(1, transT / 0.55) * 0.6 + ')'; scr.fillRect(0, 0, SW, SH); }
   };
+  let horizon = null;
+  // filtro de televisão antiga: linhas e um leve brilho nas bordas
+  function crt() {
+    if (!crtPat) { const c = document.createElement('canvas'); c.width = 4; c.height = 4; const x = c.getContext('2d'); x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(0, 2, 4, 2); x.fillStyle = 'rgba(255,255,255,0.03)'; x.fillRect(0, 0, 4, 1); crtPat = scr.createPattern(c, 'repeat'); }
+    scr.fillStyle = crtPat; scr.fillRect(0, 0, SW, SH);
+    const g = scr.createRadialGradient(SW / 2, SH / 2, Math.min(SW, SH) * 0.35, SW / 2, SH / 2, Math.max(SW, SH) * 0.75);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)');
+    scr.fillStyle = g; scr.fillRect(0, 0, SW, SH);
+  }
+  function makeVignette(w, h) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'), g = x.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.72);
+    g.addColorStop(0, 'rgba(10,8,14,0)'); g.addColorStop(1, 'rgba(10,8,14,0.5)');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    return c;
+  }
   function frame0(dt) {
     T0 += dt; budget = 1;
     const P = S.P;
     cx.setTransform(1, 0, 0, 1, 0, 0);
     cx.imageSmoothingEnabled = false;
     cx.fillStyle = '#0c0a10'; cx.fillRect(0, 0, VW, VH);
+    if (S.mode === 'title' && S.world) return titleScene(dt);
     if (!P || S.mode !== 'play') return;
     // câmera
-    const tx = P.x * TS - VW / 2, ty = (P.y - 0.5) * TS - VH / 2;
+    const tx = P.x * TS - VW / 2, ty = (P.y - 0.5) * TS - (tilt ? tilt.anchor : VH / 2);
     cam.x += (tx - cam.x) * Math.min(1, dt * 8); cam.y += (ty - cam.y) * Math.min(1, dt * 8);
     if (Math.abs(tx - cam.x) > VW) { cam.x = tx; cam.y = ty; }
     let sx = 0, sy = 0;
@@ -237,27 +322,45 @@
     for (const h of S.hazards) { const a = 0.35 + Math.sin(T0 * 12 + h.x) * 0.1; cx.fillStyle = 'rgba(247,118,34,' + a + ')'; circle(h.x * TS - ox, h.y * TS - oy, h.r * TS, 0.55); }
     for (const t of S.tele) drawTele(t, ox, oy);
     // água e véu vivos
-    if (S.map.kind === 'world') liveTiles(ox, oy);
+    if (S.map.kind === 'world') liveTiles(ox, oy); else liveDg(ox, oy);
+    // sombras: do sol (de dia, giram com a hora) e as de nuvem
+    sunShadows(ox, oy);
     // a lista do que tem altura
     const list = [];
     if (S.map.kind === 'world') collectWorld(list, ox, oy); else collectDg(list, ox, oy);
     for (const e of S.ents) if (onScreen(e.x, e.y, ox, oy, 3)) list.push({ y: e.y, e });
     for (const f of S.fx) if (f.kind === 'drop') list.push({ y: f.y - 0.01, drop: f });
     list.push({ y: P.y, hero: true });
+    if (S.map.kind === 'dg') wallCaps(list, ox, oy);
     list.sort((a, b) => a.y - b.y);
+    let heroDrawn = false;
     for (const it of list) {
-      if (it.hero) drawHero(ox, oy);
+      if (it.hero) { drawHero(ox, oy); heroDrawn = true; }
       else if (it.e) drawEnt(it.e, ox, oy);
       else if (it.drop) drawDrop(it.drop, ox, oy);
-      else if (it.o) drawObj(it.o, ox, oy);
+      else if (it.cap) drawCap(it, ox, oy);
+      else if (it.o) {
+        // a copa na frente do herói fica transparente (dá para ver quem está atrás)
+        const front = heroDrawn && TALL[it.o.k] && Math.abs(it.o.x + (it.o.w || 1) / 2 - P.x) < (it.o.w || 1) / 2 + 0.9 && it.o.y + 1 - P.y < (it.o.k === 'building' ? it.o.h + 1.5 : 2.2);
+        if (front) cx.globalAlpha = 0.5;
+        drawObj(it.o, ox, oy);
+        cx.globalAlpha = 1;
+      }
     }
+    // o herói por trás de paredes e telhados: uma silhueta (como nos ARPGs)
+    if (!S.dead) { cx.globalAlpha = 0.28; drawHeroGhost(ox, oy); cx.globalAlpha = 1; }
     // projéteis e efeitos
     for (const p of S.projs) drawProj(p, ox, oy);
     drawFx(dt, ox, oy);
+    // nuvens passando
+    cloudShadows(ox, oy);
     // clima
     weather(dt, ox, oy);
     // luz
     lighting(ox, oy);
+    glowPass(ox, oy);
+    grade();
+    cx.drawImage(vig, 0, 0);
     // números de dano
     cx.textAlign = 'center';
     for (const f of S.floats) {
@@ -297,8 +400,9 @@
       if (t === T.VEU && !(S.P.flags.veu)) {
         const ph = T0 * 6 + x * 1.7 + y;
         for (let k = 0; k < 3; k++) { const h = 6 + Math.sin(ph + k * 2) * 4 + 6; cx.fillStyle = k === 0 ? 'rgba(200,66,58,0.85)' : k === 1 ? 'rgba(247,118,34,0.85)' : 'rgba(242,218,114,0.8)'; cx.fillRect(x * TS - ox + k * 5 + 1, y * TS - oy + 16 - h - k * 3, 4, h); }
-      } else if ((t === T.SHALLOW || t === T.RIVER || t === T.DEEP) && G.hash2(x, y, Math.floor(T0 * 1.5)) < 0.05) {
-        cx.fillStyle = 'rgba(230,240,235,0.6)'; cx.fillRect(x * TS - ox + 4 + Math.floor(G.hash2(x, y, 9) * 8), y * TS - oy + 6 + Math.floor(G.hash2(y, x, 9) * 6), 3, 1);
+      } else if (t === T.SHALLOW || t === T.RIVER || t === T.DEEP) {
+        if (!waterFrames) waterFrames = makeWaterFrames(['rgba(200,230,240,0.5)'], 8);
+        cx.drawImage(waterFrames[(Math.floor(T0 * (t === T.RIVER ? 9 : 5)) + x + y * 2) % 8], x * TS - ox, y * TS - oy);
       } else if (t === T.LAVA && Math.random() < 0.01) S.fx.push({ kind: 'p', x: x + Math.random(), y: y + 0.5, vx: 0, vy: -1, t: 0, life: 0.6, col: '#f2da72', g: 0 });
     }
   }
@@ -369,6 +473,13 @@
     if (!img) return;
     if (f.it && f.it.rar >= 1) { cx.fillStyle = D.RARITY[f.it.rar].col; cx.globalAlpha = 0.35 + Math.sin(f.t * 5) * 0.15; cx.fillRect(Math.round(x - 1), Math.round(y - 30), 2, 26); cx.globalAlpha = 1; }
     cx.drawImage(img, Math.round(x - img.width / 2), Math.round(y - img.height - 2 + b));
+    // o nome do item no chão (como no Diablo), na cor da raridade
+    if (video.nomes && f.it && Math.hypot(f.x - S.P.x, f.y - S.P.y) < 7) {
+      cx.font = '7px "Pixelify Sans", monospace'; cx.textAlign = 'center';
+      const tw = cx.measureText(f.it.name).width;
+      cx.fillStyle = 'rgba(14,10,18,0.75)'; cx.fillRect(Math.round(x - tw / 2 - 2), Math.round(y - 30), tw + 4, 9);
+      cx.fillStyle = (D.RARITY[f.it.rar] || D.RARITY[0]).col; cx.fillText(f.it.name, Math.round(x), Math.round(y - 23));
+    }
   }
   function frameOf(e) { return e.moving ? 1 + (Math.floor(e.anim * 6) % 2) : 0; }
   function drawSheet(s, e, ox, oy, scale, over) {
@@ -512,6 +623,167 @@
     S.fx = S.fx.filter((f) => f.kind === 'drop' ? !f.dead : f.t < f.life);
   }
 
+  // ---------- 0.3: profundidade, sol, nuvens, luz colorida ----------
+  const TALL = { broad: 1, nobre: 1, arau: 1, mangue: 1, building: 1, altar: 1, entrance: 1, marco: 1, lamp: 1, pillar: 1 };
+  let blob = null;
+  function blobSprite() {
+    if (blob) return blob;
+    const c = document.createElement('canvas'); c.width = 32; c.height = 16;
+    const x = c.getContext('2d'), g = x.createRadialGradient(16, 8, 0, 16, 8, 16);
+    g.addColorStop(0, 'rgba(14,10,24,0.55)'); g.addColorStop(0.6, 'rgba(14,10,24,0.3)'); g.addColorStop(1, 'rgba(14,10,24,0)');
+    x.fillStyle = g; x.save(); x.scale(1, 0.5); x.fillRect(0, 0, 32, 32); x.restore();
+    return (blob = c);
+  }
+  const SHADOW_H = { broad: 26, nobre: 26, arau: 26, mangue: 20, cacto: 14, rock: 6, bush: 8, building: 40, altar: 40, marco: 26, lamp: 24, poco: 12, entrance: 20, banca: 12, quadro: 14, barril: 8, caixa: 8, pillar: 26 };
+  function sunShadows(ox, oy) {
+    const h = (S.time / 60) % 24;
+    const outdoors = S.map.kind === 'world';
+    if (outdoors && (h < 6.2 || h > 18.2)) return;
+    // o sol nasce a leste e se põe a oeste: de manhã a sombra estica para oeste, à tarde para leste
+    const t = outdoors ? (h - 6.2) / 12 : 0.5, ang = Math.PI - t * Math.PI, len = outdoors ? 0.35 + Math.abs(Math.cos(t * Math.PI)) * 1.1 : 0.3;
+    const strength = outdoors ? Math.min(1, Math.sin(t * Math.PI) * 3) : 0.6;
+    const b = blobSprite();
+    cx.globalAlpha = strength * (S.weather === 'chuva' ? 0.4 : 1);
+    const draw = (x, y, hgt, wid) => {
+      const L = Math.max(wid, hgt * len), sx = x * TS - ox, sy = y * TS - oy;
+      if (sx < -60 || sy < -60 || sx > VW + 60 || sy > VH + 60) return;
+      cx.save(); cx.translate(sx, sy); cx.rotate(ang + Math.PI);
+      cx.drawImage(b, -wid * 0.3, -wid * 0.35, L + wid * 0.6, wid * 0.7);
+      cx.restore();
+    };
+    if (outdoors) {
+      const w = S.world, N = w.N, seen = new Set();
+      const x0 = Math.max(0, Math.floor(ox / TS) - 3), y0 = Math.max(0, Math.floor(oy / TS) - 2), x1 = Math.min(N - 1, Math.ceil((ox + VW) / TS) + 3), y1 = Math.min(N - 1, Math.ceil((oy + VH) / TS) + 3);
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const id = w.grid[y * N + x]; if (id < 0 || seen.has(id)) continue; seen.add(id);
+        const o = w.objs[id]; if (o.gone || !SHADOW_H[o.k]) continue;
+        const wid = o.k === 'building' ? o.w * TS * 0.9 : o.k === 'rock' || o.k === 'bush' ? 10 : 14;
+        draw(o.x + (o.w || 1) / 2, o.y + 0.95, SHADOW_H[o.k] * (o.k === 'building' ? o.h / 2 : 1), wid);
+      }
+    } else for (const o of S.map.m.objs) if (!o.gone && SHADOW_H[o.k] && onScreen(o.x, o.y, ox, oy, 2)) draw(o.x + 0.5, o.y + 0.95, SHADOW_H[o.k], 12);
+    for (const e of S.ents) if (!e.dead && !e.def.fly && onScreen(e.x, e.y, ox, oy, 2)) draw(e.x, e.y, 16 * e.big, 9 * e.big);
+    draw(S.P.x, S.P.y, 16, 9);
+    cx.globalAlpha = 1;
+  }
+  const clouds = [];
+  function cloudShadows(ox, oy) {
+    if (S.map.kind !== 'world') return;
+    const h = (S.time / 60) % 24;
+    if (h < 7 || h > 18) return;
+    if (!clouds.length) for (let i = 0; i < 6; i++) clouds.push({ x: Math.random() * 1200, y: Math.random() * 900, w: 140 + Math.random() * 160, h: 70 + Math.random() * 60 });
+    const b = blobSprite();
+    cx.globalAlpha = S.weather ? 0.55 : 0.32;
+    for (const c of clouds) {
+      c.x += 0.08; c.y += 0.03;
+      const px = ((c.x - ox * 0.98) % 1400 + 1400) % 1400 - 250, py = ((c.y - oy * 0.98) % 1000 + 1000) % 1000 - 200;
+      cx.drawImage(b, px, py, c.w, c.h);
+    }
+    cx.globalAlpha = 1;
+  }
+  // cor de cada região (bem de leve)
+  const GRADE = { sertao: 'rgba(255,170,90,0.07)', pantano: 'rgba(90,140,90,0.09)', serra: 'rgba(150,180,230,0.07)', cratera: 'rgba(255,80,40,0.09)', mata: 'rgba(60,120,60,0.06)', mangue: 'rgba(70,120,110,0.07)' };
+  function grade() {
+    if (S.map.kind !== 'world') return;
+    const g = GRADE[S.region]; if (!g) return;
+    cx.globalCompositeOperation = 'overlay'; cx.fillStyle = g; cx.fillRect(0, 0, VW, VH); cx.globalCompositeOperation = 'source-over';
+  }
+  // luz colorida por cima do escuro (soma de cor: fogo laranja, magia azul, fogo-fátuo verde)
+  function glowPass(ox, oy) {
+    const dark = darknessNow;
+    if (dark < 0.05) return;
+    cx.globalCompositeOperation = 'lighter';
+    const a = Math.min(0.55, dark * 0.75), fl = 1 + Math.sin(T0 * 9) * 0.06;
+    const g = (x, y, r, col, k) => { const px = x * TS - ox, py = y * TS - oy, rr = r * TS; if (px < -rr || py < -rr || px > VW + rr || py > VH + rr) return; cx.globalAlpha = a * (k || 1); cx.drawImage(glow(col), px - rr, py - rr, rr * 2, rr * 2); };
+    if (S.map.kind === 'dg') { for (const o of S.map.m.objs) if (!o.gone && (o.k === 'torch' || o.k === 'brazier')) g(o.x + 0.5, o.y + (o.k === 'torch' ? 0.4 : 0.2), (o.k === 'brazier' ? 2.6 : 1.8) * fl, '#c8641c', 0.8); }
+    else {
+      const w = S.world, N = w.N, seen = new Set();
+      const x0 = Math.max(0, Math.floor(ox / TS) - 3), y0 = Math.max(0, Math.floor(oy / TS) - 3), x1 = Math.min(N - 1, Math.ceil((ox + VW) / TS) + 3), y1 = Math.min(N - 1, Math.ceil((oy + VH) / TS) + 4);
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const id = w.grid[y * N + x]; if (id < 0 || seen.has(id)) continue; seen.add(id); const o = w.objs[id]; if (o.gone) continue;
+        if (o.k === 'lamp') g(o.x + 0.5, o.y - 0.7, 1.6 * fl, '#d8a040', 0.7);
+        else if (o.k === 'campfire') g(o.x + 0.5, o.y + 0.4, 2.6 * fl, '#d0601c', 0.9);
+        else if (o.k === 'marco') g(o.x + 0.5, o.y - 1.2, 1.2, '#7cc8d0', 0.6);
+      }
+    }
+    for (const p of S.projs) if (p.kind !== 'flecha' && p.kind !== 'bala') g(p.x, p.y, 1.3, p.col || '#f77622', 0.8);
+    for (const e of S.ents) if (!e.dead && (e.def.plan === 'wisp' || e.def.plan === 'serpent' || e.def.plan === 'mula')) g(e.x, e.y - 0.6, e.def.plan === 'serpent' ? 3 : 1.4, e.def.plan === 'wisp' ? e.def.col : '#f77622', 0.8);
+    if (S.P.lightT > 0) g(S.P.x - 0.6, S.P.y - 1.4, 2, '#fff3c4', 0.6);
+    cx.globalAlpha = 1; cx.globalCompositeOperation = 'source-over';
+  }
+  // masmorra: a borda de cima das paredes do sul tem altura (as pernas somem atrás dela)
+  function wallCaps(list, ox, oy) {
+    const m = S.map.m, N = m.N;
+    const x0 = Math.max(0, Math.floor(ox / TS)), y0 = Math.max(1, Math.floor(oy / TS)), x1 = Math.min(N - 1, Math.ceil((ox + VW) / TS)), y1 = Math.min(N - 1, Math.ceil((oy + VH) / TS) + 1);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      if (m.tile[y * N + x] !== 0) continue;
+      const up = m.tile[(y - 1) * N + x];
+      if (up === 1 || up === 3) list.push({ y: y + 0.02, cap: true, x, ty: y });
+    }
+  }
+  function drawCap(it, ox, oy) {
+    const th = SP.THEMES[S.map.m.theme], px = it.x * TS - ox, py = it.ty * TS - oy;
+    cx.fillStyle = th.wall[0]; cx.fillRect(px, py - 7, TS, 9);
+    cx.fillStyle = th.wall[2]; cx.fillRect(px, py - 7, TS, 1);
+    cx.fillStyle = th.wall[1]; cx.fillRect(px, py - 6, TS, 1);
+  }
+  function drawHeroGhost(ox, oy) {
+    const P = S.P, s = heroSheetGet();
+    drawSheet(s, { x: P.x, y: P.y, dir: P.dir || 0, moving: P.moving, anim: P.anim }, ox, oy, 1);
+  }
+  // água que mexe (o "color cycling" dos jogos antigos: só o brilho anda, o desenho fica)
+  let waterFrames = null, lavaFrames = null;
+  function makeWaterFrames(cols, n, lava) {
+    const out = [];
+    for (let f = 0; f < n; f++) {
+      const c = document.createElement('canvas'); c.width = TS; c.height = TS; const x = c.getContext('2d');
+      for (let y = 2; y < TS - 2; y++) for (let k = 2; k < TS - 2; k++) {
+        const v = Math.sin((k + y * 0.6) * 0.55 + f / n * Math.PI * 2) + Math.sin((k * 0.3 - y) * 0.7 - f / n * Math.PI * 2) * 0.6;
+        if (v > (lava ? 1.0 : 1.35)) { x.fillStyle = cols[0]; x.fillRect(k, y, 1, 1); }
+        else if (lava && v < -1.2) { x.fillStyle = cols[1]; x.fillRect(k, y, 1, 1); }
+      }
+      out.push(c);
+    }
+    return out;
+  }
+  function liveDg(ox, oy) {
+    const m = S.map.m, N = m.N;
+    if (!waterFrames) waterFrames = makeWaterFrames(['rgba(200,230,240,0.55)'], 8);
+    if (!lavaFrames) lavaFrames = makeWaterFrames(['rgba(255,240,160,0.8)', 'rgba(120,20,10,0.5)'], 8, true);
+    const x0 = Math.max(0, Math.floor(ox / TS)), y0 = Math.max(0, Math.floor(oy / TS)), x1 = Math.min(N - 1, Math.ceil((ox + VW) / TS)), y1 = Math.min(N - 1, Math.ceil((oy + VH) / TS));
+    const fr = Math.floor(T0 * 7);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const t = m.tile[y * N + x];
+      if (t === 3) cx.drawImage(waterFrames[(fr + x + y) % 8], x * TS - ox, y * TS - oy);
+      else if (t === 2) cx.drawImage(lavaFrames[(fr + x * 2 + y) % 8], x * TS - ox, y * TS - oy);
+    }
+  }
+  // tela de título: o mundo passando devagar, de noite, atrás do nome do jogo
+  let tcam = null;
+  function titleScene(dt) {
+    const w = S.world;
+    if (!S.map) S.map = { kind: 'world' };
+    if (!tcam) tcam = { x: 150 * TS, y: 222 * TS };
+    tcam.x += dt * 9; tcam.y -= dt * 2.5;
+    if (tcam.x > 200 * TS) { tcam.x = 140 * TS; tcam.y = 236 * TS; }
+    const ox = Math.round(tcam.x - VW / 2), oy = Math.round(tcam.y - VH / 2);
+    const c0 = Math.floor(ox / (CH * TS)), c1 = Math.floor((ox + VW) / (CH * TS)), r0 = Math.floor(oy / (CH * TS)), r1 = Math.floor((oy + VH) / (CH * TS));
+    for (let j = r0; j <= r1; j++) for (let i = c0; i <= c1; i++) { if (i < 0 || j < 0 || i * CH >= w.N || j * CH >= w.N) continue; const ch = chunk(i, j, false); if (ch) cx.drawImage(ch, i * CH * TS - ox, j * CH * TS - oy); }
+    const list = [];
+    collectWorld(list, ox, oy);
+    list.sort((a, b) => a.y - b.y);
+    for (const it of list) drawObj(it.o, ox, oy);
+    T0 += 0;
+    cx.fillStyle = 'rgba(14,12,34,0.55)'; cx.fillRect(0, 0, VW, VH);
+    cx.globalCompositeOperation = 'lighter';
+    const seen = new Set(), N = w.N;
+    for (let y = Math.max(0, Math.floor(oy / TS)); y < Math.min(N, (oy + VH) / TS + 2); y++) for (let x = Math.max(0, Math.floor(ox / TS)); x < Math.min(N, (ox + VW) / TS); x++) {
+      const id = w.grid[y * N + x]; if (id < 0 || seen.has(id)) continue; seen.add(id); const o = w.objs[id];
+      if (!o.gone && (o.k === 'lamp' || o.k === 'campfire' || o.k === 'marco')) { const r = o.k === 'campfire' ? 40 : 26; cx.globalAlpha = 0.5; cx.drawImage(glow(o.k === 'marco' ? '#7cc8d0' : '#d8a040'), o.x * TS - ox + 8 - r, o.y * TS - oy - 6 - r, r * 2, r * 2); }
+    }
+    cx.globalAlpha = 1; cx.globalCompositeOperation = 'source-over';
+    if (vig) cx.drawImage(vig, 0, 0);
+  }
+
   // ---------- clima ----------
   const drops = [];
   function weather(dt, ox, oy) {
@@ -549,8 +821,9 @@
     if (h > 5 && h < 7.5) return 'rgba(255,180,140,' + (0.08 * Math.sin((h - 5) / 2.5 * Math.PI)) + ')';
     return null;
   }
+  let darknessNow = 0;
   function lighting(ox, oy) {
-    const a = darkness();
+    const a = darkness(); darknessNow = a;
     const tn = tint();
     if (tn) { cx.fillStyle = tn; cx.fillRect(0, 0, VW, VH); }
     if (a <= 0.01) return;

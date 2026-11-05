@@ -10,7 +10,7 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const icoURL = (c) => (c ? c.toDataURL() : '');
   const icache = new Map();
-  function ico(it) { const k = it.uid || it.id + (it.spell || ''); if (icache.has(k)) return icache.get(k); const u = icoURL(SP.itemIcon(it)); icache.set(k, u); return u; }
+  function ico(it) { const p = SP.packIcon(it); if (p) return 'img/ic/' + p + '.png'; const k = it.uid || it.id + (it.spell || ''); if (icache.has(k)) return icache.get(k); const u = icoURL(SP.itemIcon(it)); icache.set(k, u); return u; }
   UI.ico = ico;
   let panel = null, panelKind = null;
 
@@ -58,6 +58,8 @@
     for (let i = 0; i < 4; i++) {
       const s = P.slots[i], b = $('#slot' + i), d = s && D.SPELLS[s];
       b.querySelector('.sl-name').textContent = d ? d.name : '';
+      const im = b.querySelector('.sl-ic'), src = d ? 'img/ic/' + (G.ICONS['sp:' + s] || '') + '.png' : '';
+      if (im.dataset.s !== src) { im.dataset.s = src; if (src) im.src = src; im.hidden = !src; }
       b.classList.toggle('empty', !d);
       const cd = d && P.cds && P.cds[s] > 0 ? P.cds[s] / d.cd : 0;
       b.querySelector('.sl-cd').style.height = (cd * 100) + '%';
@@ -207,7 +209,7 @@
     // ferramentas
     const tl = Object.keys(P.tools);
     left.appendChild(el('h3', '', 'Cinto'));
-    left.appendChild(el('div', 'tools', tl.length ? tl.map((t) => '<span class="tool" title="' + esc(D.TOOLS[t].desc) + '"><img src="' + icoURL(SP.icon(t)) + '">' + esc(D.TOOLS[t].name) + '</span>').join('') : '<span class="muted">Nada. Os mercadores vendem picareta, gazuas, vara, tocha e machadinha.</span>'));
+    left.appendChild(el('div', 'tools', tl.length ? tl.map((t) => '<span class="tool" title="' + esc(D.TOOLS[t].desc) + '"><img src="' + ico({ id: t }) + '">' + esc(D.TOOLS[t].name) + '</span>').join('') : '<span class="muted">Nada. Os mercadores vendem picareta, gazuas, vara, tocha e machadinha.</span>'));
     // itens
     right.appendChild(el('h3', '', 'Itens (' + P.inv.length + ' de 48)'));
     const grid = el('div', 'grid');
@@ -329,7 +331,7 @@
       body.appendChild(slots);
       const list = el('div', 'mlist');
       if (!P.spells.length) list.appendChild(el('p', 'muted', 'Você ainda não sabe nenhum feitiço.'));
-      for (const sp of P.spells) { const d = D.SPELLS[sp]; const b = el('button', 'mspell' + (UI._pick === sp ? ' sel' : ''), '<b style="color:' + d.color + '">' + esc(d.name) + '</b> <small>' + D.SKILLS[d.school].name + ' · mana ' + d.mana + '</small><br><span>' + esc(d.desc) + '</span>'); b.onclick = () => { UI._pick = sp; draw(); }; list.appendChild(b); }
+      for (const sp of P.spells) { const d = D.SPELLS[sp]; const b = el('button', 'mspell' + (UI._pick === sp ? ' sel' : ''), '<img class="msp-ic" src="img/ic/' + G.ICONS['sp:' + sp] + '.png"><b style="color:' + d.color + '">' + esc(d.name) + '</b> <small>' + D.SKILLS[d.school].name + ' · mana ' + d.mana + '</small><br><span>' + esc(d.desc) + '</span>'); b.onclick = () => { UI._pick = sp; draw(); }; list.appendChild(b); }
       body.appendChild(list);
     };
     draw();
@@ -451,7 +453,7 @@
       L.appendChild(el('h3', '', 'Comprar · você tem <span class="gold">' + P.gold + '</span> de ouro'));
       const bl = el('div', 'slist');
       const line = (img, name, price, cls, onclick, title) => { const b = el('button', 'sl ' + (cls || ''), '<img src="' + img + '"><span>' + esc(name) + '</span><b>' + price + '</b>'); b.onclick = onclick; if (title) b.title = title; return b; };
-      for (const t of st.tools) { if (P.tools[t]) continue; const pr = Math.round(D.TOOLS[t].price * buyMul()); bl.appendChild(line(icoURL(SP.icon(t)), D.TOOLS[t].name, pr, '', () => { if (P.gold < pr) return UI.toast('Ouro insuficiente.'); P.gold -= pr; P.tools[t] = 1; G.Audio.sfx('moeda'); draw(); }, D.TOOLS[t].desc)); }
+      for (const t of st.tools) { if (P.tools[t]) continue; const pr = Math.round(D.TOOLS[t].price * buyMul()); bl.appendChild(line(ico({ id: t }), D.TOOLS[t].name, pr, '', () => { if (P.gold < pr) return UI.toast('Ouro insuficiente.'); P.gold -= pr; P.tools[t] = 1; G.Audio.sfx('moeda'); draw(); }, D.TOOLS[t].desc)); }
       for (const id in st.stacks) { if (!st.stacks[id]) continue; const d = D.STACK[id], pr = Math.round(d.price * buyMul()); bl.appendChild(line(ico({ id }), d.name + ' (' + st.stacks[id] + ')', pr, '', () => { if (P.gold < pr) return UI.toast('Ouro insuficiente.'); P.gold -= pr; st.stacks[id]--; Gm.give(id, 1, true); G.Audio.sfx('moeda'); draw(); }, d.desc)); }
       for (const it of st.items) { const pr = Math.round(Gm.value(it) * buyMul()); const b = line(ico(it), it.name, pr, 'r' + it.rar, () => { if (P.gold < pr) return UI.toast('Ouro insuficiente.'); if (P.inv.length >= 48) return UI.toast('Mochila cheia.'); P.gold -= pr; st.items.splice(st.items.indexOf(it), 1); P.inv.push(it); G.Audio.sfx('moeda'); draw(); }); b.onmouseenter = () => tip(it); bl.appendChild(b); }
       L.appendChild(bl);
@@ -569,6 +571,16 @@
       vol.appendChild(r);
     }
     body.appendChild(vol);
+    // imagem: câmera e filtro retrô
+    const vid = el('div', 'vol');
+    const camSel = el('label', '', 'Câmera (tecla V) <select>' + G.Render.CAMS.map(([k, n]) => '<option value="' + k + '"' + (G.Render.video.cam === k ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>');
+    camSel.querySelector('select').onchange = (e) => G.Render.setVideo('cam', e.target.value);
+    const crt = el('label', '', 'Filtro de TV antiga <input type="checkbox"' + (G.Render.video.crt ? ' checked' : '') + '>');
+    crt.querySelector('input').onchange = (e) => G.Render.setVideo('crt', e.target.checked);
+    const nm = el('label', '', 'Nome dos itens no chão <input type="checkbox"' + (G.Render.video.nomes ? ' checked' : '') + '>');
+    nm.querySelector('input').onchange = (e) => G.Render.setVideo('nomes', e.target.checked);
+    vid.appendChild(camSel); vid.appendChild(crt); vid.appendChild(nm);
+    body.appendChild(vid);
     mk('Salvar e sair para o título', () => { Gm.save(); UI.close(); G.Main.title(); }, 'ghost');
     open('menu', 'Pausa', body);
   };
@@ -576,7 +588,7 @@
     const body = el('div', 'help', '<table class="keys">' + [
       ['W A S D ou setas', 'Andar'], ['Shift', 'Correr (gasta vigor)'], ['Botão esquerdo', 'Atacar na direção do mouse (segure para continuar)'], ['Botão direito', 'Ataque forte (gasta 20 de vigor)'],
       ['Espaço', 'Rolar e desviar'], ['1, 2, 3, 4', 'Lançar magia na direção do mouse'], ['Q', 'Poção de vida (ou comida)'], ['R', 'Poção de mana'], ['E', 'Falar, abrir, colher, entrar'],
-      ['G', 'Acender fogueira (precisa de machadinha)'], ['I ou Tab', 'Mochila'], ['C', 'Personagem e talentos'], ['K', 'Magias'], ['J', 'Diário'], ['M', 'Mapa e viagem rápida'], ['Esc', 'Pausa e salvar'],
+      ['G', 'Acender fogueira (precisa de machadinha)'], ['V', 'Trocar a câmera (padrão, perto, longe, inclinada)'], ['I ou Tab', 'Mochila'], ['C', 'Personagem e talentos'], ['K', 'Magias'], ['J', 'Diário'], ['M', 'Mapa e viagem rápida'], ['Esc', 'Pausa e salvar'],
     ].map(([k, v]) => '<tr><td><kbd>' + k + '</kbd></td><td>' + v + '</td></tr>').join('') + '</table><p class="muted">No celular: o controle da esquerda anda; os botões da direita atacam, rolam, interagem e lançam magias. A mira vai sozinha no inimigo mais perto.</p>');
     open('help', 'Controles', body);
   };

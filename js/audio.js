@@ -21,8 +21,30 @@
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     want(cur.music, cur.amb);
+    loadBank();
   };
   let noiseBuf = null;
+  // 0.3: sons gravados (CC0: "RPG Sound Pack" de artisticdude e "80 CC0 RPG SFX" de rubberduck, ver CREDITOS.md).
+  // Cada som tem variações e sai com o tom levemente diferente a cada vez; o sintetizado fica de reserva
+  const BANK = { golpe: ['golpe1', 'golpe2', 'golpe3'], golpe_forte: ['forte1', 'golpe3'], acerto: ['acerto1', 'acerto2', 'acerto3'], dor: ['dor1', 'dor2'], moeda: ['moeda1', 'moeda2'], pegar: ['pegar1'], raro: ['raro1'],
+    equipar: ['equipar1', 'equipar2'], beber: ['beber1', 'beber2'], bau: ['bau1'], abrir: ['abrir1'], fechar: ['fechar1'], livro: ['livro1'], magia: ['magia1', 'magia2'], magia_m: ['magia1', 'magia2'], fogo: ['fogo1', 'fogo2'],
+    morte: ['morte1', 'morte2', 'morte3'], chefe_morre: ['rugido2'], rugido: ['rugido1', 'rugido2'], uivo: ['uivo1'], mordida: ['mordida1', 'mordida2'], minerar: ['minerar1', 'minerar2'], quebra: ['quebra1'], porta: ['porta1'], heroi_dor: ['heroi_dor1'] };
+  const bufs = {};
+  function loadBank() {
+    const names = new Set(); for (const k in BANK) BANK[k].forEach((v) => names.add(v));
+    for (const nm of names) fetch('som/sfx/' + nm + '.mp3').then((r) => r.arrayBuffer()).then((a) => ctx.decodeAudioData(a)).then((b) => { bufs[nm] = b; }).catch(() => {});
+  }
+  function sample(name, vol, x) {
+    const list = BANK[name]; if (!list) return false;
+    const nm = list[Math.floor(Math.random() * list.length)], b = bufs[nm]; if (!b) return false;
+    const src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = b; src.playbackRate.value = 0.9 + Math.random() * 0.2;
+    g.gain.value = vol * (name === 'moeda' || name === 'pegar' ? 0.6 : 0.9);
+    let out = g;
+    if (x != null && ctx.createStereoPanner && G.Game.S.P) { const p = ctx.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, (x - G.Game.S.P.x) / 8)); g.connect(p); out = p; }
+    out.connect(busS); src.connect(g); src.start();
+    return true;
+  }
   function env(g, t, a, peak, d) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
   function tone(type, f, f2, a, d, peak, dest) {
     const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
@@ -43,6 +65,7 @@
     let vol = 1;
     if (x != null && G.Game.S.P) { const d = Math.hypot(x - G.Game.S.P.x, y - G.Game.S.P.y); vol = Math.max(0, 1 - d / 16); if (vol <= 0) return; }
     const v = (n) => n * vol;
+    if (sample(name, vol, x)) { if (name === 'explosao' || name === 'golpe_forte') noise('lowpass', 500, 80, 0.7, 0.005, 0.3, v(0.5)); return; }
     switch (name) {
       case 'golpe': noise('bandpass', 1800, 600, 1.2, 0.005, 0.12, v(0.5)); break;
       case 'golpe_forte': noise('bandpass', 1200, 300, 1, 0.01, 0.22, v(0.7)); tone('sawtooth', 110, 60, 0.01, 0.18, v(0.15)); break;
@@ -86,9 +109,9 @@
   };
 
   // ---------- música e ambiente ----------
-  const MUS = { cidade: 'som/musica/town-theme.mp3', campo: 'som/musica/another-august.mp3', frio: 'som/musica/november-snow.mp3', titulo: 'som/musica/happy-lullaby.mp3' };
+  const MUS = { batalha: 'som/musica/batalha.mp3', cidade: 'som/musica/town-theme.mp3', campo: 'som/musica/another-august.mp3', frio: 'som/musica/november-snow.mp3', titulo: 'som/musica/happy-lullaby.mp3' };
   const REG_MUS = { campo: 'campo', litoral: 'campo', mata: 'campo', serra: 'frio', mangue: 'frio', sertao: 'campo', pantano: 'frio', cratera: null };
-  const AMB = { dia: 'som/amb/dia.mp3', noite: 'som/amb/noite.mp3', brisa: 'som/amb/brisa.mp3', rio: 'som/amb/rio.mp3', chuva: 'som/amb/chuva.mp3', fogo: 'som/amb/fogo.mp3' };
+  const AMB = { masmorra: 'som/amb/masmorra.mp3', dia: 'som/amb/dia.mp3', noite: 'som/amb/noite.mp3', brisa: 'som/amb/brisa.mp3', rio: 'som/amb/rio.mp3', chuva: 'som/amb/chuva.mp3', fogo: 'som/amb/fogo.mp3' };
   const cur = { music: 'titulo', amb: null };
   const tracks = {};
   function track(url, bus, loop) {
@@ -122,10 +145,10 @@
   Au.refresh = function () {
     if (place === 'title') return;
     const S = G.Game.S, night = G.Game.isNight();
-    if (place === 'dg') { want(bossOn ? null : null, dTheme === 'fogo' ? ['fogo'] : dTheme === 'navio' || dTheme === 'raiz' ? ['rio'] : null); drone(true, bossOn); return; }
-    drone(bossOn, bossOn);
+    if (place === 'dg') { want(bossOn ? 'batalha' : null, ['masmorra'].concat(dTheme === 'fogo' ? ['fogo'] : dTheme === 'navio' || dTheme === 'raiz' ? ['rio'] : [])); drone(!bossOn, false); return; }
+    drone(false, false);
     const inCity = S.cityOn && S.world && G.World.cityAt(S.world, S.P.x, S.P.y);
-    const mus = bossOn ? null : inCity ? 'cidade' : REG_MUS[region];
+    const mus = bossOn ? 'batalha' : inCity ? 'cidade' : REG_MUS[region];
     const amb = [night ? 'noite' : 'dia'];
     if (S.weather === 'chuva') amb.push('chuva');
     if (region === 'serra' || region === 'sertao' || region === 'cratera') amb.push('brisa');

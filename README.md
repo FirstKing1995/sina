@@ -1,4 +1,4 @@
-# SINA · v0.2
+# SINA · v0.3
 
 RPG de ação em mundo aberto, em pixel art feita por código, com monstros do folclore brasileiro.
 Roda no navegador (computador e celular), sem instalar nada.
@@ -89,6 +89,18 @@ No celular: controle à esquerda, botões à direita, mira automática.
 O jogo salva sozinho a cada minuto, ao entrar e sair de masmorra, ao dormir e no Marco da Sina (3 espaços no navegador).
 O **Painel do Mestre** (`admin.html`) edita os jogos salvos do navegador: ouro, nível, pontos, etapa da missão,
 cidades descobertas, itens, ferramentas, magias, exportar e importar entre aparelhos.
+
+## Visual e som (0.3)
+
+- **Luz colorida**: o escuro abre buracos de luz e, por cima, o fogo soma laranja, a magia azul e o fogo-fátuo verde.
+- **Sombras do sol** que giram com a hora (compridas de manhã e à tarde, curtas ao meio-dia) e **sombras de nuvem** passando.
+- **Profundidade**: copas e telhados ficam transparentes quando o herói passa atrás, a silhueta dele aparece por trás das coisas e as paredes de baixo das masmorras têm altura.
+- **Técnicas de jogos antigos**: água e lava que brilham em ciclo (o color cycling), rios e estradas com cantos arredondados (autotile), **mosaico** ao trocar de lugar (Super Nintendo), câmera **Mode 7** e filtro de **TV antiga** (CRT).
+- **4 câmeras** (tecla V ou no menu): Padrão, Perto, Longe e Inclinada.
+- **Tela de título** com o mundo passando ao fundo, de noite.
+- **Ícones novos** (146 ícones CC0) na mochila, lojas, forja, magias e atalhos; nome dos itens no chão na cor da raridade, como no Diablo.
+- **Sons gravados** (CC0) com variações: golpes, acertos, moedas, poções, baús, monstros; **música de batalha** nos chefes e **ambiente de masmorra**.
+- Tudo o que entrou é CC0 (uso comercial liberado). Ver CREDITOS.md.
 
 ## Conta, nuvem e ranking (0.2)
 

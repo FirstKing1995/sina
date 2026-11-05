@@ -23,3 +23,11 @@ todas **CC0 (domínio público)**: livres para uso comercial, sem obrigação de
 
 ## Fontes (SIL Open Font License 1.1)
 - Pixelify Sans e Crimson Pro (Google Fonts); Jersey 10, The Soft Type Project (só os números, em `css/digits.css`).
+
+## Entraram na 0.3 (todos CC0, conferidos na página de cada um em 04/11/2026)
+- **Ícones**: "496 pixel art icons for medieval/fantasy RPG", Henrique Lazarini (7Soul1), https://opengameart.org/content/496-pixel-art-icons-for-medievalfantasy-rpg (146 deles em `img/ic/`, escolhidos por `tools/icones.js`).
+- **Efeitos sonoros** em `som/sfx/` (convertidos para MP3):
+  - "RPG Sound Pack", artisticdude, https://opengameart.org/content/rpg-sound-pack
+  - "80 CC0 RPG SFX", rubberduck, https://opengameart.org/content/80-cc0-rpg-sfx
+- **Música de chefe** `som/musica/batalha.mp3`: "Battle Theme A", cynicmusic, https://opengameart.org/content/battle-theme-a
+- **Ambiente das masmorras** `som/amb/masmorra.mp3`: "Loopable Dungeon Ambience", JaggedStone, https://opengameart.org/content/loopable-dungeon-ambience

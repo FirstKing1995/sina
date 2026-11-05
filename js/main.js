@@ -92,6 +92,7 @@
   }
   function onPress(k, e) {
     if (UI.isOpen() && !['i', 'tab', 'c', 'j', 'm', 'k', 'h'].includes(k)) return;
+    if (S.dead && k !== 'v') return;
     if (S.dead) return;
     switch (k) {
       case 'e': G.Acts.use(); break;
@@ -99,6 +100,7 @@
       case 'q': G.Acts.quickPotion('vida'); break;
       case 'r': G.Acts.quickPotion('mana'); break;
       case 'g': G.Acts.lightFire(); break;
+      case 'v': UI.toast('Câmera: ' + G.Render.nextCam()); break;
       case '1': case '2': case '3': case '4': castSlot(+k - 1); break;
       case 'i': case 'tab': UI.toggle('inv'); break;
       case 'c': UI.toggle('char'); break;

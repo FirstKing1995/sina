@@ -178,7 +178,7 @@
     const P = S.P;
     if (P.inv.length >= 48) { G.UI.toast('A mochila está cheia. O item ficou no chão.'); Gm.dropItem(P.x, P.y, it); return false; }
     P.inv.push(it);
-    if (!quiet) G.UI.toast('Pegou ' + it.name + '.', D.RARITY[it.rar] ? 'r' + it.rar : '');
+    if (!quiet) { G.UI.toast('Pegou ' + it.name + '.', D.RARITY[it.rar] ? 'r' + it.rar : ''); if (it.rar >= 2) G.Audio.sfx('raro'); }
     return true;
   };
   Gm.give = function (id, n, quiet) {
@@ -215,7 +215,7 @@
     for (const sp of S.world.spawns) sp.active = false;
     S.cityOn = null;
     for (const a of S.ents) { a.x = x + 0.5; a.y = y; }
-    G.Render.invalidate();
+    G.Render.invalidate(); G.Render.transition();
     G.Audio.setPlace('world');
   };
   Gm.enterDungeon = function (id, floor, fromBelow) {
@@ -239,7 +239,7 @@
       if (id === 'coracao_cauda' && !P.ending) Dg.addObj(m, 'altarSina', m.bossRoom.cx, m.bossRoom.cy - 2);
       Dg.addObj(m, 'stairsUp', m.bossRoom.cx + 2, m.bossRoom.cy + 2, { exit: true });
     }
-    G.Render.invalidate();
+    G.Render.invalidate(); G.Render.transition(); G.Audio.sfx('porta');
     G.UI.banner(dd.name, floor > 1 || dd.floors > 1 ? 'Andar ' + floor + ' de ' + dd.floors : 'Nível ' + dd.lvl);
     G.Audio.setPlace('dg', dd.theme);
     if (!P.found.dungeons[id]) { P.found.dungeons[id] = 1; Gm.gainXp(20); }

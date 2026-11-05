@@ -403,6 +403,16 @@
     outline(b);
     return (icache[k] = A.polishWith(() => b.canvas()));
   };
+  // 0.3: o ícone do pacote CC0 (img/ic), quando existe; o desenhado por código fica para o chão do mundo
+  SP.packIcon = function (it) {
+    const I = G.ICONS || {}, D = G.D;
+    if (!it) return null;
+    if (it.unique && I['u:' + it.unique]) return I['u:' + it.unique];
+    if (it.base) return I[it.base + ':' + ((D.MATS[it.mat] && D.MATS[it.mat].tier) || 1)] || null;
+    if (it.id === 'tomo') return I['tomo:' + (D.SPELLS[it.spell] ? D.SPELLS[it.spell].school : 'destruicao')] || null;
+    if (it.spell) return I['sp:' + it.spell] || null;
+    return I[it.id] || null;
+  };
   SP.itemIcon = function (it) {
     if (!it) return null;
     const D = G.D;
