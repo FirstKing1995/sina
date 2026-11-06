@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>SINA - Parte I: A Cripta da Alvorada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="css/jogo.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" hidden>
+  <div id="barras">
+    <div class="barra" id="b-vida"><i></i><u></u></div>
+    <div class="barra" id="b-vigor"><i></i></div>
+  </div>
+  <div id="cabaca"><img src="assets/spr/cabaca.png" alt=""><span id="n-cabaca">3</span></div>
+  <div id="brasas"><span id="n-brasas">0</span><small>brasas</small></div>
+  <div id="chefe" hidden><div id="chefe-nome"></div><div class="barra" id="b-chefe"><i></i><u></u></div></div>
+  <div id="usar" hidden></div>
+  <div id="sussurro"></div>
+  <div id="area"></div>
+</div>
+
+<div id="toque" hidden>
+  <div id="manche"><i></i></div>
+  <button data-a="rola">Rolar</button><button data-a="golpe">Golpe</button><button data-a="forte">Forte</button>
+  <button data-a="bebe">Beber</button><button data-a="usa">Usar</button><button data-a="trava">Mirar</button>
+</div>
+
+<div id="titulo" class="tela">
+  <div class="fundo" style="background-image:url(assets/telas/titulo.webp)"></div>
+  <img id="logo" src="assets/logo.webp" alt="SINA">
+  <p class="sub">Parte I: A Cripta da Alvorada</p>
+  <div id="titulo-menu" class="menu"><div id="carrega">Acordando os mortos...</div></div>
+  <p class="rodape">WASD andar · Espaço rolar · clique golpe · botão direito golpe forte · Q beber · E usar · Tab mirar</p>
+</div>
+
+<div id="morte" class="tela" hidden>
+  <div class="fundo" style="background-image:url(assets/telas/morte.webp)"></div>
+  <h1>A Sina te alcançou</h1>
+  <p id="morte-sub"></p>
+</div>
+
+<div id="descanso" class="tela" hidden>
+  <div class="fundo lado" style="background-image:url(assets/telas/fogueira.webp)"></div>
+  <div class="painel">
+    <h2 id="d-nome"></h2>
+    <p class="nota">Os mortos se levantaram de novo. Sua vida e sua cabaça estão cheias.</p>
+    <p class="nota forte"><span id="d-brasas">0</span> brasas · fortalecer custa <span id="d-custo">0</span></p>
+    <div class="menu" id="d-niveis"></div>
+    <h3 id="d-viagem-t">Viajar para outra fogueira</h3>
+    <div class="menu" id="d-viagem"></div>
+    <button id="d-sair" class="sair">Levantar</button>
+  </div>
+</div>
+
+<div id="conversa" hidden>
+  <canvas id="conv-rosto" width="64" height="64"></canvas>
+  <div><b>Vidente Benta</b><p id="conv-texto"></p><small>E, Enter ou clique para continuar</small></div>
+</div>
+
+<div id="cartao" hidden></div>
+
+<div id="fim" class="tela" hidden>
+  <div class="fundo" style="background-image:url(assets/telas/ruina.webp)"></div>
+  <h1>Fim da Parte I</h1>
+  <p id="fim-txt"></p>
+  <div class="menu"><button id="fim-seguir">Continuar andando por Aruanã</button></div>
+</div>
+
+<script src="assets/arte.js"></script>
+<script src="js/mapa.js"></script>
+<script src="js/conteudo.js"></script>
+<script src="js/jogo.js"></script>
+<script src="js/som.js"></script>
+<script src="js/tela.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
