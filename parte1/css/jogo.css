@@ -96,3 +96,72 @@ button:disabled { opacity: .45; cursor: default; }
 .ic { width: 32px; height: 32px; image-rendering: pixelated; flex: none; }
 .mapa { display: block; width: 100%; image-rendering: pixelated; background: #05080a; }
 #toque [data-a=menu] { right: 26px; top: 16px; width: 54px; height: 54px; }
+
+/* conta */
+.conta { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; margin-top: 12px; width: min(92vw, 460px); font-size: 15px; text-shadow: 0 1px 3px #000; }
+.conta button { padding: 5px 10px; font-size: 15px; }
+.conta .linha-conta { width: 100%; text-align: center; color: #cfc7ae; }
+input { font: 17px 'Crimson Pro', serif; color: #eee4c8; background: #0d1214; border: 1px solid #5a4c30; padding: 8px 10px; width: 100%; user-select: text; -webkit-user-select: text; touch-action: auto; }
+.campo { display: block; margin-bottom: 10px; font-size: 15px; color: #c9bfa2; }
+.msg { min-height: 1.4em; color: #e0b070; font-size: 15px; margin: 0 0 8px; }
+.ranking { width: 100%; border-collapse: collapse; font-size: 15px; }
+.ranking td, .ranking th { padding: 5px 6px; border-bottom: 1px solid #1d2426; text-align: left; }
+#nuvem-aviso { position: absolute; right: 22px; top: 16px; font-size: 13px; color: #a79a7c; text-shadow: 0 1px 2px #000; }
+
+/* celular */
+#usar { pointer-events: auto; cursor: pointer; }
+@media (pointer: coarse) {
+  html, body { font-size: 16px; position: fixed; width: 100%; height: 100%; }
+  .rodape { display: none; }
+  #barras { left: 12px; top: 10px; width: min(52vw, 300px); }
+  .barra { height: 11px; }
+  #cabaca { left: 12px; top: 44px; }
+  #brasas { right: 88px; bottom: auto; top: 10px; font-size: 19px; }
+  #chefe { bottom: auto; top: 76px; width: min(84vw, 620px); }
+  #usar { bottom: 164px; padding: 9px 16px; font-size: 16px; }
+  #sussurro { bottom: 212px; font-size: 15px; }
+  #conversa { bottom: 12px; padding: 10px 12px; }
+  #conv-rosto { width: 64px; height: 64px; }
+  #toque button { width: 56px; height: 56px; font-size: 12px; background: #11171ab0; border-color: #6a5a34a0; }
+  #toque [data-a=golpe] { right: 14px; bottom: 14px; width: 76px; height: 76px; font-size: 14px; }
+  #toque [data-a=forte] { right: 96px; bottom: 10px; }
+  #toque [data-a=rola] { right: 14px; bottom: 96px; width: 68px; height: 68px; }
+  #toque [data-a=bebe] { right: 90px; bottom: 72px; }
+  #toque [data-a=trava] { right: 14px; bottom: 170px; }
+  #toque [data-a=usa] { display: none; }
+  #manche { left: 14px; bottom: 14px; }
+  #gente .caixa { max-height: 94vh; padding: 12px; }
+  #descanso .painel { width: 100%; background: linear-gradient(180deg, #04070a66, #04070af2 30%); padding: 14px 16px; }
+}
+@media (pointer: coarse) and (orientation: portrait) {
+  #toque [data-a=forte] { bottom: 96px; right: 86px; }
+  #toque [data-a=bebe] { right: 14px; bottom: 170px; }
+  #toque [data-a=trava] { right: 76px; bottom: 170px; }
+  #usar { bottom: 240px; }
+  #sussurro { bottom: 288px; }
+}
+
+@media (pointer: coarse) {
+  #nuvem-aviso { right: auto; left: 84px; top: 54px; font-size: 12px; }
+}
+@media (pointer: coarse) and (orientation: landscape) {
+  #barras { width: min(34vw, 260px); }
+  #toque button { width: 50px; height: 50px; }
+  #toque [data-a=golpe] { width: 68px; height: 68px; right: 12px; bottom: 10px; }
+  #toque [data-a=rola] { width: 60px; height: 60px; right: 12px; bottom: 84px; }
+  #toque [data-a=forte] { right: 86px; bottom: 8px; }
+  #toque [data-a=bebe] { right: 82px; bottom: 66px; }
+  #toque [data-a=trava] { right: 142px; bottom: 8px; }
+  #manche { width: 104px; height: 104px; left: 12px; bottom: 10px; }
+  #manche i { left: 32px; top: 32px; }
+  #usar { bottom: 12px; }
+  #sussurro { bottom: 56px; width: 56vw; }
+  #logo { width: min(42vw, 340px); }
+  .sub { margin-bottom: 10px; font-size: 16px; }
+  .conta { margin-top: 6px; }
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  #chefe { top: 6px; width: 30vw; }
+  #chefe-nome { font-size: 12px; margin-bottom: 1px; }
+}

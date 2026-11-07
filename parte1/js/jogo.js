@@ -6,13 +6,14 @@
   const CHAVE_SAVE = 'sina.mundo.save';
 
   const novoSave = () => ({
-    fogueira: null, acesas: [], brasas: 0, resto: null, mochila: ['espada', 'trapos'], forja: {}, equip: { arma: 'espada', armadura: 'trapos', amuleto: null },
+    jogo: 'aruana', fogueira: null, acesas: [], brasas: 0, resto: null, mochila: ['espada', 'trapos'], forja: {}, equip: { arma: 'espada', armadura: 'trapos', amuleto: null },
     materiais: {}, chaves: {}, cacos: 0, tesouros: [], ervas: [], chefesMortos: [], placas: [], visto: {}, missoes: {}, mortos: {},
     nivel: { vida: 0, vigor: 0, forca: 0 }, cabacaMax: 2, vidaBonus: 0, falouBenta: 0, cratera: false, mortes: 0, tempo: 0, fim: false,
   });
   J.S = novoSave();
   J.temSave = () => { try { return !!localStorage.getItem(CHAVE_SAVE); } catch (e) { return false; } };
-  J.salvar = () => { try { J.S.tempo = J.tempo; localStorage.setItem(CHAVE_SAVE, JSON.stringify(J.S)); } catch (e) { /* sem espaço */ } };
+  J.CHAVE_SAVE = CHAVE_SAVE;
+  J.salvar = () => { try { J.S.tempo = J.tempo; J.S.at = Date.now(); localStorage.setItem(CHAVE_SAVE, JSON.stringify(J.S)); if (J.aoSalvar) J.aoSalvar(); } catch (e) { /* sem espaço */ } };
   J.carregar = () => { try { J.S = Object.assign(novoSave(), JSON.parse(localStorage.getItem(CHAVE_SAVE))); J.tempo = J.S.tempo || 0; } catch (e) { J.S = novoSave(); } };
   J.novo = () => { J.S = novoSave(); J.tempo = 0; J.salvar(); };
   J.tempo = 0;
@@ -82,10 +83,10 @@
     J.inimigos = [];
     C.INIMIGOS.forEach(([tipo, bx, by], i) => {
       const d = C.TIPOS[tipo];
-      if (d.chefe && J.S.chefesMortos.includes(tipo)) return;
+      if ((d.chefe || d.lenda) && J.S.chefesMortos.includes(tipo)) return;
       if (tipo === 'cauda' && !J.S.cratera) return;
       // a mesma criatura é pior nas regiões perigosas; na cripta, vale o perigo 4
-      const perigo = d.chefe ? 1 : by >= M.CRIPTA_Y ? 4 : M.regiao(bx, by).perigo;
+      const perigo = d.chefe || d.lenda ? 1 : by >= M.CRIPTA_Y ? 4 : M.regiao(bx, by).perigo;
       const kHp = 1 + (perigo - 1) * 0.42, kDano = 1 + (perigo - 1) * 0.3, hp = d.hp * kHp;
       const e = { id: i, tipo, d, x: bx * T + 16, y: by * T + 16, cx: bx * T + 16, cy: by * T + 16, hp, hpMax: hp, dano: d.dano * kDano, brasas: d.brasas * (1 + (perigo - 1) * 0.55), estado: 'ronda', t: Math.random() * 3, ang: Math.random() * 6.28, passo: Math.random() * 6, flash: 0, atord: 0, resta: 0, batida: false, firme: d.firme, fase: 1, vagar: 0 };
       if (d.chefe) { e.estado = 'dorme'; e.arenaX = e.cx; e.arenaY = e.cy; e.arenaR = (tipo === 'corpo' ? 15 : 13.4) * T; }
@@ -191,13 +192,17 @@
     J.S.mortos[e.tipo] = (J.S.mortos[e.tipo] || 0) + 1;
     avisa('brasas', { x: e.x, y: e.y, qtd: ganho });
     avisa('matou', { x: e.x, y: e.y, chefe: !!e.d.chefe });
+    if (e.d.lenda) { J.S.chefesMortos.push(e.tipo); (e.d.deixa || []).forEach((id) => darItem(id)); avisa('lendaCaiu', { nome: e.d.nome }); J.salvar(); }
     if (e.d.chefe) {
       J.S.chefesMortos.push(e.tipo); J.preso = false; J.chefe = null;
+      J.inimigos.forEach((o) => { if (o.invocado && o.estado !== 'morto') { o.estado = 'morto'; o.t = 2; } });
+      J.fx.length = 0;
       (e.d.deixa || []).forEach((id) => darItem(id));
       avisa('chefeCaiu', { nome: e.d.nome, final: e.d.final, tipoChefe: e.tipo });
       if (e.d.final) J.S.fim = true;
       J.salvar();
-    } else if (Math.random() < 0.035 * (e.brasas / e.d.brasas)) darItem('pedra_forja'); // queda rara, mais comum onde é mais perigoso
+      if (window.Nuvem) window.Nuvem.enviar(true);
+    } else if (!e.d.lenda && Math.random() < 0.035 * (e.brasas / e.d.brasas)) darItem('pedra_forja'); // queda rara, mais comum onde é mais perigoso
   }
   function acordar(e) {
     if (e.estado !== 'dorme') return;
@@ -224,8 +229,9 @@
     if (d.chefe && e.estado === 'dorme' && Math.abs(dx) > 400) return;
     const dist = Math.hypot(dx, dy);
     e.t += dt;
-    const fase2 = d.chefe && e.hp < e.hpMax * 0.55;
-    if (fase2 && e.fase === 1) { e.fase = 2; avisa('fase', { x: e.x, y: e.y }); e.estado = 'recua'; e.t = 0; e.resta = 0.9; }
+    const fase2 = (d.chefe || d.lenda) && e.hp < e.hpMax * 0.55;
+    if (fase2 && e.fase === 1) { e.fase = 2; avisa('fase', { x: e.x, y: e.y, nome: d.nome }); e.estado = 'recua'; e.t = 0; e.resta = 0.9; poderDeFase(e); }
+    if (d.poder && e.fase === 2) poderContinuo(e, dt);
     const velK = fase2 ? 1.3 : 1, prepK = fase2 ? 0.78 : 1;
     switch (e.estado) {
       case 'dorme':
@@ -305,7 +311,36 @@
       if (m > 0 && m < 18) mover(e, (a / m) * 16 * dt, (b / m) * 16 * dt, d.r);
     }
   }
+  // ---------- poderes dos chefes ----------
+  function invocar(e, tipo, n) {
+    const d = C.TIPOS[tipo];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * 6.283 + Math.random(), x = e.x + Math.cos(a) * 80, y = e.y + Math.sin(a) * 80;
+      if (!livre(x, y, d.r)) continue;
+      J.inimigos.push({ id: 5000 + Math.floor(Math.random() * 1e6), tipo, d, x, y, cx: x, cy: y, hp: d.hp, hpMax: d.hp, dano: d.dano, brasas: d.brasas * 0.3, estado: 'caca', t: 0, ang: a, passo: 0, flash: 0.3, atord: 0, resta: 0, batida: false, firme: d.firme, fase: 1, vagar: 0, invocado: true });
+    }
+    avisa('invocou', { x: e.x, y: e.y });
+  }
+  function poderDeFase(e) {
+    const p = e.d.poder;
+    if (p === 'bando') invocar(e, 'bandido', 2);
+    if (p === 'uivo') { invocar(e, 'lobo', 3); avisa('uivo', {}); }
+    if (p === 'levanta') invocar(e, 'morto', 3);
+  }
+  function poderContinuo(e, dt) {
+    const p = e.d.poder;
+    e.relogio = (e.relogio || 0) + dt;
+    if (p === 'rastro' && (e.estado === 'caca' || e.estado === 'golpe') && e.relogio > 0.5) { // quem persegue deixa fogo pelo caminho
+      e.relogio = 0;
+      J.fx.push({ tipo: 'fogo', x: e.x, y: e.y, r: 22, vida: 5, t: 0, dano: e.dano * 0.34, proximo: 0 });
+    }
+    if (p === 'meteoro' && e.relogio > 2.6) { // cai onde o herói está: tem de sair do círculo
+      e.relogio = 0;
+      for (let i = 0; i < 3; i++) J.fx.push({ tipo: 'meteoro', x: J.P.x + (i ? (Math.random() - 0.5) * 170 : 0), y: J.P.y + (i ? (Math.random() - 0.5) * 170 : 0), r: 38, t: 0, cai: 1.05 + i * 0.22, dano: e.dano * 0.8 });
+    }
+  }
   function escolherGolpe(e, dist, fase2) {
+    if (e.d.lenda) return e.d.tremor && fase2 && Math.random() < 0.3 ? 'tremor' : 'corte';
     if (!e.d.chefe) return 'corte';
     const r = Math.random();
     if (e.d.tremor && fase2 && r < 0.32) return 'tremor';
@@ -349,15 +384,37 @@
       const d = Math.hypot(P.x - f.x, P.y - f.y);
       if (!f.batido && Math.abs(d - f.r) < 11 && J.ferir(Math.round(f.dano), f.x, f.y, true)) f.batido = true;
     }
-    J.fx = J.fx.filter((f) => f.tipo !== 'anel' || f.r < f.max);
+    for (const f of J.fx) {
+      if (f.tipo === 'fogo') {
+        f.vida -= dt; f.proximo -= dt;
+        if (f.proximo <= 0 && Math.hypot(P.x - f.x, P.y - f.y) < f.r && J.ferir(Math.round(f.dano), f.x, f.y)) f.proximo = 0.8;
+      } else if (f.tipo === 'meteoro') {
+        f.t += dt;
+        if (f.t >= f.cai && !f.caiu) {
+          f.caiu = true; f.vida = 0.3;
+          avisa('meteoro', { x: f.x, y: f.y });
+          if (Math.hypot(P.x - f.x, P.y - f.y) < f.r) J.ferir(Math.round(f.dano), f.x, f.y, true);
+        }
+        if (f.caiu) f.vida -= dt;
+      }
+    }
+    J.fx = J.fx.filter((f) => (f.tipo === 'anel' ? f.r < f.max : f.tipo === 'fogo' ? f.vida > 0 : f.tipo === 'meteoro' ? !f.caiu || f.vida > 0 : true));
   }
 
   // ---------- interações ----------
+  function portal(l, dentro, descer, subir) {
+    return [
+      { x: l[0] * T, y: (l[1] - 3) * T, vai: { x: (dentro[0] + 3) * T, y: dentro[1] * T }, texto: descer },
+      { x: dentro[0] * T, y: dentro[1] * T, vai: { x: l[0] * T, y: (l[1] + 1) * T }, texto: subir },
+    ];
+  }
   J.PORTAIS = (() => {
     const c = M.LUGARES.cripta, sai = M.cr(18, 206), volta = M.cr(18, 202);
     return [
       { x: c[0] * T, y: (c[1] + 2) * T, vai: { x: sai[0] * T, y: sai[1] * T }, texto: 'Descer à cripta', chave: 'chave_ferro' },
       { x: volta[0] * T, y: volta[1] * T, vai: { x: c[0] * T, y: (c[1] + 5) * T }, texto: 'Subir ao cemitério' },
+      ...portal(M.LUGARES.mina, M.cr(203, 202), 'Descer à Mina do Ferro', 'Subir à pedreira'),
+      ...portal(M.LUGARES.gruta, M.cr(403, 207), 'Entrar na Gruta do Mangue', 'Sair para o mangue'),
     ];
   })();
   J.pertoDe = function () {
@@ -370,7 +427,7 @@
     }
     for (const n of C.NPCS) if (Math.hypot(n.x * T - P.x, n.y * T - P.y) < 42) return { tipo: 'npc', npc: n, texto: 'Falar com ' + n.nome };
     for (const t of C.TESOUROS) if (!J.S.tesouros.includes(t.id) && Math.hypot(t.x * T + 16 - P.x, t.y * T + 16 - P.y) < 34) return { tipo: 'tesouro', t, texto: 'Abrir o baú' };
-    for (const t of C.ERVAS) if (!J.S.ervas.includes(t.id) && Math.hypot(t.x * T + 16 - P.x, t.y * T + 16 - P.y) < 30) return { tipo: 'erva', t, texto: 'Colher a erva' };
+    for (const t of C.ERVAS) if (!J.S.ervas.includes(t.id) && Math.hypot(t.x * T + 16 - P.x, t.y * T + 16 - P.y) < 30) return { tipo: 'erva', t, texto: 'Pegar: ' + C.ITENS[t.item].nome };
     for (const q of J.PORTAIS) if (Math.hypot(q.x - P.x, q.y - P.y) < 46) {
       if (q.chave && !J.S.chaves[q.chave]) return { tipo: 'trancado', texto: 'Trancada. Precisa de uma chave de ferro' };
       return { tipo: 'portal', q, texto: q.texto };
@@ -389,10 +446,10 @@
     } else if (alvo.tipo === 'tesouro') {
       const t = alvo.t, tab = C.BAU_TABELA[t.perigo] || C.BAU_TABELA[1];
       J.S.tesouros.push(t.id);
-      const id = tab[Math.floor(M.hash(t.x, t.y) * tab.length)];
+      const id = t.fixo || tab[Math.floor(M.hash(t.x, t.y) * tab.length)];
       darItem(id, id === 'brasas' ? 120 * t.perigo + Math.floor(M.hash(t.y, t.x) * 150) : 1); J.salvar();
     } else if (alvo.tipo === 'erva') {
-      J.S.ervas.push(alvo.t.id); darItem('erva'); J.salvar();
+      J.S.ervas.push(alvo.t.id); darItem(alvo.t.item); J.salvar();
     } else if (alvo.tipo === 'npc') {
       avisa('npc', { npc: alvo.npc });
     } else if (alvo.tipo === 'trancado') {
@@ -422,7 +479,7 @@
     if (q.quer.item) J.S.materiais[q.quer.item] -= q.quer.n;
     J.S.missoes[id].feita = true;
     if (q.premio.brasas) J.S.brasas += q.premio.brasas;
-    if (q.premio.item) darItem(q.premio.item);
+    if (q.premio.item) darItem(q.premio.item, q.premio.qtd);
     J.salvar();
   };
   // loja e forja
@@ -450,6 +507,7 @@
     J.levantarMortos();
     J.salvar();
     avisa('descansou', { id });
+    if (window.Nuvem) window.Nuvem.enviar(true);
   };
   J.subir = function (atr) {
     const custo = J.custoNivel();

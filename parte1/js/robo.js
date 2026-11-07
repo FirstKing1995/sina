@@ -33,8 +33,8 @@
     // [nome, x, y, o que fazer ao chegar]
     const F = C.FOGUEIRAS, L = M.LUGARES, ben = C.NPCS[0];
     const ETAPAS = [
-      ['Benta', ben.x, ben.y, 'benta'], ['fogueira Alvorada', F.alvorada.x, F.alvorada.y, 'usa'], ['fogueira Ybirá', F.ybira.x, F.ybira.y, 'usa'], ['fogueira Serra', F.toca.x, F.toca.y, 'usa'],
-      ['Zé', L.ze[0], L.ze[1], 'chefe:ze'], ['fogueira Mangue', F.mangue.x, F.mangue.y, 'usa'], ['fogueira Vale', F.vale.x, F.vale.y, 'usa'], ['Lobisomem', L.lobisomem[0], L.lobisomem[1], 'chefe:lobisomem'],
+      ['Benta', ben.x, ben.y, 'benta'], ['fogueira Alvorada', F.alvorada.x, F.alvorada.y, 'usa'], ['fogueira Ybirá', F.ybira.x, F.ybira.y, 'usa'], ['fogueira Serra', F.toca.x, F.toca.y, 'usa'], ['Mapinguari', L.mapinguari[0], L.mapinguari[1], 'chefe:mapinguari'], ['entrada Mina', L.mina[0], L.mina[1] - 3, 'usa'], ['fogueira Mina', F.mina.x, F.mina.y, 'usa'], ['saída Mina', M.cr(203, 202)[0], M.cr(203, 202)[1], 'usa'],
+      ['Zé', L.ze[0], L.ze[1], 'chefe:ze'], ['fogueira Mangue', F.mangue.x, F.mangue.y, 'usa'], ['entrada Gruta', L.gruta[0], L.gruta[1] - 3, 'usa'], ['fogueira Gruta', F.gruta.x, F.gruta.y, 'usa'], ['saída Gruta', M.cr(403, 207)[0], M.cr(403, 207)[1], 'usa'], ['Boiúna', L.boiuna[0], L.boiuna[1], 'chefe:boiuna'], ['fogueira Vale', F.vale.x, F.vale.y, 'usa'], ['Lobisomem', L.lobisomem[0], L.lobisomem[1], 'chefe:lobisomem'],
       ['fogueira Torre', F.torre.x, F.torre.y, 'usa'], ['fogueira Sertão', F.sertao.x, F.sertao.y, 'usa'], ['Tição', L.ticao[0], L.ticao[1], 'chefe:ticao'],
       ['fogueira Cemitério', F.cemiterio.x, F.cemiterio.y, 'usa'], ['entrada cripta', L.cripta[0], L.cripta[1] + 2, 'usa'], ['fogueira Cripta', F.cripta.x, F.cripta.y, 'usa'],
       ['Guardião', M.cr(160, 233)[0], M.cr(160, 233)[1], 'chefe:corpo'], ['volta', F.cripta.x, F.cripta.y, 'viaja:alvorada'], ['Benta 3 cacos', ben.x, ben.y, 'benta'],

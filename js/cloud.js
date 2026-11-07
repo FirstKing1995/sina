@@ -48,6 +48,7 @@
     for (const k in r.espacos) {
       let local = null; try { local = JSON.parse(localStorage.getItem(KEY + k) || 'null'); } catch (e) { local = null; }
       const remote = JSON.parse(r.espacos[k].dados);
+      if (remote.jogo === 'aruana') continue; // é do novo SINA, em /parte1/
       if (!local || (remote.at || 0) > (local.at || 0)) { try { localStorage.setItem(KEY + k, r.espacos[k].dados); n++; } catch (e) { /* cheio */ } }
     }
     return n;

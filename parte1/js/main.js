@@ -50,7 +50,7 @@
   if ('ontouchstart' in window && matchMedia('(pointer: coarse)').matches) {
     const man = $('manche'), bola = man.firstElementChild;
     const mover = (t) => {
-      const b = man.getBoundingClientRect(), dx = t.clientX - b.left - 60, dy = t.clientY - b.top - 60, m = Math.hypot(dx, dy), k = Math.min(1, m / 50);
+      const b = man.getBoundingClientRect(), dx = t.clientX - b.left - b.width / 2, dy = t.clientY - b.top - b.height / 2, m = Math.hypot(dx, dy), k = Math.min(1, m / 50);
       toque.x = m ? (dx / m) * k : 0; toque.y = m ? (dy / m) * k : 0;
       bola.style.transform = 'translate(' + toque.x * 40 + 'px,' + toque.y * 40 + 'px)';
     };
@@ -60,10 +60,21 @@
     man.addEventListener('touchend', solta); man.addEventListener('touchcancel', solta);
     document.querySelectorAll('#toque button').forEach((b) => b.addEventListener('touchstart', (e) => {
       e.preventDefault(); Som.ligar(); if (modal) return;
-      if (b.dataset.a === 'menu') abrirMenu('heroi'); else en[b.dataset.a] = true;
+      if (b.dataset.a === 'menu') return abrirMenu('heroi');
+      if (b.dataset.a === 'golpe' || b.dataset.a === 'forte') mirarMaisPerto();
+      en[b.dataset.a] = true;
     }, { passive: false }));
     Tela.temToque = true;
   }
+
+  // no toque não há mouse: o golpe vai no inimigo mais próximo à frente, ou no mais próximo se estiver colado
+  function mirarMaisPerto() {
+    const P = J.P; let melhor = null, nota = 110;
+    for (const e of J.inimigos) { if (e.estado === 'morto' || e.estado === 'dorme') continue; const d = Math.hypot(e.x - P.x, e.y - P.y); if (d < nota) { nota = d; melhor = e; } }
+    en.mira = melhor ? Math.atan2(melhor.y - P.y, melhor.x - P.x) : P.ang;
+  }
+  $('usar').addEventListener('click', () => { if (!modal) en.usa = true; });
+  $('usar').addEventListener('touchstart', (e) => { e.preventDefault(); if (!modal) en.usa = true; }, { passive: false });
 
   // ---------- avisos ----------
   let timerSus, timerArea;
@@ -76,7 +87,7 @@
   function verArea() {
     const P = J.P, bx = P.x / T, by = P.y / T;
     let nome = null;
-    if (by >= M.CRIPTA_Y) nome = 'Cripta da Alvorada';
+    if (by >= M.CRIPTA_Y) nome = bx >= 395 ? 'Gruta do Mangue' : bx >= 195 ? 'Mina do Ferro' : 'Cripta da Alvorada';
     else {
       for (const [n, k] of C.LUGARES_NOME) { const l = M.LUGARES[k]; if (Math.hypot(bx - l[0], by - l[1]) < l[2]) { nome = n; break; } }
       if (!nome) nome = M.regiao(Math.floor(bx), Math.floor(by)).nome;
@@ -87,7 +98,7 @@
     }
     for (const p of C.PLACAS) {
       const id = p.x + ':' + p.y;
-      if (!J.S.placas.includes(id) && Math.hypot(p.x * T - P.x, p.y * T - P.y) < 80) { J.S.placas.push(id); sussurrar(p.t, 7000); }
+      if (!J.S.placas.includes(id) && Math.hypot(p.x * T - P.x, p.y * T - P.y) < 80) { J.S.placas.push(id); sussurrar(Tela.temToque && p.toque ? p.toque : p.t, 7000); }
     }
     Som.ambiente(by >= M.CRIPTA_Y ? 'masmorra' : M.regiao(Math.floor(bx), Math.floor(by)).id === 'sertao' ? 'brisa' : 'noite');
     let fogo = 0;
@@ -116,7 +127,11 @@
       case 'tiro': Som.tocar('magia', 0.5); break;
       case 'tremor': Som.tocar('rugido', 0.9, 0.6); treme(9); break;
       case 'quebra': Som.tocar('quebra', 0.8); sussurrar('A guarda quebrou. Agora.', 1500); break;
-      case 'fase': Som.tocar('rugido', 1, 0.7); treme(10); anunciar('Ele ainda não acabou', false); break;
+      case 'fase': Som.tocar('rugido', 1, 0.7); treme(10); anunciar((ev.nome || 'Ele') + ' ainda não acabou', false); break;
+      case 'invocou': Som.tocar('rugido', 0.7, 1.2); Tela.fagulhas(ev.x, ev.y, 24, '#c8c8d8', 30); treme(5); break;
+      case 'uivo': Som.tocar('uivo', 1); sussurrar('O uivo chama a matilha.', 2500); break;
+      case 'meteoro': Som.tocar('quebra', 0.8, 0.7); treme(6); Tela.fagulhas(ev.x, ev.y, 18, '#ffb040', 40); break;
+      case 'lendaCaiu': Som.tocar('raro', 0.9); anunciar(ev.nome + ' caiu', true); break;
       case 'matou': Som.tocar(ev.chefe ? 'rugido' : 'morte', ev.chefe ? 1 : 0.5); Tela.fagulhas(ev.x, ev.y, ev.chefe ? 60 : 14, '#ff9a3a', 30); if (ev.chefe) { treme(12); parada = 0.25; } break;
       case 'brasas': Som.tocar('moeda', 0.3); break;
       case 'bebeu': Som.tocar('beber', 0.7); Tela.fagulhas(J.P.x, J.P.y - 16, 12, '#7ce0a8', 24); break;
@@ -203,7 +218,12 @@
   function falarCom(n) {
     if (n.papel === 'historia') return abrirConversa(J.falasBenta(), n);
     if (n.papel === 'loja') return abrirLoja(n);
-    if (n.papel === 'forja') return abrirForja(n);
+    if (n.papel === 'forja') {
+      const q = C.MISSOES[n.id], est = J.S.missoes[n.id];
+      if (!est) { J.aceitar(n.id); return abrirConversa([q.pede], n, () => { sussurrar('Nova missão: ' + q.nome + '.', 3500); abrirForja(n); }); }
+      if (!est.feita) { const p = J.progresso(n.id); if (p.tem >= p.n) { J.entregar(n.id); return abrirConversa([q.obrigado], n, () => abrirForja(n)); } }
+      return abrirForja(n);
+    }
     const q = C.MISSOES[n.id], est = J.S.missoes[n.id];
     if (!est) { J.aceitar(n.id); return abrirConversa([q.pede], n, () => sussurrar('Nova missão: ' + q.nome + '. I para ver.', 3500)); }
     if (est.feita) return abrirConversa(['Ainda de pé. Isso já é alguma coisa.'], n);
@@ -232,7 +252,7 @@
   function abrirLoja(n) {
     const c = painel(n.nome, 'gente');
     const topo = document.createElement('p'); topo.className = 'nota forte'; topo.textContent = J.S.brasas + ' brasas'; c.appendChild(topo);
-    for (const id of C.LOJA) {
+    for (const id of n.loja || C.LOJA) {
       const it = C.ITENS[id], tem = J.S.mochila.includes(id);
       linha(c, icone(it) + '<div><b>' + it.nome + '</b><small>' + descreve(id) + '</small></div>', tem ? 'Já tem' : it.preco + ' brasas', () => { if (J.comprar(id)) { Som.tocar('moeda', 0.7); abrirLoja(n); } }, tem || J.S.brasas < it.preco);
     }
@@ -345,6 +365,7 @@
     const c = J.chefe;
     if (c) { $('b-chefe').firstElementChild.style.width = pct(c.hp, c.hpMax); $('b-chefe').lastElementChild.style.width = pct(c.hp, c.hpMax); }
     const u = P.estado === 'livre' && !modal ? J.pertoDe() : null, box = $('usar');
+    const av = $('nuvem-aviso'); if (N.sessao()) { av.hidden = false; av.textContent = N.estado === 'salva' ? 'Salvo na nuvem' : N.estado === 'offline' ? 'Sem conexão: salvando aqui' : N.estado === 'erro' ? 'Nuvem: ' + N.ultimoErro : N.estado === 'sessao' ? 'Entre de novo para salvar na nuvem' : N.estado === 'cheia' ? 'Nuvem cheia: os 3 espaços têm jogos antigos' : ''; } else av.hidden = true;
     if (u) { box.hidden = false; box.innerHTML = '<b>' + (Tela.temToque ? 'Usar' : 'E') + '</b>' + u.texto; } else box.hidden = true;
   }
 
@@ -364,8 +385,54 @@
 
   // ---------- início ----------
   let salvando = false;
+  // ---------- conta na tela de título ----------
+  const N = window.Nuvem, esc = N.esc;
+  function desenharConta() {
+    const box = $('conta'); box.innerHTML = '';
+    if (!N.ligada()) return;
+    const u = N.sessao();
+    const bt = (t, f) => { const b = document.createElement('button'); b.textContent = t; b.onclick = f; box.appendChild(b); };
+    if (u) {
+      const l = document.createElement('div'); l.className = 'linha-conta'; l.innerHTML = 'Na nuvem como <b>' + esc(u.usuario.nome) + '</b>'; box.appendChild(l);
+      bt('Ranking', abrirRanking); bt('Sair da conta', async () => { await N.sair(); desenharConta(); });
+    } else {
+      bt('Entrar', () => formConta('entrar')); bt('Criar conta', () => formConta('cadastrar')); bt('Ranking', abrirRanking);
+      const l = document.createElement('div'); l.className = 'linha-conta'; l.textContent = 'Com conta, sua jornada vai junto para qualquer aparelho.'; box.appendChild(l);
+    }
+  }
+  function formConta(tipo) {
+    const c = painel(tipo === 'cadastrar' ? 'Criar conta' : 'Entrar', 'gente');
+    const f = document.createElement('form');
+    f.innerHTML = (tipo === 'cadastrar' ? '<label class="campo">Nome no ranking<input name="nome" maxlength="18" required autocomplete="nickname"></label>' : '') + '<label class="campo">E-mail<input name="email" type="email" required autocomplete="email"></label><label class="campo">Senha<input name="senha" type="password" minlength="6" required autocomplete="' + (tipo === 'cadastrar' ? 'new-password' : 'current-password') + '"></label><p class="msg">' + (tipo === 'cadastrar' ? 'Senha com 6 ou mais caracteres. A mesma conta vale para o SINA antigo.' : '') + '</p><button type="submit">' + (tipo === 'cadastrar' ? 'Criar conta' : 'Entrar') + '</button>';
+    c.appendChild(f);
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const d = new FormData(f), msg = f.querySelector('.msg'), b = f.querySelector('button[type=submit]');
+      b.disabled = true; msg.textContent = 'Falando com o servidor, pode levar alguns segundos...';
+      const r = await N.entrar(tipo, { nome: d.get('nome'), email: d.get('email'), senha: d.get('senha') });
+      b.disabled = false;
+      if (!r.ok) { msg.textContent = r.erro; return; }
+      fecharPainel(); desenharConta(); montarTitulo();
+    };
+  }
+  async function abrirRanking() {
+    const c = painel('Heróis de Aruanã', 'gente');
+    c.innerHTML = '<p class="nota">Buscando...</p>';
+    const r = await N.ranking();
+    if (!r.ok) { c.innerHTML = '<p class="nota">' + esc(r.erro) + '</p>'; return; }
+    if (!r.lista.length) { c.innerHTML = '<p class="nota">Ninguém ainda. O primeiro nome pode ser o seu.</p>'; return; }
+    c.innerHTML = '<table class="ranking"><tr><th>#</th><th>Herói</th><th>Nível</th><th>Chefes</th><th>Cacos</th></tr>' + r.lista.map((h, i) => '<tr><td>' + (i + 1) + '</td><td><b>' + esc(h.heroi) + '</b></td><td>' + h.nivel + '</td><td>' + h.masmorras + '</td><td>' + (h.final ? 'Fim' : h.etapa) + '</td></tr>').join('') + '</table>';
+  }
+  function montarTitulo() {
+    const m = $('titulo-menu'); m.innerHTML = '';
+    if (J.temSave()) { const b = document.createElement('button'); b.textContent = 'Continuar'; b.onclick = () => comecar(false); m.appendChild(b); }
+    const n = document.createElement('button'); n.textContent = 'Nova jornada';
+    n.onclick = () => { if (!J.temSave() || confirm('Começar de novo apaga a jornada salva. Continuar?')) comecar(true); };
+    m.appendChild(n);
+  }
   function comecar(novo) {
     Som.ligar();
+    if (Tela.temToque && document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().then(() => { Tela.medir(); }).catch(() => {}); }
     if (novo) J.novo(); else J.carregar();
     $('titulo').hidden = true; $('hud').hidden = false;
     if (Tela.temToque) $('toque').hidden = false;
@@ -373,15 +440,14 @@
     entrouCripta = J.S.acesas.includes('cripta');
     Tela.cam.x = J.P.x - 320; Tela.cam.y = J.P.y - 200;
     if (novo) setTimeout(() => anunciar('Você acorda na terra'), 800);
-    if (!salvando) { salvando = true; setInterval(() => { if (rodando && !J.morreu()) J.salvar(); }, 30000); } // explorar também fica salvo
+    if (!salvando) { salvando = true; setInterval(() => { if (rodando && !J.morreu()) J.salvar(); }, 30000); }
+    N.enviar(true); // explorar também fica salvo
   }
   Tela.carregar((k) => { $('carrega').textContent = 'Acordando os mortos... ' + Math.round(k * 100) + '%'; }).then(() => {
     Tela.iniciar();
-    const m = $('titulo-menu'); m.innerHTML = '';
-    if (J.temSave()) { const b = document.createElement('button'); b.textContent = 'Continuar'; b.onclick = () => comecar(false); m.appendChild(b); }
-    const n = document.createElement('button'); n.textContent = 'Nova jornada';
-    n.onclick = () => { if (!J.temSave() || confirm('Começar de novo apaga a jornada salva. Continuar?')) comecar(true); };
-    m.appendChild(n);
+    montarTitulo(); desenharConta();
+    if (N.sessao()) N.baixar().then((trocou) => { if (trocou) montarTitulo(); });
+    N.acordar();
     requestAnimationFrame(laco);
   });
   window.SINA = { J, Tela, comecar, passoMundo, entrada: en, abrirMenu, fecharPainel, get modal() { return modal; } };

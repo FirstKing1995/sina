@@ -20,16 +20,20 @@
   const LUGARES = {
     ermo: [250, 412, 9], alvorada: [270, 372, 20], encruz: [270, 296, 9], ybira: [190, 165, 12], vale: [292, 128, 12], lobisomem: [330, 76, 14],
     toca: [120, 122, 14], ze: [62, 62, 14], manguefogo: [90, 290, 12], manguefim: [40, 350, 9], cemiterio: [400, 396, 22], cripta: [436, 416, 8],
-    sertao: [450, 290, 12], ticao: [516, 250, 14], cinzas: [440, 112, 12], cauda: [470, 56, 15], oasis: [520, 380, 8], pedreira: [40, 180, 9], torre: [360, 200, 9],
+    sertao: [450, 290, 12], ticao: [516, 250, 14], cabra: [340, 345, 10], curupira: [150, 215, 10], boiuna: [28, 262, 11], mapinguari: [30, 118, 10], boitata: [392, 268, 11], gigante: [525, 130, 11], mina: [40, 180, 5], gruta: [40, 350, 5], outro: [190, 165, 2], cinzas: [440, 112, 12], cauda: [470, 56, 15], oasis: [520, 380, 8], pedreira: [40, 180, 9], torre: [360, 200, 9],
   };
   const ESTRADAS = [
     ['ermo', 'alvorada'], ['alvorada', 'encruz'], ['encruz', 'ybira'], ['ybira', 'vale'], ['vale', 'lobisomem'], ['ybira', 'toca'], ['toca', 'ze'], ['toca', 'pedreira'],
     ['encruz', 'manguefogo'], ['manguefogo', 'manguefim'], ['manguefogo', 'pedreira'], ['alvorada', 'cemiterio'], ['cemiterio', 'cripta'], ['encruz', 'torre'], ['torre', 'vale'],
-    ['torre', 'sertao'], ['cemiterio', 'sertao'], ['sertao', 'ticao'], ['sertao', 'oasis'], ['torre', 'cinzas'], ['cinzas', 'cauda'], ['vale', 'cinzas'],
+    ['torre', 'sertao'], ['cemiterio', 'sertao'], ['sertao', 'ticao'], ['sertao', 'oasis'], ['torre', 'cinzas'], ['cinzas', 'cauda'], ['vale', 'cinzas'], ['alvorada', 'cabra'], ['ybira', 'curupira'], ['manguefogo', 'boiuna'], ['pedreira', 'mapinguari'], ['sertao', 'boitata'], ['cinzas', 'gigante'],
   ];
   const SALAS = [
     [10, 200, 27, 213], [27, 205, 50, 208], [50, 196, 73, 217], [60, 217, 63, 228], [44, 228, 81, 245],
     [81, 235, 110, 238], [110, 230, 123, 243], [123, 235, 142, 238], [142, 218, 178, 248], [73, 204, 92, 207], [92, 199, 104, 212],
+    // Mina do Ferro
+    [200, 196, 216, 208], [216, 201, 240, 204], [240, 192, 262, 212], [262, 200, 286, 203], [286, 194, 306, 210], [294, 210, 297, 228], [280, 228, 312, 246], [240, 212, 243, 228], [228, 228, 256, 244],
+    // Gruta do Mangue
+    [400, 200, 416, 214], [416, 205, 438, 208], [438, 196, 458, 218], [458, 206, 480, 209], [480, 198, 500, 216], [488, 216, 491, 230], [472, 230, 512, 247], [445, 218, 448, 232], [430, 232, 460, 246],
   ];
   const PORTOES = {};
 

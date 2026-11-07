@@ -31,11 +31,17 @@ Pelo preview `sina-parte1` (porta 8792) ou com qualquer servidor estático nesta
 ## Mundo
 
 Seis regiões, da mais segura à mais perigosa: Campos da Aurora, Mata Funda, Mangue Sombrio, Serra do Ferro, Sertão das Cinzas e Cratera da Cauda.
-Dez fogueiras, 63 baús e cerca de 570 criaturas. Não há ordem obrigatória.
+Doze fogueiras, 67 baús, cerca de 610 criaturas, 3 masmorras e 6 lendas (Cabra-Cabriola, Curupira, Boiúna, Mapinguari, Boitatá e Gigante de Cinza), além dos 5 chefes. Não há ordem obrigatória.
 
 **História:** Benta, em Alvorada, pede os três Cacos da Sina: Lobisomem (norte), Capitão Tição (leste) e Corpo-seco (cripta a sudeste, cuja chave está com Zé Facão, a noroeste). Com os três, a Cratera se abre para o Filho da Cauda.
 
-**Alvorada:** Lauro vende, Bento afia a arma, e Rosa, Tonho e Zefa dão missões.
+**Gente:** em Alvorada, Lauro vende, Bento afia a arma e dá missão, e Rosa, Tonho, Zefa e Dona Cida dão missões. Taliel fica em Ybirá; Pagu, a andarilha, vende na Torre Caída.
+
+**Chefes:** Zé chama o bando, o Lobisomem uiva a matilha, o Corpo-seco levanta mortos, Tição deixa rastro de fogo e atira em leque, e o Filho da Cauda faz cair meteoros.
+
+**Celular:** manche, botões e mira automática, em pé ou deitado. O desenho fica mais leve sozinho se o aparelho não der conta.
+
+**Nuvem:** conta do servidor Apps Script do SINA. O save ocupa um espaço vazio da conta (nunca sobrescreve jogos antigos). Testar com o simulador: `node tools/serve.js` e abrir `/parte1/?api=http://localhost:8790/exec`.
 
 ## Código
 

@@ -11,7 +11,7 @@
 
   function medir() {
     const lw = innerWidth || 640, lh = innerHeight || 360;
-    const esc = Math.max(1, Math.round(Math.max(lw / 640, lh / 400)));
+    const esc = Math.max(1, Math.round(Math.min(lw / 640, lh / 360))); // em pé ou deitado, o celular vê mais mundo em vez de ampliar demais
     VW = Math.ceil(lw / esc); VH = Math.ceil(lh / esc);
     cv.width = luz.width = VW; cv.height = luz.height = VH;
     cx.imageSmoothingEnabled = false;
@@ -48,7 +48,8 @@
     for (const n of C.NPCS) if (Math.hypot(n.x - bx, n.y - by) < 4) return true;
     for (const t of C.ERVAS) if (Math.hypot(t.x - bx, t.y - by) < 3) return true;
     for (const k of ['ermo', 'cripta']) if (Math.hypot(M.LUGARES[k][0] - bx, M.LUGARES[k][1] - by) < 7) return true;
-    for (const k of ['ze', 'lobisomem', 'ticao', 'cauda']) if (Math.hypot(M.LUGARES[k][0] - bx, M.LUGARES[k][1] - by) < 12) return true;
+    for (const k of ['ze', 'lobisomem', 'ticao', 'cauda', 'mina', 'gruta']) if (Math.hypot(M.LUGARES[k][0] - bx, M.LUGARES[k][1] - by) < 12) return true;
+    for (const n of [[M.cr(203, 202)], [M.cr(403, 207)], [M.cr(18, 202)]]) if (Math.hypot(n[0][0] - bx, n[0][1] - by) < 5) return true;
     if (Math.hypot(M.LUGARES.alvorada[0] - bx, M.LUGARES.alvorada[1] - by) < 17) return true;
     return false;
   };
@@ -86,7 +87,8 @@
     for (const [dx, dy, n] of [[-14, -12, 'casa1'], [14, -12, 'casa2'], [-16, 8, 'casa2'], [17, 10, 'casa1'], [-4, 14, 'casa1'], [8, 15, 'casa2']]) pôr(n, (al[0] + dx) * T, (al[1] + dy) * T, { base: 12, r: 50 });
     const cr = M.LUGARES.cripta;
     pôr('entrada', cr[0] * T, cr[1] * T, { base: 10, r: 46 });
-    for (const [x, y] of [[12, 201], [25, 201], [52, 197], [71, 197], [46, 229], [79, 229], [112, 231], [121, 231], [144, 219], [176, 219]]) { const c = M.cr(x, y); pôr(A.tocha, c[0] * T, c[1] * T + 12, { base: 4, tocha: 1 }); }
+    for (const k of ['mina', 'gruta']) pôr(k === 'mina' ? 'entrada_mina' : 'entrada_gruta', M.LUGARES[k][0] * T, (M.LUGARES[k][1] - 5) * T, { base: 10, r: 46 });
+    for (const [x, y] of [[12, 201], [25, 201], [52, 197], [71, 197], [46, 229], [79, 229], [112, 231], [121, 231], [144, 219], [176, 219], [201, 197], [214, 197], [242, 193], [260, 193], [288, 195], [304, 195], [282, 229], [310, 229], [230, 229], [254, 229], [402, 201], [414, 201], [440, 197], [456, 197], [482, 199], [498, 199], [474, 231], [510, 231], [432, 233], [458, 233]]) { const c = M.cr(x, y); pôr(A.tocha, c[0] * T, c[1] * T + 12, { base: 4, tocha: 1 }); }
     for (const t of C.TESOUROS) pôr(A.bau, t.x * T + 16, t.y * T + 16, { base: 6, bau: t.id });
     for (const t of C.ERVAS) pôr(A.erva, t.x * T + 16, t.y * T + 16, { base: 6, erva: t.id });
   }
@@ -135,7 +137,7 @@
     const k = cc * 1000 + cl;
     let c = cachos.get(k);
     if (!c) {
-      if (cachos.size > 36) cachos.delete(cachos.keys().next().value); // guarda só os mais recentes, por causa do celular
+      if (cachos.size > (innerWidth < 900 ? 16 : 36)) cachos.delete(cachos.keys().next().value); // guarda só os mais recentes, por causa do celular
       c = pintaChunk(cc, cl); cachos.set(k, c);
     } else { cachos.delete(k); cachos.set(k, c); }
     return c;
@@ -170,7 +172,7 @@
     if (!im) return false;
     const w = info.w, h = info.h, f = ((Math.floor(q) % info.n) + info.n) % info.n;
     // os quadros maiores que 64 são centrados: o pé fica sempre na mesma altura
-    const fundo = (h - 64) / 2 + 2 + (extraFundo || 0);
+    const fundo = (info.fundo != null ? info.fundo : (h - 64) / 2 + 2) + (extraFundo || 0);
     if (escalaFolha !== 1) { // chefes desenhados maiores, com o pé no mesmo lugar
       const k = escalaFolha, dw = w * k, dh = h * k;
       cx.save(); cx.translate(Math.round(x), Math.round(y + fundo * k)); if (inverte) cx.scale(-1, 1);
@@ -211,7 +213,7 @@
     cx.globalAlpha = 1;
   }
   function inimigo(e) {
-    escalaFolha = e.d.chefe || 1;
+    escalaFolha = e.d.chefe || e.d.lenda || 1;
     desenhaInimigo(e);
     escalaFolha = 1;
   }
@@ -232,6 +234,7 @@
       cx.strokeStyle = 'rgba(240,80,40,' + Math.min(0.8, e.t / e.resta) + ')'; cx.lineWidth = 2;
       cx.beginPath(); cx.arc(e.x, e.y, 30 * (1 - e.t / e.resta) + 12, 0, 7); cx.stroke();
     }
+    if (d.aura && Math.random() < 0.5) { const q = Math.random() * 6.28; pts.push({ x: e.x + Math.cos(q) * d.r * 1.4, y: e.y - 20 - Math.random() * 40, vx: 0, vy: -24, g: 0, vida: 0.7, cor: d.aura }); }
     if (e.flash > 0) cx.filter = 'brightness(3) saturate(0.2)';
     else if (e.estado === 'prepara') cx.filter = 'brightness(1.45) saturate(1.3)';
     else if (e.estado === 'atordoado') cx.filter = 'brightness(0.7)';
@@ -247,9 +250,15 @@
     else if (Math.sin(e.ang) < -0.75 && A.spr[s + '_n']) folha(s + '_n', e.passo, e.x, e.y, false);
     else folha(s + '_e', e.passo, e.x, e.y, inv);
     cx.filter = 'none';
+    if (e.estado === 'golpe' && !d.atira && e.tipoGolpe !== 'tremor') {
+      const k = escalaFolha, rr = (d.alcance * 0.7 + 16) * Math.min(1.25, k), prog = e.t / e.resta, ini = e.ang - 1 + prog * 1.2;
+      cx.strokeStyle = 'rgba(240,226,190,' + (0.85 - prog * 0.7) + ')'; cx.lineWidth = 3;
+      cx.beginPath(); cx.arc(e.x, e.y - 20, rr, ini, ini + 0.9); cx.stroke();
+    }
     if (e.hp < e.hpMax && !d.chefe) {
-      cx.fillStyle = '#0a0c0e'; cx.fillRect(Math.round(e.x - 13), Math.round(e.y - 56), 26, 3);
-      cx.fillStyle = '#a02a24'; cx.fillRect(Math.round(e.x - 12), Math.round(e.y - 55), Math.max(0, 24 * e.hp / e.hpMax), 1);
+      const L_ = d.lenda ? 46 : 24, ty = d.lenda ? 84 : 56;
+      cx.fillStyle = '#0a0c0e'; cx.fillRect(Math.round(e.x - L_ / 2 - 1), Math.round(e.y - ty), L_ + 2, 3);
+      cx.fillStyle = d.lenda ? '#c8822a' : '#a02a24'; cx.fillRect(Math.round(e.x - L_ / 2), Math.round(e.y - ty + 1), Math.max(0, L_ * e.hp / e.hpMax), 1);
     }
     if (J.P.alvo === e) {
       cx.fillStyle = '#e8d08a';
@@ -259,7 +268,7 @@
 
   function silhueta(e) {
     const s = e.d.spr, inv = Math.cos(e.ang) < 0;
-    escalaFolha = e.d.chefe || 1;
+    escalaFolha = e.d.chefe || e.d.lenda || 1;
     if (e.estado === 'golpe' && A.spr[s + '_ge']) folha(s + '_ge', A.spr[s + '_ge'].n - 2, e.x, e.y, inv);
     else folha(s + '_e', e.passo, e.x, e.y, inv);
     escalaFolha = 1;
@@ -276,10 +285,19 @@
   }
 
   // ---------- quadro ----------
-  let relogio = 0;
+  let relogio = 0, leve = false, mediaMs = 0, amostras = 0;
+  Tela.leve = () => leve;
+  Tela.forcaLeve = (v) => { leve = v; };
   const luzAtual = [10, 22, 34, 0.52];
   const brasasFogo = [];
+  // se o aparelho não dá conta, tira a névoa dupla e as faixas de luz, sem avisar
   Tela.desenhar = function (dt) {
+    const ini_ = performance.now();
+    desenharQuadro(dt);
+    mediaMs += performance.now() - ini_;
+    if (++amostras >= 45) { if (mediaMs / amostras > 20) leve = true; mediaMs = 0; amostras = 0; }
+  };
+  function desenharQuadro(dt) {
     relogio += dt;
     const P = J.P, cam = Tela.cam;
     if (!P) return;
@@ -324,12 +342,12 @@
     for (const it of lista) {
       switch (it[1]) {
         case 0: { const o = it[2], im = IMG[o.n]; if (!im) break;
-          if (A.spr[o.n].n > 1) folha(o.n, relogio * 8, o.x, o.y, false, 10);
+          if (A.spr[o.n].n > 1) folha(o.n, relogio * 8, o.x, o.y, false);
           else cx.drawImage(im, Math.round(o.x - im.width / 2), Math.round(o.y - im.height + (o.base || 0)));
           break; }
         case 1: inimigo(it[2]); break;
         case 2: { const f = it[2], acesa = J.S.acesas.includes(it[3]);
-          if (acesa) folha('fogueira', relogio * 8, f.x * T + 16, f.y * T + 18, false, 14);
+          if (acesa) folha('fogueira', relogio * 8, f.x * T + 16, f.y * T + 18, false);
           else if (IMG.fogueira) { cx.drawImage(IMG.fogueira, 0, 34, 48, 30, f.x * T - 8, f.y * T - 2, 48, 30); }
           if (acesa && Math.random() < dt * 8) Tela.fagulhas(f.x * T + 16, f.y * T + 4, 1, Math.random() < 0.5 ? '#ffb84a' : '#c8501e');
           break; }
@@ -349,6 +367,21 @@
       cx.fillStyle = '#7a3ad0'; cx.fillRect(Math.round(t.x) - 3, Math.round(t.y) - 3, 7, 7);
       cx.fillStyle = '#d8b0ff'; cx.fillRect(Math.round(t.x) - 1, Math.round(t.y) - 1, 3, 3);
       if (Math.random() < 0.5) pts.push({ x: t.x, y: t.y, vx: 0, vy: 0, g: 0, vida: 0.25, cor: '#6a2ac0' });
+    }
+    for (const f of J.fx) if (f.tipo === 'fogo') {
+      const pulsa = (Math.sin(relogio * 9 + f.x) + 1) / 2, k = Math.min(1, f.vida);
+      cx.fillStyle = 'rgba(220,70,20,' + 0.26 * k + ')'; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, 7); cx.fill();
+      cx.fillStyle = 'rgba(255,170,60,' + (0.16 + pulsa * 0.2) * k + ')'; cx.beginPath(); cx.arc(f.x, f.y, f.r * 0.55, 0, 7); cx.fill();
+      if (Math.random() < dt * 5) Tela.fagulhas(f.x, f.y, 1, '#ff9a3a');
+    } else if (f.tipo === 'meteoro') {
+      if (f.caiu) { cx.fillStyle = 'rgba(255,190,90,' + Math.max(0, f.vida * 2.5) + ')'; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, 7); cx.fill(); }
+      else {
+        const k = f.t / f.cai;
+        cx.strokeStyle = 'rgba(240,80,40,0.85)'; cx.lineWidth = 2; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, 7); cx.stroke();
+        cx.fillStyle = 'rgba(240,70,30,' + k * 0.35 + ')'; cx.beginPath(); cx.arc(f.x, f.y, f.r * k, 0, 7); cx.fill();
+        const yy = f.y - (1 - k) * 170; // a pedra caindo
+        cx.fillStyle = '#ffb040'; cx.fillRect(Math.round(f.x) - 3, Math.round(yy) - 3, 7, 7); cx.fillStyle = '#fff0c0'; cx.fillRect(Math.round(f.x) - 1, Math.round(yy) - 1, 3, 3);
+      }
     }
     for (const f of J.fx) if (f.tipo === 'anel') {
       cx.strokeStyle = '#f07028'; cx.lineWidth = 3; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, 7); cx.stroke();
@@ -370,7 +403,7 @@
     cx.setTransform(1, 0, 0, 1, 0, 0);
     // névoa no ar
     cx.globalCompositeOperation = 'screen';
-    for (const [k, vel, al] of [[0.6, 5, 0.32], [1.15, -8, 0.22]]) {
+    for (const [k, vel, al] of leve ? [[0.6, 5, 0.3]] : [[0.6, 5, 0.32], [1.15, -8, 0.22]]) {
       const nx = -(((ox * k + relogio * vel) % 512) + 512) % 512, ny = -(((oy * k) % 256) + 256) % 256;
       cx.globalAlpha = al;
       for (let x = nx; x < VW; x += 512) for (let y = ny; y < VH; y += 256) cx.drawImage(nevoa, x, y);
@@ -388,7 +421,7 @@
     lx.clearRect(0, 0, VW, VH);
     lx.fillStyle = 'rgba(' + Math.round(luzAtual[0]) + ',' + Math.round(luzAtual[1]) + ',' + Math.round(luzAtual[2]) + ',' + luzAtual[3] + ')'; lx.fillRect(0, 0, VW, VH);
     lx.globalCompositeOperation = 'destination-out';
-    furo(P.x - ox, P.y - oy - 20, 225, naCripta ? 0.72 : 0.7, 14);
+    furo(P.x - ox, P.y - oy - 20, 225, naCripta ? 0.72 : 0.7, leve ? 7 : 14);
     const quentes = [];
     for (const id in C.FOGUEIRAS) {
       if (!J.S.acesas.includes(id)) continue;
@@ -397,7 +430,7 @@
     }
     for (const o of visiveis) {
       const qx = o.x - ox, qy = o.y - oy;
-      if (o.tocha) { furo(qx, qy - 22, 130 * pisca, 0.88, 7); quentes.push([qx, qy - 22, 70]); }
+      if (o.tocha) { furo(qx, qy - 22, 130 * pisca, 0.88, leve ? 4 : 7); quentes.push([qx, qy - 22, 70]); }
       else if (o.cogu) furo(qx, qy - 12, 44, 0.42, 4);
     }
     for (const e of J.inimigos) if (e.d.chefe && Math.abs(e.arenaX - P.x) < 700 && Math.abs(e.arenaY - P.y) < 500) furo(e.arenaX - ox, e.arenaY - oy, e.arenaR, 0.62, 12); // a arena é sempre visível: o medo vem de ver o que espera
@@ -422,8 +455,9 @@
       cx.fillStyle = 'rgba(120,10,10,' + a + ')';
       cx.fillRect(0, 0, VW, 8); cx.fillRect(0, VH - 8, VW, 8); cx.fillRect(0, 0, 8, VH); cx.fillRect(VW - 8, 0, 8, VH);
     }
-  };
+  }
 
+  Tela.medir = medir;
   Tela.iniciar = function () {
     montarMundo(); montarNevoa();
     Tela.espriteBenta = IMG.benta_s0;
