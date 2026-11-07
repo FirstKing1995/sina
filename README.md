@@ -1,7 +1,7 @@
 # SINA · As Terras de Aruanã
 
 RPG soulslike de mundo aberto, em pixel art dark fantasy. Roda no navegador, sem instalar nada.
-Publicado em https://firstking1995.github.io/sina/parte1/.
+Publicado em https://firstking1995.github.io/sina/ (a v0.3.4 antiga fica em /sina/antigo/). Para publicar: `node tools/publicar.js`, depois commit e push em site/.
 
 ## Rodar
 
@@ -27,6 +27,10 @@ Pelo preview `sina-parte1` (porta 8792) ou com qualquer servidor estático nesta
 - Ao morrer, as brasas ficam onde você caiu. Morra de novo antes de buscá-las e elas se perdem.
 - Brasas fortalecem Vida, Vigor e Força nas fogueiras, compram itens e pagam a forja.
 - Armaduras protegem, mas deixam o herói mais lento e o rolamento mais caro. Armas pesadas exigem Força.
+
+## Personagem
+
+Nome, sexo, povo (Humano, Elfo, Anão, Povo-fera) e especialidade (Soldado, Caçador, Aprendiz de feitiço, Andarilho), com efeito nas regras. Cada especialidade tem um poder na tecla R. A aparência é refeita por código em `js/aparencia.js`.
 
 ## Mundo
 
