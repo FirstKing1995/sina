@@ -14,3 +14,6 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 
 ## Geradas por IA
 - Personagens, cenário e ilustrações: PixelLab (uso comercial permitido pelos termos dele). Ver `arte-pixel/`.
+
+## Versões do herói
+- `assets/herois/`: geradas pelo Google Gemini a partir da folha de poses do herói (PixelLab), recortadas por `tools/folha-poses.py`.

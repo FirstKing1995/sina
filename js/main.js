@@ -429,7 +429,7 @@
   }
   // ---------- criação de personagem ----------
   const AP = window.Aparencia;
-  let ficha = AP.padrao(), verTimer = null, verFrames = null;
+  let ficha = AP.padrao(), verTimer = null, verFrames = null, verChave = null;
   function grupo(id, opcoes, chave, html) {
     const box = $(id); box.innerHTML = '';
     for (const [valor, rotulo] of opcoes) {
@@ -449,12 +449,14 @@
   }
   function pintarCriacao() {
     grupo('cria-sexo', [['m', 'Homem'], ['f', 'Mulher']], 'sexo');
-    grupo('cria-cabelo', AP.CABELOS.map(([h, n]) => [h, n]), 'cabelo');
-    $('cria-cabelo').hidden = ficha.sexo !== 'f';
     grupo('cria-raca', Object.entries(AP.RACAS).map(([k, r]) => [k, r]), 'raca', (k, r) => '<b>' + r.nome + '</b><small>' + r.desc + '</small><em>' + efeitos(r) + '</em>');
     grupo('cria-esp', Object.entries(AP.ESPECIALIDADES).map(([k, r]) => [k, r]), 'esp', (k, r) => '<b>' + r.nome + '</b><small>' + r.desc + '</small><em>' + r.poder.nome + ': ' + r.poder.desc + '</em>');
-    const A_ = window.ARTE;
-    verFrames = [['heroi_s', 's'], ['heroi_e', 'e'], ['heroi_n', 'n']].map(([n, d]) => ({ c: AP.tira(Tela.original(n), A_.spr[n], d, ficha), info: A_.spr[n] }));
+    const k_ = AP.melhor(ficha), pedido = AP.chave(ficha);
+    $('cria-aviso').textContent = AP.existe(ficha) ? '' : 'Esta combinação ainda não tem arte própria: por enquanto aparece a mais parecida.';
+    verChave = k_;
+    if (k_ === 'm_humano_andarilho') verFrames = ['heroi_s', 'heroi_e', 'heroi_n'].map((n) => ({ c: Tela.original(n) || Tela.imagem(n), w: 64, n: 6 }));
+    else AP.carrega(k_).then((o) => { if (verChave === k_) verFrames = ['heroi_s', 'heroi_e', 'heroi_n'].map((n) => ({ c: o[n], w: 64, n: 6 })).filter((f) => f.c); });
+    void pedido;
   }
   function abrirCriacao() {
     ficha = AP.padrao();
@@ -466,8 +468,9 @@
     verTimer = setInterval(() => {
       t++;
       const g = $('cria-ver').getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, 64, 64);
-      const v = verFrames[Math.floor(t / 24) % 3], q = t % v.info.n;
-      g.drawImage(v.c, q * v.info.w, 0, v.info.w, v.info.h, 0, 0, 64, 64);
+      if (!verFrames || !verFrames.length) return;
+      const v = verFrames[Math.floor(t / 24) % verFrames.length], q = t % v.n;
+      g.drawImage(v.c, q * v.w, 0, v.w, 64, 0, 0, 64, 64);
     }, 130);
   }
   function fecharCriacao() { clearInterval(verTimer); $('criacao').hidden = true; modal = null; }
@@ -486,7 +489,7 @@
     if (Tela.temToque && document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().then(() => { Tela.medir(); }).catch(() => {}); }
     if (novo) J.novo(typeof novo === 'object' ? novo : undefined); else J.carregar();
     if (!J.S.heroi) J.S.heroi = window.Aparencia.padrao();
-    window.Aparencia.vestir(J.S.heroi);
+    window.Aparencia.vestir(J.S.heroi); // carrega em segundo plano; até lá aparece o herói original
     $('titulo').hidden = true; $('hud').hidden = false;
     if (Tela.temToque) $('toque').hidden = false;
     J.nascer(); rodando = true;

@@ -565,6 +565,8 @@
   Tela.imagem = (n) => IMG[n];
   const ORIG = {};
   Tela.original = (n) => { if (!ORIG[n] && IMG[n]) ORIG[n] = IMG[n]; return ORIG[n]; };
-  Tela.trocar = (n, c) => { Tela.original(n); IMG[n] = c; };
+  const SPR0 = {};
+  Tela.trocar = (n, c) => { Tela.original(n); if (!SPR0[n]) SPR0[n] = A.spr[n]; IMG[n] = c; };
+  Tela.restaurar = (n) => { if (ORIG[n]) IMG[n] = ORIG[n]; if (SPR0[n]) A.spr[n] = SPR0[n]; };
   Tela.tamanho = () => ({ VW, VH, esc: Tela.esc });
 })(window);
