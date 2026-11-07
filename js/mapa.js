@@ -8,12 +8,12 @@
 
   // regiões: centro, quão fechado é o mato (quanto menor, mais fechado), perigo e luz ambiente
   const REGIOES = [
-    { id: 'campos', nome: 'Campos da Aurora', x: 270, y: 350, fecha: 0.67, perigo: 1, luz: 'rgba(10,22,34,0.52)' },
-    { id: 'mata', nome: 'Mata Funda', x: 250, y: 150, fecha: 0.55, perigo: 2, luz: 'rgba(6,20,28,0.68)' },
-    { id: 'mangue', nome: 'Mangue Sombrio', x: 80, y: 300, fecha: 0.58, perigo: 3, luz: 'rgba(12,22,14,0.66)' },
-    { id: 'serra', nome: 'Serra do Ferro', x: 80, y: 90, fecha: 0.56, perigo: 3, luz: 'rgba(14,20,34,0.6)' },
-    { id: 'sertao', nome: 'Sertão das Cinzas', x: 460, y: 300, fecha: 0.69, perigo: 4, luz: 'rgba(30,20,14,0.46)' },
-    { id: 'cinzas', nome: 'Cratera da Cauda', x: 470, y: 80, fecha: 0.61, perigo: 5, luz: 'rgba(30,8,8,0.64)' },
+    { id: 'campos', nome: 'Campos da Aurora', x: 270, y: 350, fecha: 0.72, perigo: 1, luz: 'rgba(10,22,34,0.52)' },
+    { id: 'mata', nome: 'Mata Funda', x: 250, y: 150, fecha: 0.62, perigo: 2, luz: 'rgba(6,20,28,0.68)' },
+    { id: 'mangue', nome: 'Mangue Sombrio', x: 80, y: 300, fecha: 0.64, perigo: 3, luz: 'rgba(12,22,14,0.66)' },
+    { id: 'serra', nome: 'Serra do Ferro', x: 80, y: 90, fecha: 0.63, perigo: 3, luz: 'rgba(14,20,34,0.6)' },
+    { id: 'sertao', nome: 'Sertão das Cinzas', x: 460, y: 300, fecha: 0.74, perigo: 4, luz: 'rgba(30,20,14,0.46)' },
+    { id: 'cinzas', nome: 'Cratera da Cauda', x: 470, y: 80, fecha: 0.67, perigo: 5, luz: 'rgba(30,8,8,0.64)' },
   ];
 
   // lugares abertos à força: [x, y, raio]
@@ -77,7 +77,7 @@
       for (let i = 0; i <= L; i++) {
         const k = i / L, onda = Math.sin(k * Math.PI) * 18 * (ruido(A[0] * 0.1, B[1] * 0.1) - 0.5) * 2;
         const x = A[0] + (B[0] - A[0]) * k + (-(B[1] - A[1]) / L) * onda + (ruido(i * 0.1, A[1]) - 0.5) * 8, y = A[1] + (B[1] - A[1]) * k + ((B[0] - A[0]) / L) * onda + (ruido(i * 0.1, A[0]) - 0.5) * 8;
-        abre(x, y, 3.4); abre(x, y, 1.5, TERRA);
+        abre(x, y, 4.2); abre(x, y, 1.6, TERRA);
       }
     }
     for (const k in LUGARES) { const n = LUGARES[k]; abre(n[0], n[1], n[2]); }

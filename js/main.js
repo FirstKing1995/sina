@@ -219,6 +219,7 @@
   // ---------- gente de Alvorada ----------
   function falarCom(n) {
     if (n.papel === 'historia') return abrirConversa(J.falasBenta(), n);
+    if (n.papel === 'povo') return abrirConversa([n.falas[Math.floor(Math.random() * n.falas.length)]], n);
     if (n.papel === 'loja') return abrirLoja(n);
     if (n.papel === 'forja') {
       const q = C.MISSOES[n.id], est = J.S.missoes[n.id];

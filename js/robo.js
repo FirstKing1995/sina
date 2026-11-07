@@ -79,13 +79,23 @@
           if (acao === 'usa' || acao === 'benta') en.usa = true;
           if (acao && acao.startsWith('chefe:')) {
             const tipo = acao.slice(6);
-            if (J.S.chefesMortos.includes(tipo)) { log.push(et[0] + ' caiu aos ' + Math.round(J.tempo / 60) + ' min'); etapa++; rota = null; }
+            if (J.S.chefesMortos.includes(tipo)) { log.push(et[0] + ' caiu aos ' + Math.round(J.tempo / 60) + ' min'); etapa++; rota = null; window.__melhor = 1e9; }
           } else if (acao && acao.startsWith('viaja:')) {
             J.viajar(acao.slice(6)); document.getElementById('d-sair').click(); etapa++; rota = null;
           } else { log.push(et[0] + ' ok aos ' + Math.round(J.tempo / 60) + ' min'); etapa++; rota = null; }
         }
       } else { log.push('etapas concluídas'); fim = true; }
       S.passoMundo(dt);
+      // sem chegar mais perto do destino por 25 s: recalcula o caminho e dá uma volta; é o que uma pessoa faria
+      if (et) {
+        const dAlvo = Math.hypot(P.x - et[1] * T, P.y - et[2] * T);
+        if (dAlvo < (window.__melhor || 1e9) - 8) { window.__melhor = dAlvo; window.__semAvanco = 0; }
+        else if (++window.__semAvanco > 750 && !lutar) {
+          window.__semAvanco = 0; window.__melhor = 1e9; rota = null;
+          log.push('REDESVIO perto de ' + Math.round(P.x / T) + ',' + Math.round(P.y / T) + ' indo para ' + et[0]);
+          const ang = Math.random() * 6.28; for (let i = 0; i < 45; i++) { en.mx = Math.cos(ang); en.my = Math.sin(ang); S.passoMundo(dt); }
+        }
+      }
       // detector de travamento
       if (Math.hypot(P.x - ux, P.y - uy) > 6) { ux = P.x; uy = P.y; parado = 0; } else if (++parado > 300 && !lutar) {
         log.push('TRAVOU em ' + Math.round(P.x / T) + ',' + Math.round(P.y / T) + ' indo para ' + (et ? et[0] : '?'));

@@ -79,6 +79,29 @@
     return moveu;
   }
 
+  // ---------- gente da vila: vaga por perto, para, e olha para quem se aproxima ----------
+  J.gente = C.NPCS.map((n, i) => Object.assign(n, { px: n.x * T, py: n.y * T, cx: n.x * T, cy: n.y * T, espera: 1 + (i % 4), dx: 0, dy: 0, andando: false, vira: false, fase: i * 0.7 }));
+  function passoGente(dt) {
+    const P = J.P;
+    for (const n of J.gente) {
+      const dist = Math.hypot(P.x - n.px, P.y - n.py);
+      if (dist > 700) continue;
+      if (dist < 70) { n.andando = false; n.vira = P.x < n.px; continue; } // para e olha para você
+      if (!n.anda) continue;
+      n.espera -= dt;
+      if (n.espera <= 0) {
+        if (n.andando) { n.andando = false; n.espera = 1.5 + Math.random() * 3.5; }
+        else {
+          const a = Math.random() * 6.283, r = Math.random() * n.anda, ax = n.cx + Math.cos(a) * r, ay = n.cy + Math.sin(a) * r;
+          const d = Math.hypot(ax - n.px, ay - n.py) || 1;
+          n.dx = ((ax - n.px) / d) * 24; n.dy = ((ay - n.py) / d) * 24;
+          n.andando = true; n.espera = d / 24; n.vira = n.dx < 0;
+        }
+      }
+      if (n.andando) { n.px += n.dx * dt; n.py += n.dy * dt; if (!livre(n.px, n.py, 8)) { n.px -= n.dx * dt; n.py -= n.dy * dt; n.andando = false; n.espera = 1; } }
+    }
+  }
+
   // ---------- início ----------
   function ponto() {
     const f = J.S.fogueira && C.FOGUEIRAS[J.S.fogueira];
@@ -464,7 +487,7 @@
       const f = C.FOGUEIRAS[id];
       if (Math.hypot(f.x * T + 16 - P.x, f.y * T + 16 - P.y) < 46) return { tipo: 'fogueira', id, texto: J.S.acesas.includes(id) ? 'Descansar' : 'Acender a fogueira' };
     }
-    for (const n of C.NPCS) if (Math.hypot(n.x * T - P.x, n.y * T - P.y) < 42) return { tipo: 'npc', npc: n, texto: 'Falar com ' + n.nome };
+    for (const n of J.gente) if (Math.hypot(n.px - P.x, n.py - P.y) < 42) return { tipo: 'npc', npc: n, texto: 'Falar com ' + n.nome };
     for (const t of C.TESOUROS) if (!J.S.tesouros.includes(t.id) && Math.hypot(t.x * T + 16 - P.x, t.y * T + 16 - P.y) < 34) return { tipo: 'tesouro', t, texto: 'Abrir o baú' };
     for (const t of C.ERVAS) if (!J.S.ervas.includes(t.id) && Math.hypot(t.x * T + 16 - P.x, t.y * T + 16 - P.y) < 30) return { tipo: 'erva', t, texto: 'Pegar: ' + C.ITENS[t.item].nome };
     for (const q of J.PORTAIS) if (Math.hypot(q.x - P.x, q.y - P.y) < 46) {
@@ -635,6 +658,7 @@
     if (P.estado !== 'morto') for (const e of J.inimigos) passoInimigo(e, dt);
     else for (const e of J.inimigos) e.flash = 0;
     passoTiros(dt);
+    passoGente(dt);
     J.inimigos = J.inimigos.filter((e) => !(e.estado === 'morto' && e.t > 3));
     // mapa: marca o que já foi visto, em quadrados de 8 blocos
     const qx = Math.floor(P.x / T / 8), qy = Math.floor(P.y / T / 8);

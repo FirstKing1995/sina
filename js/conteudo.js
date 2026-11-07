@@ -158,6 +158,16 @@
   ];
   C.ITENS.gibao = { nome: 'Gibão reforçado', tipo: 'armadura', ic: 'A_Armour03', def: 0.18, peso: 1, preco: 1100 };
   C.ITENS.maca.preco = 1250; C.ITENS.am_pele.preco = 2400;
+  // o povo da vila: não faz negócio, só vive e comenta
+  const povo = (nome, spr, dx, dy, falas) => ({ id: 'p_' + spr, nome, spr, x: L.alvorada[0] + dx, y: L.alvorada[1] + dy, papel: 'povo', falas, anda: 90 });
+  C.NPCS.push(
+    povo('Velho do poço', 'velho_s0', 5, -8, ['Antes da Cauda, esse poço dava água boa. Hoje dá medo.', 'Se ouvir alguém chamando seu nome de noite, não responda.']),
+    povo('Lavadeira', 'lavadeira_s0', -11, -3, ['Meu marido voltou da cova na semana passada. Tive de fechar a porta.', 'Fogueira acesa é a única coisa que ainda presta por aqui.']),
+    povo('Menino sem nome', 'menino_s0', 6, 11, ['Eu vi o bicho grande lá no norte! Ninguém acredita.', 'Dizem que você não tem sina. Isso dói?']),
+    povo('Soldado cansado', 'guarda_s0', 15, -6, ['A Capitã diz que seguramos a vila. Seguramos nada.', 'Rola antes do golpe cair, não depois. Aprendi tarde.']),
+    povo('Benzedeira', 'benzedeira_s0', -3, 12, ['Não adianta benzer quem não tem sina. Mas eu benzo assim mesmo.', 'Cuidado com o mangue quando chove. E lá sempre chove.'])
+  );
+  for (const n of C.NPCS) if (!n.anda && n.id !== 'benta') n.anda = 40;
   C.LOJA = ['adaga', 'lanca', 'machado', 'couro', 'cota', 'am_brasas', 'caco_cabaca', 'pedra_forja'];
   C.CUSTO_FORJA = [400, 1100, 2600]; // +1, +2, +3; cada nível usa uma pedra de forja
 

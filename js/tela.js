@@ -72,14 +72,14 @@
       const r = rnd(x, y, 5), cripta = y >= M.CRIPTA_Y;
       const cem = !cripta && Math.hypot(x - M.LUGARES.cemiterio[0], y - M.LUGARES.cemiterio[1]) < M.LUGARES.cemiterio[2];
       if (cripta) {
-        if (r < 0.035) pôr(G.cripta[Math.floor(rnd(x, y, 6) * G.cripta.length)], x * T + 16, y * T + 16, { base: 6, r: 12 });
+        if (r < 0.035) pôr(G.cripta[Math.floor(rnd(x, y, 6) * G.cripta.length)], x * T + 16, y * T + 16, { base: 6, r: 9 });
       } else if (cem) {
-        if (r < 0.14) pôr(G.cemiterio[Math.floor(rnd(x, y, 6) * G.cemiterio.length)], x * T + 16, y * T + 16, { base: 5, r: 10 });
+        if (r < 0.14) pôr(G.cemiterio[Math.floor(rnd(x, y, 6) * G.cemiterio.length)], x * T + 16, y * T + 16, { base: 5, r: 8 });
       } else if (M.CHAO[y * M.W + x] !== M.TERRA) {
         const reg = M.regiao(x, y), B = A.biomas[reg.id], dens = { campos: 0.05, mata: 0.09, mangue: 0.08, serra: 0.075, sertao: 0.045, cinzas: 0.06 }[reg.id];
         const jx = (rnd(x, y, 11) - 0.5) * 60, jy = (rnd(x, y, 12) - 0.5) * 60;
-        if (r < dens * 0.32) pôr(B.arvores[Math.floor(rnd(x, y, 9) * B.arvores.length)], x * T + jx, y * T + jy, { base: 12, r: 15 });
-        else if (r < dens) { const n = B.objetos[Math.floor(rnd(x, y, 6) * B.objetos.length)]; pôr(n, x * T + jx, y * T + jy, { base: 6, r: (A.baixos || []).includes(n) ? 0 : 12, cogu: (A.cogumelos || []).includes(n) }); }
+        if (r < dens * 0.32) pôr(B.arvores[Math.floor(rnd(x, y, 9) * B.arvores.length)], x * T + jx, y * T + jy, { base: 12, r: 10 });
+        else if (r < dens) { const n = B.objetos[Math.floor(rnd(x, y, 6) * B.objetos.length)]; pôr(n, x * T + jx, y * T + jy, { base: 6, r: (A.baixos || []).includes(n) ? 0 : 8, cogu: (A.cogumelos || []).includes(n) }); }
       }
     }
     // Ruínas de Alvorada, em volta da praça
@@ -100,7 +100,7 @@
         const ax = x + Math.floor((rnd(n, i, 34) - 0.5) * 12), ay = y + Math.floor((rnd(n, i, 35) - 0.5) * 12);
         if (!M.anda(ax, ay) || reservado(ax, ay)) continue;
         const lista = i === 0 && rnd(n, i, 36) < 0.5 && A.estatuas.length ? A.estatuas : A.ruinas;
-        if (lista.length) pôr(lista[Math.floor(rnd(n, i, 37) * lista.length)], ax * T + 16, ay * T + 16, { base: 5, r: 12 });
+        if (lista.length) pôr(lista[Math.floor(rnd(n, i, 37) * lista.length)], ax * T + 16, ay * T + 16, { base: 5, r: 9 });
       }
     }
     const cr = M.LUGARES.cripta;
@@ -114,6 +114,22 @@
   // ---------- chão ----------
   const CHUNK = 16, cachos = new Map();
   function tile(i, x, y) { return i[Math.floor(M.hash(x, y) * i.length)]; }
+  // moita: aglomerado de folhas em blocos de 2 px, na cor da região, cada vez mais escura para dentro do mato
+  const CORES_MOITA = { campos: ['#24401f', '#2f5028', '#172c1a', '#466a32'], mata: ['#10302b', '#173f37', '#0a2321', '#265a48'], mangue: ['#2c3a18', '#3c4c20', '#1c2810', '#566a2c'], serra: ['#2a3440', '#38444e', '#1c242e', '#55636e'], sertao: ['#4a3c20', '#5e4c28', '#352a16', '#7c6636'], cinzas: ['#2e1a18', '#3e2420', '#1e100e', '#5a3026'] };
+  function moita(g, dx, dy, x, y, d) {
+    const c = CORES_MOITA[M.regiao(x, y).id] || CORES_MOITA.mata;
+    const k = d >= 3 ? 0.55 : d === 2 ? 0.8 : 1;
+    for (let b = 0; b < T; b += 2) for (let a = 0; a < T; a += 2) {
+      const wx = x * T + a, wy = y * T + b, n = M.ruido(wx * 0.11, wy * 0.11) * 0.7 + M.hash(wx >> 1, wy >> 1) * 0.3;
+      g.globalAlpha = k >= 1 ? 1 : 1;
+      g.fillStyle = n > 0.68 ? c[3] : n > 0.52 ? c[1] : n > 0.34 ? c[0] : c[2];
+      g.fillRect(dx + a, dy + b, 2, 2);
+    }
+    g.globalAlpha = 1;
+    if (k < 1) { g.fillStyle = 'rgba(2,8,12,' + (1 - k) + ')'; g.fillRect(dx, dy, T, T); }
+    // sombra projetada no chão aberto logo abaixo
+    if (M.anda(x, y + 1)) { g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillRect(dx, dy + T - 4, T, 4); }
+  }
   function pintaChunk(cc, cl) {
     const c = document.createElement('canvas'); c.width = c.height = CHUNK * T;
     const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
@@ -137,12 +153,40 @@
         } else { g.fillStyle = '#04070a'; g.fillRect(dx, dy, T, T); }
       } else {
         const k = canto(x, y) + canto(x + 1, y) + canto(x, y + 1) + canto(x + 1, y + 1);
-        const p = tile(A.tiles[k], x, y), folha = IMG['chao_' + M.regiao(x, y).id];
+        const reg0 = M.regiao(x, y), p = tile(A.tiles[k], x, y), folha = IMG['chao_' + reg0.id];
         if (folha) g.drawImage(folha, p[0], p[1], T, T, dx, dy, T, T);
+        // fronteira entre regiões: em vez de degrau quadrado, pedacinhos de uma entram na outra
+        let vizinha = null;
+        for (const [a, b] of [[-3, 0], [3, 0], [0, -3], [0, 3], [-2, -2], [2, 2], [-2, 2], [2, -2]]) { const r_ = M.regiao(x + a, y + b); if (r_ !== reg0) { vizinha = r_; break; } }
+        if (vizinha && IMG['chao_' + vizinha.id]) {
+          const outra = IMG['chao_' + vizinha.id];
+          for (let b = 0; b < T; b += 4) for (let a = 0; a < T; a += 4) {
+            const wx = x * T + a, wy = y * T + b;
+            const qx = Math.floor((wx + (M.ruido(wx * 0.025, wy * 0.025) - 0.5) * 150 + (M.hash(wx >> 2, wy >> 2) - 0.5) * 34) / T);
+            const qy = Math.floor((wy + (M.ruido(wx * 0.025 + 50, wy * 0.025) - 0.5) * 150 + (M.hash(wy >> 2, wx >> 2) - 0.5) * 34) / T);
+            if (M.regiao(qx, qy) === vizinha) g.drawImage(outra, p[0] + a, p[1] + b, 4, 4, dx + a, dy + b, 4, 4);
+          }
+        }
         if (v === M.MATA) {
           let d = 3; // distância até o aberto mais próximo, em blocos
           for (let b = -2; b <= 2; b++) for (let a = -2; a <= 2; a++) if (M.anda(x + a, y + b)) d = Math.min(d, Math.max(Math.abs(a), Math.abs(b)));
-          if (d > 1) { g.fillStyle = 'rgba(2,8,12,' + (d === 2 ? 0.34 : 0.66) + ')'; g.fillRect(dx, dy, T, T); }
+          moita(g, dx, dy, x, y, d);
+        }
+      }
+    }
+    // folhas invadem o chão aberto: a beirada do mato deixa de ser um degrau reto
+    for (let y = cl * CHUNK; y < (cl + 1) * CHUNK; y++) for (let x = cc * CHUNK; x < (cc + 1) * CHUNK; x++) {
+      if (y >= M.CRIPTA_Y || x >= M.W || M.CHAO[y * M.W + x] !== M.MATA) continue;
+      const c = CORES_MOITA[M.regiao(x, y).id] || CORES_MOITA.mata;
+      const dx = (x - cc * CHUNK) * T, dy = (y - cl * CHUNK) * T;
+      for (const [vx, vy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (!M.anda(x + vx, y + vy)) continue;
+        for (let p = 0; p < T; p += 2) for (let d_ = 0; d_ < 14; d_ += 2) {
+          const px = vx ? (vx > 0 ? T + d_ : -2 - d_) : p, py = vy ? (vy > 0 ? T + d_ : -2 - d_) : p;
+          const n = M.hash(x * T + px, y * T + py);
+          if (n > 0.85 - d_ * 0.06) continue;
+          g.fillStyle = n < 0.14 ? c[3] : n < 0.4 ? c[1] : n < 0.62 ? c[0] : c[2];
+          g.fillRect(dx + px, dy + py, 2, 2);
         }
       }
     }
@@ -227,7 +271,23 @@
     }
     sombra(P.x, P.y - 1, 13);
     if (P.inv > 0 && P.estado !== 'rola' && Math.floor(P.inv * 20) % 2) cx.globalAlpha = 0.45;
-    if (P.estado === 'rola') { folha('rola', (P.t / 0.46) * 4, P.x, P.y, Math.cos(P.ang) < 0); cx.globalAlpha = 1; return; }
+    if (P.estado === 'rola') {
+      const nome = 'heroi_' + base, info = A.spr[nome], im = IMG[nome], k = Math.min(1, P.t / 0.46);
+      if (im) {
+        const sobe = Math.sin(k * Math.PI);          // abaixa no meio do movimento
+        const achata = 1 - sobe * 0.28, estica = 1 + sobe * 0.16, incl = (inv ? -1 : 1) * (d === 'e' || d === 'w' ? sobe * 0.34 : 0);
+        const q = Math.floor(P.t * 22) % info.n, fundo = info.fundo != null ? info.fundo : 2;
+        const pinta = (x, y, a) => {
+          cx.save(); cx.globalAlpha = a; cx.translate(Math.round(x), Math.round(y)); cx.rotate(incl); cx.scale((inv ? -1 : 1) * estica, achata);
+          cx.drawImage(im, q * info.w, 0, info.w, info.h, -info.w / 2, -info.h + fundo, info.w, info.h);
+          cx.restore();
+        };
+        for (const [atras, a] of [[34, 0.14], [22, 0.22], [11, 0.32]]) pinta(P.x - P.dirX * atras * sobe, P.y - P.dirY * atras * sobe, a); // rastro
+        pinta(P.x, P.y, 1);
+        if (Math.random() < 0.6) pts.push({ x: P.x - P.dirX * 12 + (Math.random() - 0.5) * 10, y: P.y - 2, vx: -P.dirX * 20, vy: -8, g: 0, vida: 0.4, cor: 'rgba(170,160,140,0.6)' });
+      }
+      cx.globalAlpha = 1; return;
+    }
     if (P.estado === 'golpe') {
       const k = P.t / P.dGolpe;
       const n = 'golpe_' + base, info = A.spr[n] || A.spr.golpe_e;
@@ -432,7 +492,7 @@
     for (const e of J.inimigos) if (e.x > ox - 80 && e.x < ox + VW + 80 && e.y > oy - 60 && e.y < oy + VH + 90) lista.push([e.y, 1, e]);
     for (const id in C.FOGUEIRAS) { const f = C.FOGUEIRAS[id]; lista.push([f.y * T + 18, 2, f, id]); }
     for (const id in M.PORTOES) { if (!J.S.portoes.includes(id)) { const p = M.PORTOES[id]; lista.push([(p.y0 + p.y1) / 2 * T + T, 3, p]); } }
-    for (const n of C.NPCS) if (Math.abs(n.x * T - ox - VW / 2) < VW && Math.abs(n.y * T - oy - VH / 2) < VH) lista.push([n.y * T, 4, n]);
+    for (const n of J.gente) if (Math.abs(n.px - ox - VW / 2) < VW && Math.abs(n.py - oy - VH / 2) < VH) lista.push([n.py, 4, n]);
     lista.push([P.y, 5]);
     lista.sort((a, b) => a[0] - b[0]);
     for (const it of lista) {
@@ -444,7 +504,7 @@
         case 1: inimigo(it[2]); break;
         case 2: { const f = it[2], acesa = J.S.acesas.includes(it[3]);
           if (acesa) folha('fogueira', relogio * 8, f.x * T + 16, f.y * T + 18, false);
-          else if (IMG.fogueira) { cx.drawImage(IMG.fogueira, 0, 34, 48, 30, f.x * T - 8, f.y * T - 2, 48, 30); }
+          else folha('fogueira_apagada', 0, f.x * T + 16, f.y * T + 18, false);
           if (acesa && Math.random() < dt * 8) Tela.fagulhas(f.x * T + 16, f.y * T + 4, 1, Math.random() < 0.5 ? '#ffb84a' : '#c8501e');
           break; }
         case 3: { const p = it[2];
@@ -454,7 +514,7 @@
           if (IMG.cerca) for (const y of abertos) { const i = IMG.cerca; cx.drawImage(i, Math.round((p.x0 + 1) * T - i.width / 2), Math.round((y + 1) * T - i.height + 4)); }
           if (IMG.portao && abertos.length) { const i = IMG.portao, y = abertos[abertos.length >> 1]; cx.drawImage(i, Math.round((p.x0 + 1) * T - i.width / 2), Math.round((y + 1) * T - i.height + 10)); }
           break; }
-        case 4: { const n = it[2]; sombra(n.x * T, n.y * T - 1, 12); folha(n.spr, 0, n.x * T, n.y * T, false); break; }
+        case 4: { const n = it[2]; sombra(n.px, n.py - 1, 12); folha(n.spr, n.andando ? relogio * 7 + n.fase : Math.floor(relogio * 1.6 + n.fase) % 2, n.px, n.py, n.vira); break; }
         case 5: heroi(); break;
       }
     }
