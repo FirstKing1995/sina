@@ -45,58 +45,60 @@
   const reservado = (bx, by) => {
     for (const f of Object.values(C.FOGUEIRAS)) if (Math.hypot(f.x - bx, f.y - by) < 5) return true;
     for (const t of C.TESOUROS) if (Math.hypot(t.x - bx, t.y - by) < 3) return true;
-    for (const id in M.PORTOES) { const p = M.PORTOES[id]; if (bx >= p.x0 - 4 && bx <= p.x1 + 4 && by >= p.y0 - 2 && by <= p.y1 + 2) return true; }
-    for (const q of [[28, 172], [226, 152], [18, 206], [40, 134], [204, 26], [160, 230]]) { const c = M.p(q[0], q[1]); if (Math.hypot(c[0] - bx, c[1] - by) < 6) return true; }
+    for (const n of C.NPCS) if (Math.hypot(n.x - bx, n.y - by) < 4) return true;
+    for (const t of C.ERVAS) if (Math.hypot(t.x - bx, t.y - by) < 3) return true;
+    for (const k of ['ermo', 'cripta']) if (Math.hypot(M.LUGARES[k][0] - bx, M.LUGARES[k][1] - by) < 7) return true;
+    for (const k of ['ze', 'lobisomem', 'ticao', 'cauda']) if (Math.hypot(M.LUGARES[k][0] - bx, M.LUGARES[k][1] - by) < 12) return true;
+    if (Math.hypot(M.LUGARES.alvorada[0] - bx, M.LUGARES.alvorada[1] - by) < 17) return true;
     return false;
   };
   function montarMundo() {
     const G = A.grupos;
-    // árvores nas bordas da mata: só onde a copa não cobre o caminho (nada aberto logo acima)
     for (let y = 2; y < M.CRIPTA_Y - 2; y += 2) for (let x = 2; x < M.W - 2; x += 2) {
       if (M.anda(x, y)) continue;
       let pertoAberto = false, acima = false;
-      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (M.anda(x + dx, y + dy)) pertoAberto = true;
-      if (!pertoAberto) continue;
-      for (let dy = 1; dy <= 6; dy++) for (let dx = -2; dx <= 2; dx++) if (M.anda(x + dx, y - dy)) acima = true;
-      const r = rnd(x, y, 1);
-      if (!acima && r < 0.8) {
-        pôr(r < 0.45 ? 'arvore1' : 'arvore2', x * T + (rnd(x, y, 2) - 0.5) * 54, y * T + (rnd(x, y, 3) - 0.5) * 40, { base: 12 });
-      } else if (acima && r < 0.24) {
-        const lista = G.mata; // ao sul do caminho, só plantas baixas fazem a parede
-        pôr(lista[Math.floor(rnd(x, y, 4) * lista.length)], x * T + (rnd(x, y, 7) - 0.5) * 56, y * T + (rnd(x, y, 8) - 0.5) * 44, { base: 6 });
+      for (let dy = -3; dy <= 3 && !pertoAberto; dy++) for (let dx = -3; dx <= 3; dx++) if (M.anda(x + dx, y + dy)) { pertoAberto = true; break; }
+      for (let dy = 1; dy <= 6 && !acima; dy++) for (let dx = -2; dx <= 2; dx++) if (M.anda(x + dx, y - dy)) { acima = true; break; }
+      const r = rnd(x, y, 1), reg = M.regiao(x, y).id, B = A.biomas[reg];
+      if (!acima && r < (pertoAberto ? 0.92 : 0.42)) { // a copa não pode cobrir o caminho: só onde não há nada aberto logo acima
+        pôr(B.arvores[Math.floor(rnd(x, y, 9) * B.arvores.length)], x * T + (rnd(x, y, 2) - 0.5) * 54, y * T + (rnd(x, y, 3) - 0.5) * 40, { base: 12 });
+      } else if (acima && pertoAberto && r < 0.78) {
+        pôr(B.objetos[Math.floor(rnd(x, y, 4) * B.objetos.length)], x * T + (rnd(x, y, 7) - 0.5) * 40, y * T + (rnd(x, y, 8) - 0.5) * 30, { base: 6 });
       }
     }
-    // miolo das áreas
     for (let y = 0; y < M.H; y += 3) for (let x = 0; x < M.W; x += 3) {
       if (!M.anda(x, y) || reservado(x, y)) continue;
-      const r = rnd(x, y, 5);
-      const cem = Math.hypot(x - M.N.cemiterio[0], y - M.N.cemiterio[1]) < M.N.cemiterio[2], cripta = y >= M.CRIPTA_Y;
+      const r = rnd(x, y, 5), cripta = y >= M.CRIPTA_Y;
+      const cem = !cripta && Math.hypot(x - M.LUGARES.cemiterio[0], y - M.LUGARES.cemiterio[1]) < M.LUGARES.cemiterio[2];
       if (cripta) {
         if (r < 0.035) pôr(G.cripta[Math.floor(rnd(x, y, 6) * G.cripta.length)], x * T + 16, y * T + 16, { base: 6, r: 12 });
       } else if (cem) {
-        if (r < 0.12) pôr(G.cemiterio[Math.floor(rnd(x, y, 6) * G.cemiterio.length)], x * T + 16, y * T + 16, { base: 5, r: 10 });
-      } else if (r < 0.018 && M.CHAO[y * M.W + x] === M.MUSGO) {
-        const n = G.mata[Math.floor(rnd(x, y, 6) * G.mata.length)];
-        pôr(n, x * T + 16, y * T + 16, { base: 6, r: (A.baixos || []).includes(n) ? 0 : 12, cogu: (A.cogumelos || []).includes(n) });
+        if (r < 0.14) pôr(G.cemiterio[Math.floor(rnd(x, y, 6) * G.cemiterio.length)], x * T + 16, y * T + 16, { base: 5, r: 10 });
+      } else if (M.CHAO[y * M.W + x] !== M.TERRA) {
+        const reg = M.regiao(x, y), B = A.biomas[reg.id], dens = { campos: 0.05, mata: 0.09, mangue: 0.08, serra: 0.075, sertao: 0.045, cinzas: 0.06 }[reg.id];
+        const jx = (rnd(x, y, 11) - 0.5) * 60, jy = (rnd(x, y, 12) - 0.5) * 60;
+        if (r < dens * 0.32) pôr(B.arvores[Math.floor(rnd(x, y, 9) * B.arvores.length)], x * T + jx, y * T + jy, { base: 12, r: 15 });
+        else if (r < dens) { const n = B.objetos[Math.floor(rnd(x, y, 6) * B.objetos.length)]; pôr(n, x * T + jx, y * T + jy, { base: 6, r: (A.baixos || []).includes(n) ? 0 : 12, cogu: (A.cogumelos || []).includes(n) }); }
       }
     }
-    // Ruínas de Alvorada
-    for (const [x, y, n] of [[36, 150, 'casa1'], [62, 136, 'casa2'], [56, 156, 'casa2'], [34, 128, 'casa1'], [66, 150, 'casa1']]) { const c = M.p(x, y); pôr(n, c[0] * T, c[1] * T, { base: 12, r: 52 }); }
-    // entrada da cripta
-    { const c = M.p(226, 150); pôr('entrada', c[0] * T, c[1] * T, { base: 10 }); }
-    // tochas da cripta
-    for (const [x, y] of [[12, 201], [25, 201], [52, 197], [71, 197], [46, 229], [79, 229], [112, 231], [121, 231], [144, 219], [176, 219]]) { const c = M.p(x, y); pôr(A.tocha || 'fogueira', c[0] * T, c[1] * T + 12, { base: 4, tocha: 1 }); }
-    for (const t of C.TESOUROS) pôr(A.bau || 'obj7', t.x * T + 16, t.y * T + 16, { base: 6, bau: t.id });
+    // Ruínas de Alvorada, em volta da praça
+    const al = M.LUGARES.alvorada;
+    for (const [dx, dy, n] of [[-14, -12, 'casa1'], [14, -12, 'casa2'], [-16, 8, 'casa2'], [17, 10, 'casa1'], [-4, 14, 'casa1'], [8, 15, 'casa2']]) pôr(n, (al[0] + dx) * T, (al[1] + dy) * T, { base: 12, r: 50 });
+    const cr = M.LUGARES.cripta;
+    pôr('entrada', cr[0] * T, cr[1] * T, { base: 10, r: 46 });
+    for (const [x, y] of [[12, 201], [25, 201], [52, 197], [71, 197], [46, 229], [79, 229], [112, 231], [121, 231], [144, 219], [176, 219]]) { const c = M.cr(x, y); pôr(A.tocha, c[0] * T, c[1] * T + 12, { base: 4, tocha: 1 }); }
+    for (const t of C.TESOUROS) pôr(A.bau, t.x * T + 16, t.y * T + 16, { base: 6, bau: t.id });
+    for (const t of C.ERVAS) pôr(A.erva, t.x * T + 16, t.y * T + 16, { base: 6, erva: t.id });
   }
 
   // ---------- chão ----------
   const CHUNK = 16, cachos = new Map();
-  function tile(i, x, y) { return i[((x * 73856093) ^ (y * 19349663)) >>> 0 & 0xffff ? (((x * 73856093) ^ (y * 19349663)) >>> 0) % i.length : 0]; }
+  function tile(i, x, y) { return i[Math.floor(M.hash(x, y) * i.length)]; }
   function pintaChunk(cc, cl) {
     const c = document.createElement('canvas'); c.width = c.height = CHUNK * T;
     const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
     const canto = (x, y) => (x >= 0 && y >= 0 && x < M.W && y < M.H && M.CHAO[y * M.W + x] === M.TERRA ? 'l' : 'u');
-    const folha = IMG.chao, parede = IMG.parede, piso = IMG.piso;
+    const parede = IMG.parede, piso = IMG.piso;
     for (let y = cl * CHUNK; y < (cl + 1) * CHUNK; y++) for (let x = cc * CHUNK; x < (cc + 1) * CHUNK; x++) {
       if (x >= M.W || y >= M.H) continue;
       const dx = (x - cc * CHUNK) * T, dy = (y - cl * CHUNK) * T, v = M.CHAO[y * M.W + x];
@@ -111,9 +113,13 @@
         } else { g.fillStyle = '#04070a'; g.fillRect(dx, dy, T, T); }
       } else {
         const k = canto(x, y) + canto(x + 1, y) + canto(x, y + 1) + canto(x + 1, y + 1);
-        const p = tile(A.tiles[k], x, y);
+        const p = tile(A.tiles[k], x, y), folha = IMG['chao_' + M.regiao(x, y).id];
         if (folha) g.drawImage(folha, p[0], p[1], T, T, dx, dy, T, T);
-        if (v === M.MATA) { g.fillStyle = 'rgba(2,8,12,0.62)'; g.fillRect(dx, dy, T, T); }
+        if (v === M.MATA) {
+          let d = 3; // distância até o aberto mais próximo, em blocos
+          for (let b = -2; b <= 2; b++) for (let a = -2; a <= 2; a++) if (M.anda(x + a, y + b)) d = Math.min(d, Math.max(Math.abs(a), Math.abs(b)));
+          if (d > 1) { g.fillStyle = 'rgba(2,8,12,' + (d === 2 ? 0.34 : 0.66) + ')'; g.fillRect(dx, dy, T, T); }
+        }
       }
     }
     // manchas grandes em blocos de 4 px: escondem a repetição dos blocos sem borrar o pixel
@@ -205,7 +211,7 @@
     cx.globalAlpha = 1;
   }
   function inimigo(e) {
-    escalaFolha = e.d.chefe ? (e.d.spr === 'corpo' ? 1.5 : 1.3) : 1;
+    escalaFolha = e.d.chefe || 1;
     desenhaInimigo(e);
     escalaFolha = 1;
   }
@@ -253,7 +259,7 @@
 
   function silhueta(e) {
     const s = e.d.spr, inv = Math.cos(e.ang) < 0;
-    escalaFolha = e.d.chefe ? (s === 'corpo' ? 1.5 : 1.3) : 1;
+    escalaFolha = e.d.chefe || 1;
     if (e.estado === 'golpe' && A.spr[s + '_ge']) folha(s + '_ge', A.spr[s + '_ge'].n - 2, e.x, e.y, inv);
     else folha(s + '_e', e.passo, e.x, e.y, inv);
     escalaFolha = 1;
@@ -271,6 +277,7 @@
 
   // ---------- quadro ----------
   let relogio = 0;
+  const luzAtual = [10, 22, 34, 0.52];
   const brasasFogo = [];
   Tela.desenhar = function (dt) {
     relogio += dt;
@@ -304,14 +311,14 @@
     for (let a = a0; a <= a1; a++) for (let b = b0; b <= b1; b++) {
       const l = baldeObj.get((a << 10) | b); if (!l) continue;
       for (const o of l) {
-        if (o.bau && J.S.tesouros.includes(o.bau)) continue;
+        if ((o.bau && J.S.tesouros.includes(o.bau)) || (o.erva && J.S.ervas.includes(o.erva))) continue;
         lista.push([o.y, 0, o]); visiveis.push(o);
       }
     }
     for (const e of J.inimigos) if (e.x > ox - 80 && e.x < ox + VW + 80 && e.y > oy - 60 && e.y < oy + VH + 90) lista.push([e.y, 1, e]);
     for (const id in C.FOGUEIRAS) { const f = C.FOGUEIRAS[id]; lista.push([f.y * T + 18, 2, f, id]); }
     for (const id in M.PORTOES) { if (!J.S.portoes.includes(id)) { const p = M.PORTOES[id]; lista.push([(p.y0 + p.y1) / 2 * T + T, 3, p]); } }
-    lista.push([J.BENTA.y, 4]);
+    for (const n of C.NPCS) if (Math.abs(n.x * T - ox - VW / 2) < VW && Math.abs(n.y * T - oy - VH / 2) < VH) lista.push([n.y * T, 4, n]);
     lista.push([P.y, 5]);
     lista.sort((a, b) => a[0] - b[0]);
     for (const it of lista) {
@@ -333,7 +340,7 @@
           if (IMG.cerca) for (const y of abertos) { const i = IMG.cerca; cx.drawImage(i, Math.round((p.x0 + 1) * T - i.width / 2), Math.round((y + 1) * T - i.height + 4)); }
           if (IMG.portao && abertos.length) { const i = IMG.portao, y = abertos[abertos.length >> 1]; cx.drawImage(i, Math.round((p.x0 + 1) * T - i.width / 2), Math.round((y + 1) * T - i.height + 10)); }
           break; }
-        case 4: sombra(J.BENTA.x, J.BENTA.y - 1, 12); folha('benta_s0', 0, J.BENTA.x, J.BENTA.y, false); break;
+        case 4: { const n = it[2]; sombra(n.x * T, n.y * T - 1, 12); folha(n.spr, 0, n.x * T, n.y * T, false); break; }
         case 5: heroi(); break;
       }
     }
@@ -373,9 +380,13 @@
     // escuridão com furos de luz
     const mexe = Math.floor(relogio * 11), pisca = 1 + Math.sin(mexe * 1.7) * 0.035 + Math.sin(mexe * 0.6) * 0.03;
     const naCripta = P.y >= M.CRIPTA_Y * T;
+    // a luz muda aos poucos ao cruzar de uma região para outra
+    const reg = naCripta ? null : M.regiao(Math.floor(P.x / T), Math.floor(P.y / T));
+    const alvoLuz = naCripta ? [6, 10, 20, 0.8] : reg.luz.match(/[\d.]+/g).map(Number);
+    for (let i = 0; i < 4; i++) luzAtual[i] += (alvoLuz[i] - luzAtual[i]) * Math.min(1, dt * 1.5);
     lx.globalCompositeOperation = 'source-over';
     lx.clearRect(0, 0, VW, VH);
-    lx.fillStyle = naCripta ? 'rgba(6,10,20,0.8)' : 'rgba(8,20,34,0.64)'; lx.fillRect(0, 0, VW, VH);
+    lx.fillStyle = 'rgba(' + Math.round(luzAtual[0]) + ',' + Math.round(luzAtual[1]) + ',' + Math.round(luzAtual[2]) + ',' + luzAtual[3] + ')'; lx.fillRect(0, 0, VW, VH);
     lx.globalCompositeOperation = 'destination-out';
     furo(P.x - ox, P.y - oy - 20, 225, naCripta ? 0.72 : 0.7, 14);
     const quentes = [];

@@ -1,4 +1,4 @@
-/* SINA · Parte I: liga tudo. Laço, controles, menus e a resposta aos eventos do jogo. */
+/* SINA · Aruanã: liga tudo. Laço, controles, menus, gente de Alvorada e resposta aos eventos do jogo. */
 (function () {
   'use strict';
   const M = window.Mapa, C = window.Conteudo, J = window.Jogo, Tela = window.Tela, Som = window.Som, T = M.T;
@@ -16,7 +16,12 @@
     Som.ligar();
     if (modal === 'conversa' && ['KeyE', 'Enter', 'Space'].includes(e.code)) return avancarConversa();
     if (modal === 'descanso' && e.code === 'Escape') return fecharDescanso();
-    if (!modal && ACAO[e.code]) en[ACAO[e.code]] = true;
+    if ((modal === 'menu' || modal === 'gente') && ['Escape', 'KeyI', 'KeyM'].includes(e.code)) return fecharPainel();
+    if (!modal && rodando) {
+      if (e.code === 'KeyI' || e.code === 'Escape') return abrirMenu('heroi');
+      if (e.code === 'KeyM') return abrirMenu('mapa');
+      if (ACAO[e.code]) en[ACAO[e.code]] = true;
+    }
   });
   addEventListener('keyup', (e) => { teclas[e.code] = false; });
   addEventListener('blur', () => { for (const k in teclas) teclas[k] = false; });
@@ -53,7 +58,10 @@
     man.addEventListener('touchmove', (e) => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === toque.id) mover(t); }, { passive: false });
     const solta = (e) => { for (const t of e.changedTouches) if (t.identifier === toque.id) { toque.ativo = false; toque.x = toque.y = 0; en.mx = en.my = 0; bola.style.transform = ''; } };
     man.addEventListener('touchend', solta); man.addEventListener('touchcancel', solta);
-    document.querySelectorAll('#toque button').forEach((b) => b.addEventListener('touchstart', (e) => { e.preventDefault(); Som.ligar(); if (!modal) en[b.dataset.a] = true; }, { passive: false }));
+    document.querySelectorAll('#toque button').forEach((b) => b.addEventListener('touchstart', (e) => {
+      e.preventDefault(); Som.ligar(); if (modal) return;
+      if (b.dataset.a === 'menu') abrirMenu('heroi'); else en[b.dataset.a] = true;
+    }, { passive: false }));
     Tela.temToque = true;
   }
 
@@ -66,17 +74,22 @@
   }
   let areaAtual = null, entrouCripta = false;
   function verArea() {
-    const P = J.P; let nome = null, menor = 1e9;
-    for (const [n, x, y, r] of C.AREAS) { const d = Math.hypot(x * T - P.x, y * T - P.y); if (d < r * T && d / r < menor) { menor = d / r; nome = n; } }
-    if (nome && nome !== areaAtual) {
+    const P = J.P, bx = P.x / T, by = P.y / T;
+    let nome = null;
+    if (by >= M.CRIPTA_Y) nome = 'Cripta da Alvorada';
+    else {
+      for (const [n, k] of C.LUGARES_NOME) { const l = M.LUGARES[k]; if (Math.hypot(bx - l[0], by - l[1]) < l[2]) { nome = n; break; } }
+      if (!nome) nome = M.regiao(Math.floor(bx), Math.floor(by)).nome;
+    }
+    if (nome !== areaAtual) {
       areaAtual = nome; anunciar(nome);
       if (nome === 'Cripta da Alvorada' && !entrouCripta) { entrouCripta = true; cartao('assets/telas/cripta.webp'); }
     }
     for (const p of C.PLACAS) {
       const id = p.x + ':' + p.y;
-      if (!J.S.placas.includes(id) && Math.hypot(p.x * T - P.x, p.y * T - P.y) < 74) { J.S.placas.push(id); sussurrar(p.t, 6500); }
+      if (!J.S.placas.includes(id) && Math.hypot(p.x * T - P.x, p.y * T - P.y) < 80) { J.S.placas.push(id); sussurrar(p.t, 7000); }
     }
-    Som.ambiente(P.y >= M.CRIPTA_Y * T ? 'masmorra' : 'noite');
+    Som.ambiente(by >= M.CRIPTA_Y ? 'masmorra' : M.regiao(Math.floor(bx), Math.floor(by)).id === 'sertao' ? 'brisa' : 'noite');
     let fogo = 0;
     for (const id in C.FOGUEIRAS) if (J.S.acesas.includes(id)) { const f = C.FOGUEIRAS[id], d = Math.hypot(f.x * T - P.x, f.y * T - P.y); fogo = Math.max(fogo, 1 - d / 240); }
     Som.fogueira(Math.max(0, fogo) * 0.6);
@@ -90,40 +103,40 @@
   // ---------- eventos do jogo ----------
   const cam = Tela.cam;
   const treme = (k) => { cam.tremor = Math.max(cam.tremor, k); };
-  const CORES = { morto: '#6a7a5a', morto_forte: '#6a6a7a', corpo: '#8a7a5a', lobo: '#7a2a24' };
   function tratar(ev) {
     switch (ev.tipo) {
       case 'golpe': Som.tocar(ev.forte ? 'forte' : 'golpe', 0.6); break;
       case 'rola': Som.tocar('golpe', 0.22, 0.6); break;
-      case 'semvigor': sussurrar('Sem vigor.', 1000); break;
-      case 'acerto': Som.tocar('acerto', 0.8); parada = ev.forte ? 0.09 : 0.05; treme(ev.forte ? 5 : 2.5); Tela.sangue(ev.x, ev.y, ev.forte ? 14 : 8, '#7a1f1a'); break;
-      case 'dor': Som.tocar('dor', 0.8); parada = 0.07; treme(6); Tela.sangue(ev.x, ev.y, 10, '#a02a24'); break;
+      case 'semvigor': sussurrar('Sem vigor.', 900); break;
+      case 'acerto': Som.tocar('acerto', 0.8); parada = ev.forte || ev.brecha ? 0.09 : 0.045; treme(ev.forte ? 5 : 2.5); Tela.sangue(ev.x, ev.y, ev.brecha ? 16 : 8, '#7a1f1a'); break;
+      case 'dor': Som.tocar('dor', 0.8); parada = 0.08; treme(7); Tela.sangue(ev.x, ev.y, 12, '#a02a24'); break;
       case 'notou': if (Math.random() < 0.5) Som.tocar(ev.quem === 'lobo' ? 'uivo' : 'inimigoDor', 0.28, 0.8); break;
       case 'prepara': if (ev.grande) { Som.tocar('rugido', 0.8, 0.8); treme(3); } break;
       case 'inimigoGolpe': Som.tocar('golpe', 0.45, 0.72); break;
       case 'tiro': Som.tocar('magia', 0.5); break;
       case 'tremor': Som.tocar('rugido', 0.9, 0.6); treme(9); break;
-      case 'quebra': Som.tocar('quebra', 0.8); sussurrar('A guarda dele quebrou. Agora.', 1600); break;
-      case 'fase': Som.tocar('rugido', 1, 0.7); treme(10); anunciar('Ele não larga o caco', false); break;
+      case 'quebra': Som.tocar('quebra', 0.8); sussurrar('A guarda quebrou. Agora.', 1500); break;
+      case 'fase': Som.tocar('rugido', 1, 0.7); treme(10); anunciar('Ele ainda não acabou', false); break;
       case 'matou': Som.tocar(ev.chefe ? 'rugido' : 'morte', ev.chefe ? 1 : 0.5); Tela.fagulhas(ev.x, ev.y, ev.chefe ? 60 : 14, '#ff9a3a', 30); if (ev.chefe) { treme(12); parada = 0.25; } break;
       case 'brasas': Som.tocar('moeda', 0.3); break;
       case 'bebeu': Som.tocar('beber', 0.7); Tela.fagulhas(J.P.x, J.P.y - 16, 12, '#7ce0a8', 24); break;
       case 'aviso': sussurrar(ev.t, 2600); break;
-      case 'item': { const it = C.ITENS[ev.item]; Som.tocar('raro', 0.7); sussurrar(ev.item === 'brasas' ? ev.qtd + ' brasas.' : it.nome + '. ' + (it.desc || ''), 6000); break; }
+      case 'item': { const it = C.ITENS[ev.item]; Som.tocar('raro', 0.7); sussurrar(ev.item === 'brasas' ? ev.qtd + ' brasas.' : it.nome + (it.desc ? '. ' + it.desc : '') + (it.tipo === 'arma' || it.tipo === 'armadura' || it.tipo === 'amuleto' ? ' (I para equipar)' : ''), 6000); break; }
       case 'acendeu': Som.tocar('fogo', 0.8); anunciar(ev.nome, true); break;
       case 'descansou': mostrarDescanso(ev.id); break;
-      case 'portao': Som.tocar('porta', 0.9); treme(3); sussurrar(ev.nome + ' aberto.', 2600); break;
       case 'passagem': Som.tocar('porta', 0.7); areaAtual = null; break;
-      case 'conversa': abrirConversa(ev.falas); break;
+      case 'npc': falarCom(ev.npc); break;
       case 'chefe': Som.musica('batalha'); Som.tocar('rugido', 0.9, 0.85); treme(7); anunciar(ev.nome, true); $('chefe-nome').textContent = ev.nome; $('chefe').hidden = false; if (ev.quem === 'corpo') cartao('assets/spr/ilustracao.png'); break;
-      case 'chefeCaiu': Som.musica(null); $('chefe').hidden = true; anunciar(ev.final ? 'Um caco de estrela' : 'Derrotado', true); if (ev.final) sussurrar('Leve o fragmento a Benta, nas ruínas de Alvorada. A morte agora é só o caminho de casa.', 8000); break;
+      case 'chefeCaiu':
+        Som.musica(null); $('chefe').hidden = true; anunciar(ev.final ? 'Aruanã respira' : 'Derrotado', true);
+        if (ev.final) setTimeout(mostrarFim, 3500);
+        else if (J.S.cacos >= 3 && !J.S.cratera) sussurrar('Três cacos. Benta, em Alvorada, precisa saber.', 7000);
+        break;
       case 'morreu': aoMorrer(); break;
       case 'nasceu': $('chefe').hidden = true; Som.musica(null); break;
-      case 'fim': fimPendente = true; break;
       case 'subiu': Som.tocar('raro', 0.6); atualizarDescanso(); break;
     }
   }
-  let fimPendente = false;
   function aoMorrer() {
     Som.tocar('morte', 0.9, 0.8); Som.musica(null);
     modal = 'morte';
@@ -155,11 +168,11 @@
   }
   function atualizarDescanso() {
     const custo = J.custoNivel();
-    $('d-brasas').textContent = J.S.brasas; $('d-custo').textContent = custo;
+    $('d-brasas').textContent = J.S.brasas; $('d-custo').textContent = custo; $('d-nivel').textContent = J.nivelTotal();
     const box = $('d-niveis'); box.innerHTML = '';
     for (const [k, nome] of ATR) {
       const b = document.createElement('button'); b.className = 'niv';
-      b.innerHTML = '<span>' + nome + '</span><em>nível ' + J.S.nivel[k] + '</em>';
+      b.innerHTML = '<span>' + nome + '</span><em>' + J.S.nivel[k] + '</em>';
       b.disabled = J.S.brasas < custo;
       b.onclick = () => J.subir(k);
       box.appendChild(b);
@@ -169,10 +182,11 @@
   $('d-sair').onclick = fecharDescanso;
 
   // ---------- conversa ----------
-  let falas = [], falaI = 0;
-  function abrirConversa(l) {
-    falas = l; falaI = 0; modal = 'conversa'; $('conversa').hidden = false;
-    const r = $('conv-rosto').getContext('2d'), im = Tela.imagem('benta_s0');
+  let falas = [], falaI = 0, aoFimConversa = null;
+  function abrirConversa(l, npc, depois) {
+    falas = l; falaI = 0; modal = 'conversa'; aoFimConversa = depois || null; $('conversa').hidden = false;
+    $('conv-nome').textContent = npc.nome;
+    const r = $('conv-rosto').getContext('2d'), im = Tela.imagem(npc.spr);
     r.imageSmoothingEnabled = false; r.clearRect(0, 0, 64, 64);
     if (im) r.drawImage(im, 16, 2, 32, 32, 0, 0, 64, 64);
     $('conv-texto').textContent = falas[0]; Som.tocar('livro', 0.4);
@@ -181,13 +195,139 @@
     falaI++;
     if (falaI < falas.length) { $('conv-texto').textContent = falas[falaI]; Som.tocar('livro', 0.25); return; }
     $('conversa').hidden = true; modal = null;
-    if (fimPendente) { fimPendente = false; mostrarFim(); }
+    if (aoFimConversa) { const f = aoFimConversa; aoFimConversa = null; f(); }
   }
   $('conversa').onclick = avancarConversa;
+
+  // ---------- gente de Alvorada ----------
+  function falarCom(n) {
+    if (n.papel === 'historia') return abrirConversa(J.falasBenta(), n);
+    if (n.papel === 'loja') return abrirLoja(n);
+    if (n.papel === 'forja') return abrirForja(n);
+    const q = C.MISSOES[n.id], est = J.S.missoes[n.id];
+    if (!est) { J.aceitar(n.id); return abrirConversa([q.pede], n, () => sussurrar('Nova missão: ' + q.nome + '. I para ver.', 3500)); }
+    if (est.feita) return abrirConversa(['Ainda de pé. Isso já é alguma coisa.'], n);
+    const p = J.progresso(n.id);
+    if (p.tem >= p.n) { J.entregar(n.id); return abrirConversa([q.obrigado], n); }
+    abrirConversa([q.nome + ': ' + p.tem + ' de ' + p.n + '. Volte quando terminar.'], n);
+  }
+  const icone = (it) => '<img class="ic" src="assets/ic/' + it.ic + '.png" alt="">';
+  function descreve(id) {
+    const it = C.ITENS[id];
+    if (it.tipo === 'arma') {
+      const f = J.S.forja[id] || 0, falta = (it.req || 0) - J.S.nivel.forca;
+      return 'dano ' + Math.round(J.danoArma(id)) + ' · vigor ' + it.custo + (it.lento < 0.9 ? ' · rápida' : it.lento > 1.2 ? ' · lenta' : '') + (it.alcance > 1.2 ? ' · longa' : '') + (f ? ' · +' + f : '') + (falta > 0 ? ' · exige Força ' + it.req : '');
+    }
+    if (it.tipo === 'armadura') return 'defesa ' + Math.round(it.def * 100) + '%' + (it.peso ? ' · peso ' + it.peso : '');
+    return it.desc || '';
+  }
+  function painel(titulo, nome) { modal = nome; $('gente').hidden = false; $('g-titulo').textContent = titulo; const c = $('g-corpo'); c.innerHTML = ''; return c; }
+  function fecharPainel() { $('gente').hidden = true; modal = null; }
+  $('g-fechar').onclick = fecharPainel;
+  function linha(pai, html, texto, acao, desliga) {
+    const d = document.createElement('div'); d.className = 'linha'; d.innerHTML = '<div class="l-txt">' + html + '</div>';
+    if (texto) { const b = document.createElement('button'); b.textContent = texto; b.disabled = !!desliga; b.onclick = acao; d.appendChild(b); }
+    pai.appendChild(d); return d;
+  }
+  function abrirLoja(n) {
+    const c = painel(n.nome, 'gente');
+    const topo = document.createElement('p'); topo.className = 'nota forte'; topo.textContent = J.S.brasas + ' brasas'; c.appendChild(topo);
+    for (const id of C.LOJA) {
+      const it = C.ITENS[id], tem = J.S.mochila.includes(id);
+      linha(c, icone(it) + '<div><b>' + it.nome + '</b><small>' + descreve(id) + '</small></div>', tem ? 'Já tem' : it.preco + ' brasas', () => { if (J.comprar(id)) { Som.tocar('moeda', 0.7); abrirLoja(n); } }, tem || J.S.brasas < it.preco);
+    }
+  }
+  function abrirForja(n) {
+    const c = painel(n.nome, 'gente'), id = J.S.equip.arma, it = C.ITENS[id], f = J.S.forja[id] || 0, custo = C.CUSTO_FORJA[f], pedras = J.S.materiais.pedra_forja || 0;
+    const topo = document.createElement('p'); topo.className = 'nota forte'; topo.textContent = J.S.brasas + ' brasas · ' + pedras + ' pedra(s) de forja'; c.appendChild(topo);
+    linha(c, icone(it) + '<div><b>' + it.nome + (f ? ' +' + f : '') + '</b><small>' + descreve(id) + '</small></div>', custo == null ? 'No máximo' : 'Afiar: ' + custo, () => { if (J.forjar()) { Som.tocar('raro', 0.7); abrirForja(n); } }, custo == null || J.S.brasas < custo || !pedras);
+    const p = document.createElement('p'); p.className = 'nota'; p.textContent = 'Cada afiação custa brasas e uma pedra de forja. Pedras caem de inimigos, saem de baús e Lauro vende.'; c.appendChild(p);
+  }
+
+  // ---------- menu: herói, equipamentos, missões, mapa ----------
+  function abrirMenu(aba) {
+    const c = painel('Sem-Sina · nível ' + J.nivelTotal(), 'menu');
+    const abas = document.createElement('div'); abas.className = 'abas';
+    for (const [k, nome] of [['heroi', 'Equipamento'], ['missoes', 'Missões'], ['mapa', 'Mapa']]) {
+      const b = document.createElement('button'); b.textContent = nome; if (k === aba) b.className = 'ativa'; b.onclick = () => abrirMenu(k); abas.appendChild(b);
+    }
+    c.appendChild(abas);
+    if (aba === 'heroi') menuHeroi(c);
+    if (aba === 'missoes') menuMissoes(c);
+    if (aba === 'mapa') menuMapa(c);
+  }
+  function menuHeroi(c) {
+    const r = document.createElement('p'); r.className = 'nota forte';
+    r.textContent = 'Vida ' + J.vidaMax() + ' · Vigor ' + J.vigorMax() + ' · Dano ' + Math.round(J.danoArma(J.S.equip.arma)) + ' · Defesa ' + Math.round(J.defesa() * 100) + '% · Cabaça ' + J.S.cabacaMax;
+    c.appendChild(r);
+    for (const tipo of ['arma', 'armadura', 'amuleto']) {
+      const lista = J.S.mochila.filter((id) => C.ITENS[id].tipo === tipo);
+      if (!lista.length) continue;
+      const h = document.createElement('h3'); h.textContent = { arma: 'Armas', armadura: 'Armaduras', amuleto: 'Amuletos' }[tipo]; c.appendChild(h);
+      for (const id of lista) {
+        const it = C.ITENS[id], usa = J.S.equip[tipo] === id;
+        linha(c, icone(it) + '<div><b>' + it.nome + '</b><small>' + descreve(id) + '</small></div>', usa ? (tipo === 'amuleto' ? 'Tirar' : 'Em uso') : 'Usar', () => { J.equipar(id); Som.tocar('pegar', 0.5); abrirMenu('heroi'); }, usa && tipo !== 'amuleto');
+      }
+    }
+    const coisas = [];
+    if (J.S.cacos) coisas.push('Cacos da Sina: ' + J.S.cacos + ' de 3');
+    if (J.S.chaves.chave_ferro) coisas.push('Chave de ferro');
+    for (const k in J.S.materiais) if (J.S.materiais[k] > 0) coisas.push(C.ITENS[k].nome + ': ' + J.S.materiais[k]);
+    if (coisas.length) { const p = document.createElement('p'); p.className = 'nota'; p.textContent = coisas.join(' · '); c.appendChild(p); }
+  }
+  function textoPrincipal() {
+    const S = J.S;
+    if (S.fim) return 'O Filho da Cauda caiu. Aruanã respira, por enquanto.';
+    if (S.cratera) return 'Vá ao Altar da Cauda, no fundo da Cratera, ao nordeste.';
+    if (S.cacos >= 3) return 'Leve os três cacos a Benta, em Alvorada.';
+    if (!S.falouBenta) return 'Procure a vidente Benta, nas ruínas de Alvorada, ao norte de onde você acordou.';
+    const falta = [];
+    if (!S.chefesMortos.includes('lobisomem')) falta.push('o Lobisomem, ao norte');
+    if (!S.chefesMortos.includes('ticao')) falta.push('o Capitão Tição, a leste');
+    if (!S.chefesMortos.includes('corpo')) falta.push('o Corpo-seco, na cripta a sudeste' + (S.chaves.chave_ferro ? '' : ' (a chave está com Zé Facão, a noroeste)'));
+    return 'Cacos: ' + S.cacos + ' de 3. Faltam ' + falta.join('; ') + '.';
+  }
+  function menuMissoes(c) {
+    linha(c, '<div><b>A Sina Partida</b><small>' + textoPrincipal() + '</small></div>');
+    const ativas = Object.keys(J.S.missoes);
+    for (const id of ativas) {
+      const q = C.MISSOES[id], est = J.S.missoes[id], p = J.progresso(id);
+      linha(c, '<div><b>' + q.nome + '</b><small>' + (est.feita ? 'Concluída.' : p.tem >= p.n ? 'Pronta. Volte a Alvorada.' : p.tem + ' de ' + p.n + '.') + '</small></div>');
+    }
+    if (!ativas.length) { const n = document.createElement('p'); n.className = 'nota'; n.textContent = 'Há gente em Alvorada que pode ter trabalho para você.'; c.appendChild(n); }
+  }
+  let fundoMapa = null;
+  function menuMapa(c) {
+    const cv2 = document.createElement('canvas'); cv2.width = Math.ceil(M.W / 2); cv2.height = Math.ceil(M.CRIPTA_Y / 2); cv2.className = 'mapa';
+    const g = cv2.getContext('2d');
+    if (!fundoMapa) { // o desenho do terreno é feito uma vez só
+      fundoMapa = document.createElement('canvas'); fundoMapa.width = cv2.width; fundoMapa.height = cv2.height;
+      const f = fundoMapa.getContext('2d');
+      const CORES = { campos: '#3e5a3a', mata: '#1e4240', mangue: '#3f4a22', serra: '#4a5560', sertao: '#7a6238', cinzas: '#5a2c26' };
+      for (let y = 0; y < cv2.height; y++) for (let x = 0; x < cv2.width; x++) {
+        const bx = x * 2, by = y * 2;
+        if (!M.anda(bx, by)) { f.fillStyle = '#0c1412'; f.fillRect(x, y, 1, 1); continue; }
+        f.fillStyle = M.CHAO[by * M.W + bx] === M.TERRA ? '#6a5236' : CORES[M.regiao(bx, by).id];
+        f.fillRect(x, y, 1, 1);
+      }
+    }
+    g.fillStyle = '#05080a'; g.fillRect(0, 0, cv2.width, cv2.height);
+    for (const chave in J.S.visto) { // só aparece o que já foi visto
+      const qx = chave >> 8, qy = chave & 255;
+      if (qx >= 0 && qy >= 0) g.drawImage(fundoMapa, qx * 4, qy * 4, 4, 4, qx * 4, qy * 4, 4, 4);
+    }
+    for (const id of J.S.acesas) { const f = C.FOGUEIRAS[id]; if (f.y < M.CRIPTA_Y) { g.fillStyle = '#ffb040'; g.fillRect(f.x / 2 - 1, f.y / 2 - 1, 3, 3); } }
+    if (J.S.resto && J.S.resto.y < M.CRIPTA_Y * T) { g.fillStyle = '#ff5a30'; g.fillRect(J.S.resto.x / T / 2 - 1, J.S.resto.y / T / 2 - 1, 3, 3); }
+    const py = Math.min(J.P.y / T, M.CRIPTA_Y - 1);
+    g.fillStyle = '#fff'; g.fillRect(J.P.x / T / 2 - 1, py / 2 - 1, 3, 3);
+    c.appendChild(cv2);
+    const n = document.createElement('p'); n.className = 'nota'; n.textContent = 'Branco: você. Laranja: fogueiras acesas. Vermelho: suas brasas. Benta sabe para onde ir, se você perguntar.'; c.appendChild(n);
+  }
+
   function mostrarFim() {
     modal = 'fim'; $('fim').hidden = false;
     const min = Math.round(J.tempo / 60);
-    $('fim-txt').textContent = 'Você levou ' + min + ' minutos e caiu ' + J.S.mortes + ' vezes. A Sina tem cinco cacos. Este é só o primeiro.';
+    $('fim-txt').textContent = 'Você levou ' + min + ' minutos, chegou ao nível ' + J.nivelTotal() + ' e caiu ' + J.S.mortes + ' vezes. Aruanã continua aberta para quem quiser andar por ela.';
   }
   $('fim-seguir').onclick = () => { $('fim').hidden = true; modal = null; };
 
@@ -195,11 +335,10 @@
   const pct = (v, m) => Math.max(0, Math.min(100, (v / m) * 100)) + '%';
   function hud() {
     const P = J.P;
-    const lv = 100 + J.S.nivel.vida * 9 + J.S.vidaBonus * 20; // a barra cresce com a vida máxima
-    $('b-vida').style.width = (lv / 100) * 100 / 1.0 > 0 ? 'min(100%, ' + lv * 2.4 + 'px)' : '';
+    $('b-vida').style.width = 'min(100%, ' + J.vidaMax() * 2.4 + 'px)';
     $('b-vida').firstElementChild.style.width = pct(P.vida, J.vidaMax());
     $('b-vida').lastElementChild.style.width = pct(P.vida, J.vidaMax());
-    $('b-vigor').style.width = 'min(100%, ' + J.vigorMax() * 2.2 + 'px)';
+    $('b-vigor').style.width = 'min(100%, ' + J.vigorMax() * 2.4 + 'px)';
     $('b-vigor').firstElementChild.style.width = pct(P.vigor, J.vigorMax());
     $('n-cabaca').textContent = P.cabaca;
     $('n-brasas').textContent = J.S.brasas;
@@ -224,6 +363,7 @@
   }
 
   // ---------- início ----------
+  let salvando = false;
   function comecar(novo) {
     Som.ligar();
     if (novo) J.novo(); else J.carregar();
@@ -232,8 +372,8 @@
     J.nascer(); rodando = true;
     entrouCripta = J.S.acesas.includes('cripta');
     Tela.cam.x = J.P.x - 320; Tela.cam.y = J.P.y - 200;
-    if (novo) { setTimeout(() => anunciar('Você acorda na terra'), 800); }
-    window.SINA.pronto = true;
+    if (novo) setTimeout(() => anunciar('Você acorda na terra'), 800);
+    if (!salvando) { salvando = true; setInterval(() => { if (rodando && !J.morreu()) J.salvar(); }, 30000); } // explorar também fica salvo
   }
   Tela.carregar((k) => { $('carrega').textContent = 'Acordando os mortos... ' + Math.round(k * 100) + '%'; }).then(() => {
     Tela.iniciar();
@@ -244,6 +384,6 @@
     m.appendChild(n);
     requestAnimationFrame(laco);
   });
-  window.SINA = { J, Tela, comecar, passoMundo, entrada: en, get modal() { return modal; } };
+  window.SINA = { J, Tela, comecar, passoMundo, entrada: en, abrirMenu, fecharPainel, get modal() { return modal; } };
   if (location.search.includes('robo')) { const s = document.createElement('script'); s.src = 'js/robo.js'; document.head.appendChild(s); }
 })();

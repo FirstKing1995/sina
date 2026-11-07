@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>SINA - Parte I: A Cripta da Alvorada</title>
+<title>SINA - As Terras de Aruanã</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
@@ -28,15 +28,15 @@
 <div id="toque" hidden>
   <div id="manche"><i></i></div>
   <button data-a="rola">Rolar</button><button data-a="golpe">Golpe</button><button data-a="forte">Forte</button>
-  <button data-a="bebe">Beber</button><button data-a="usa">Usar</button><button data-a="trava">Mirar</button>
+  <button data-a="bebe">Beber</button><button data-a="usa">Usar</button><button data-a="trava">Mirar</button><button data-a="menu">Menu</button>
 </div>
 
 <div id="titulo" class="tela">
   <div class="fundo" style="background-image:url(assets/telas/titulo.webp)"></div>
   <img id="logo" src="assets/logo.webp" alt="SINA">
-  <p class="sub">Parte I: A Cripta da Alvorada</p>
+  <p class="sub">As Terras de Aruanã</p>
   <div id="titulo-menu" class="menu"><div id="carrega">Acordando os mortos...</div></div>
-  <p class="rodape">WASD andar · Espaço rolar · clique golpe · botão direito golpe forte · Q beber · E usar · Tab mirar</p>
+  <p class="rodape">WASD andar · Espaço rolar · clique golpe · botão direito golpe forte · Q beber · E usar · Tab mirar · I equipamento · M mapa</p>
 </div>
 
 <div id="morte" class="tela" hidden>
@@ -50,7 +50,7 @@
   <div class="painel">
     <h2 id="d-nome"></h2>
     <p class="nota">Os mortos se levantaram de novo. Sua vida e sua cabaça estão cheias.</p>
-    <p class="nota forte"><span id="d-brasas">0</span> brasas · fortalecer custa <span id="d-custo">0</span></p>
+    <p class="nota forte">Nível <span id="d-nivel">1</span> · <span id="d-brasas">0</span> brasas · fortalecer custa <span id="d-custo">0</span></p>
     <div class="menu" id="d-niveis"></div>
     <h3 id="d-viagem-t">Viajar para outra fogueira</h3>
     <div class="menu" id="d-viagem"></div>
@@ -60,16 +60,18 @@
 
 <div id="conversa" hidden>
   <canvas id="conv-rosto" width="64" height="64"></canvas>
-  <div><b>Vidente Benta</b><p id="conv-texto"></p><small>E, Enter ou clique para continuar</small></div>
+  <div><b id="conv-nome"></b><p id="conv-texto"></p><small>E, Enter ou clique para continuar</small></div>
 </div>
+
+<div id="gente" hidden><div class="caixa"><div class="topo"><h2 id="g-titulo"></h2><button id="g-fechar">Fechar</button></div><div id="g-corpo"></div></div></div>
 
 <div id="cartao" hidden></div>
 
 <div id="fim" class="tela" hidden>
   <div class="fundo" style="background-image:url(assets/telas/ruina.webp)"></div>
-  <h1>Fim da Parte I</h1>
+  <h1>O céu menos rachado</h1>
   <p id="fim-txt"></p>
-  <div class="menu"><button id="fim-seguir">Continuar andando por Aruanã</button></div>
+  <div class="menu"><button id="fim-seguir">Continuar em Aruanã</button></div>
 </div>
 
 <script src="assets/arte.js"></script>
