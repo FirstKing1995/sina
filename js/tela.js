@@ -575,7 +575,7 @@
           if (IMG.cerca) for (const y of abertos) { const i = IMG.cerca; cx.drawImage(i, Math.round((p.x0 + 1) * T - i.width / 2), Math.round((y + 1) * T - i.height + 4)); }
           if (IMG.portao && abertos.length) { const i = IMG.portao, y = abertos[abertos.length >> 1]; cx.drawImage(i, Math.round((p.x0 + 1) * T - i.width / 2), Math.round((y + 1) * T - i.height + 10)); }
           break; }
-        case 4: { const n = it[2]; sombra(n.px, n.py - 1, 12); folha(n.spr, n.andando ? relogio * 7 + n.fase : Math.floor(relogio * 1.6 + n.fase) % 2, n.px, n.py, n.vira); break; }
+        case 4: { const n = it[2]; sombra(n.px, n.py - 1, 12); { const q_ = A.spr[n.spr] && A.spr[n.spr].n >= 6 ? (n.andando ? 2 + Math.floor(relogio * 7 + n.fase) % 4 : Math.floor(relogio * 1.3 + n.fase) % 2) : relogio * 1.6 + n.fase; folha(n.spr, q_, n.px, n.py, n.vira); } break; }
         case 5: heroi(); break;
       }
     }
@@ -633,12 +633,20 @@
     // a luz muda aos poucos ao cruzar de uma região para outra
     const reg = naCripta ? null : M.regiao(Math.floor(P.x / T), Math.floor(P.y / T));
     const alvoLuz = naCripta ? [6, 10, 20, 0.8] : reg.luz.match(/[\d.]+/g).map(Number);
+    const dia = naCripta ? 0 : J.momento();
+    if (!naCripta) {
+      // de dia quase não há véu; de noite, escurece bem; na virada, o céu puxa para o laranja
+      const a0 = alvoLuz[3], virada = 4 * dia * (1 - dia);
+      alvoLuz[3] = Math.min(0.86, a0 + 0.14) * (1 - dia) + a0 * 0.28 * dia;
+      alvoLuz[0] += (84 - alvoLuz[0]) * virada * 0.7; alvoLuz[1] += (38 - alvoLuz[1]) * virada * 0.7; alvoLuz[2] += (16 - alvoLuz[2]) * virada * 0.7;
+    }
     for (let i = 0; i < 4; i++) luzAtual[i] += (alvoLuz[i] - luzAtual[i]) * Math.min(1, dt * 1.5);
     lx.globalCompositeOperation = 'source-over';
     lx.clearRect(0, 0, VW, VH);
     lx.fillStyle = 'rgba(' + Math.round(luzAtual[0]) + ',' + Math.round(luzAtual[1]) + ',' + Math.round(luzAtual[2]) + ',' + luzAtual[3] + ')'; lx.fillRect(0, 0, VW, VH);
     lx.globalCompositeOperation = 'destination-out';
-    furo(P.x - ox, P.y - oy - 20, 225, naCripta ? 0.72 : 0.7, leve ? 7 : 14);
+    if (P.tochaLiga) furo(P.x - ox, P.y - oy - 20, 310 * pisca, 0.95, leve ? 8 : 16);
+    else furo(P.x - ox, P.y - oy - 20, naCripta ? 225 : 130 + 95 * dia, naCripta ? 0.72 : 0.6 + 0.1 * dia, leve ? 7 : 14);
     const quentes = [];
     for (const id in C.FOGUEIRAS) {
       if (!J.S.acesas.includes(id)) continue;
@@ -653,6 +661,21 @@
     for (const e of J.inimigos) if (e.d.chefe && Math.abs(e.arenaX - P.x) < 700 && Math.abs(e.arenaY - P.y) < 500) furo(e.arenaX - ox, e.arenaY - oy, e.arenaR, 0.62, 12); // a arena é sempre visível: o medo vem de ver o que espera
     for (const e of J.inimigos) if (e.estado === 'prepara' || e.d.spr === 'apagado') furo(e.x - ox, e.y - oy - 26, 50, 0.45, 3);
     cx.drawImage(luz, 0, 0);
+    // luz do sol: clareia o que já tem cor, sem lavar os pretos
+    if (dia > 0 && !leve) {
+      cx.globalCompositeOperation = 'color-dodge';
+      cx.fillStyle = 'rgb(' + Math.round(74 * dia) + ',' + Math.round(70 * dia) + ',' + Math.round(58 * dia) + ')'; cx.fillRect(0, 0, VW, VH);
+      cx.globalCompositeOperation = 'source-over';
+    }
+    if (P.tochaLiga && P.estado !== 'morto') {
+      // a tocha na mão: cabo e chama em blocos, tremendo
+      const lado = Math.cos(P.ang) >= 0 ? 1 : -1, tx = Math.round(P.x - ox + lado * 13), ty = Math.round(P.y - oy - 28), m_ = mexe % 3;
+      cx.fillStyle = '#3a2412'; cx.fillRect(tx - 1, ty, 2, 12);
+      cx.fillStyle = '#d4551a'; cx.fillRect(tx - 3, ty - 5 - m_, 6, 6 + m_);
+      cx.fillStyle = '#f6b53a'; cx.fillRect(tx - 2, ty - 3 - m_, 4, 4);
+      cx.fillStyle = '#fff0b0'; cx.fillRect(tx - 1, ty - 1, 2, 2);
+      quentes.push([tx, ty - 2, 110]);
+    }
 
     // silhuetas: mesmo no escuro, quem pode matar você precisa ser visto
     cx.setTransform(1, 0, 0, 1, -ox, -oy);

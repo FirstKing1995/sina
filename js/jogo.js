@@ -8,7 +8,7 @@
   const novoSave = (H) => ({
     jogo: 'aruana', heroi: H || (raiz.Aparencia ? raiz.Aparencia.padrao() : null), fogueira: null, acesas: [], brasas: 0, resto: null, mochila: ['espada', 'trapos'], forja: {}, equip: { arma: 'espada', armadura: 'trapos', amuleto: null },
     materiais: {}, chaves: {}, cacos: 0, tesouros: [], ervas: [], chefesMortos: [], placas: [], visto: {}, missoes: {}, mortos: {},
-    nivel: { vida: 0, vigor: 0, forca: 0 }, cabacaMax: 2, vidaBonus: 0, falouBenta: 0, cratera: false, mortes: 0, tempo: 0, fim: false,
+    nivel: { vida: 0, vigor: 0, forca: 0 }, cabacaMax: 2, hora: 8, tochas: 1, gravetos: 3, vidaBonus: 0, falouBenta: 0, cratera: false, mortes: 0, tempo: 0, fim: false,
   });
   J.S = novoSave();
   J.temSave = () => { try { return !!localStorage.getItem(CHAVE_SAVE); } catch (e) { return false; } };
@@ -123,7 +123,7 @@
       if (tipo === 'cauda' && !J.S.cratera) return;
       // a mesma criatura é pior nas regiões perigosas; na cripta, vale o perigo 4
       const perigo = d.chefe || d.lenda ? 1 : by >= M.CRIPTA_Y ? 4 : M.regiao(bx, by).perigo;
-      const kHp = 1 + (perigo - 1) * 0.42, kDano = 1 + (perigo - 1) * 0.3, hp = d.hp * kHp;
+      const kHp = 1 + (perigo - 1) * 0.5, kDano = 1 + (perigo - 1) * 0.3, hp = d.hp * kHp;
       const e = { id: i, tipo, d, x: bx * T + 16, y: by * T + 16, cx: bx * T + 16, cy: by * T + 16, hp, hpMax: hp, dano: d.dano * kDano, brasas: d.brasas * (1 + (perigo - 1) * 0.55), estado: 'ronda', t: Math.random() * 3, ang: Math.random() * 6.28, passo: Math.random() * 6, flash: 0, atord: 0, resta: 0, batida: false, firme: d.firme, fase: 1, vagar: 0 };
       if (d.chefe) { e.estado = 'dorme'; e.arenaX = e.cx; e.arenaY = e.cy; e.arenaR = (tipo === 'corpo' ? 15 : 13.4) * T; }
       J.inimigos.push(e);
@@ -135,20 +135,20 @@
   J.rolar = function () {
     const P = J.P;
     if (P.estado !== 'livre' && !(P.estado === 'golpe' && P.t > P.dGolpe * 0.75) && !(P.estado === 'dor' && P.t > 0.14)) return false; // apanhou: ainda dá para rolar e escapar
-    const custo = J.P.passoCaca > 0 ? 0 : 26 + J.peso() * 7 + (raca().rola || 0);
+    const custo = J.P.passoCaca > 0 ? 0 : 20 + J.peso() * 7 + (raca().rola || 0);
     if (P.vigor < 10) { avisa('semvigor'); return false; }
     const m = Math.hypot(entrada.mx, entrada.my);
     if (m) { P.dirX = entrada.mx / m; P.dirY = entrada.my / m; } else { P.dirX = Math.cos(P.ang); P.dirY = Math.sin(P.ang); }
     P.ang = Math.atan2(P.dirY, P.dirX);
-    P.estado = 'rola'; P.t = 0; P.vigor -= custo; P.espera = 0.95; avisa('rola');
+    P.estado = 'rola'; P.t = 0; P.vigor -= custo; P.espera = 0.6; avisa('rola');
     return true;
   };
   function golpear(forte) {
     const P = J.P;
-    if (P.estado !== 'livre') return;
-    const a = J.arma(), custo = a.custo * (forte ? 1.75 : 1);
+    if (P.estado !== 'livre' && !(P.estado === 'dor' && P.t > 0.1)) return; // apanhou: logo já dá para revidar
+    const a = J.arma(), custo = a.custo * 0.75 * (forte ? 1.75 : 1);
     if (P.vigor < 8) { avisa('semvigor'); return; }
-    P.vigor -= custo; P.espera = 1; P.estado = 'golpe'; P.t = 0; P.forte = forte; P.batido = new Set();
+    P.vigor -= custo; P.espera = 0.55; P.estado = 'golpe'; P.t = 0; P.forte = forte; P.batido = new Set();
     P.dGolpe = (forte ? 0.86 : 0.5) * a.lento; P.hitIni = (forte ? 0.42 : 0.16) * a.lento; P.hitFim = P.hitIni + 0.14;
     if (P.alvo) P.ang = Math.atan2(P.alvo.y - P.y, P.alvo.x - P.x);
     else if (entrada.mira != null) P.ang = entrada.mira;
@@ -183,8 +183,9 @@
     const P = J.P;
     if (P.inv > 0 || P.estado === 'morto') return false;
     const final = Math.round(dano * (1 - J.defesa()) * (P.guarda > 0 ? 0.4 : 1));
-    P.vida -= final; P.inv = 0.42; P.duro = 0.3;
-    if (P.estado !== 'rola') { P.estado = 'dor'; P.t = 0; } // bebendo também é interrompido, e o gole se perde
+    P.vida -= final; P.inv = 0.7; P.duro = 0.3; // o respiro impede que dois bichos emendem golpes
+    // golpe em andamento não é cortado, salvo pancada forte; bebendo é interrompido, e o gole se perde
+    if (P.estado !== 'rola' && (P.estado !== 'golpe' || forteEmpurrao)) { P.estado = 'dor'; P.t = 0; }
     const d = Math.hypot(P.x - ox, P.y - oy) || 1, k = forteEmpurrao ? 20 : 10;
     mover(P, ((P.x - ox) / d) * k, ((P.y - oy) / d) * k, P.r);
     avisa('dor', { x: P.x, y: P.y, dano: final });
@@ -226,9 +227,11 @@
     if (e.estado === 'ronda' || e.estado === 'volta') { e.estado = 'caca'; e.t = 0; alertar(e); }
     avisa('acerto', { x: e.x, y: e.y, dano, forte: P.forte, brecha: brecha > 1 });
     e.firme -= P.forte ? 2 : 1;
-    if (e.firme <= 0 && e.hp > 0) { // só agora ele é interrompido; antes disso, continua vindo
+    // só agora ele é interrompido; antes disso, continua vindo. Depois de um tranco, fica um tempo sem tomar outro: nada de prender o bicho para sempre
+    if (e.firme <= 0 && e.hp > 0 && (e.d.chefe || !e.tranco || J.tempo - e.tranco > 1.9)) {
       const d = Math.hypot(e.x - P.x, e.y - P.y) || 1;
-      e.estado = 'atordoado'; e.t = 0; e.atord = e.d.chefe ? 1.1 : 0.55; e.firme = e.d.firme;
+      e.tranco = J.tempo;
+      e.estado = 'atordoado'; e.t = 0; e.atord = e.d.chefe ? 1.1 : 0.42; e.firme = e.d.firme;
       mover(e, ((e.x - P.x) / d) * 10, ((e.y - P.y) / d) * 10, e.d.r);
       if (e.d.chefe) avisa('quebra', { x: e.x, y: e.y });
     }
@@ -248,6 +251,7 @@
   }
   J.darItem = darItem;
   function matar(e) {
+    if (!e.d.chefe && !e.d.lenda && Math.random() < 0.3) { J.S.gravetos++; avisa('aviso', { t: 'Graveto: ' + J.S.gravetos }); }
     e.estado = 'morto'; e.t = 0;
     const am = item(J.S.equip.amuleto), ge = esp() || {}, ganho = Math.round(e.brasas * (1 + (am && am.brasas ? am.brasas : 0) + (raca().brasas || 0) + (ge.brasas || 0)));
     J.S.brasas += ganho;
@@ -561,7 +565,21 @@
     J.P.vigor = Math.min(J.P.vigor, J.vigorMax());
     J.salvar();
   };
+  // 1 de dia, 0 de noite, e o meio-termo no amanhecer e no entardecer
+  J.momento = function () {
+    const h = J.S.hora;
+    if (h >= 7 && h < 17) return 1;
+    if (h >= 19 || h < 5) return 0;
+    return h >= 17 ? 1 - (h - 17) / 2 : (h - 5) / 2;
+  };
+  J.fazerTocha = function () {
+    if (J.S.gravetos < 2 || J.S.brasas < 15 || J.S.tochas >= 5) return false;
+    J.S.gravetos -= 2; J.S.brasas -= 15; J.S.tochas++;
+    J.salvar();
+    return true;
+  };
   J.descansar = function (id) {
+    if (J.momento() < 1) J.S.hora = 7; // quem dorme na fogueira acorda de manhã
     const P = J.P;
     J.S.fogueira = id;
     P.vida = J.vidaMax(); P.vigor = J.vigorMax(); P.cabaca = J.S.cabacaMax; P.estado = 'livre';
@@ -590,7 +608,7 @@
     J.tempo += dt;
     P.t += dt; P.inv = Math.max(0, P.inv - dt); P.duro = Math.max(0, P.duro - dt);
     if (P.espera > 0) P.espera -= dt;
-    else if (P.estado !== 'rola' && P.estado !== 'golpe') P.vigor = Math.min(J.vigorMax(), P.vigor + (P.estado === 'bebe' ? 8 : 27) * dt);
+    else if (P.estado !== 'rola' && P.estado !== 'golpe') P.vigor = Math.min(J.vigorMax(), P.vigor + (P.estado === 'bebe' ? 8 : 34) * dt);
 
     if (entrada.rola) { entrada.rola = false; J.rolar(); }
     if (entrada.golpe) { entrada.golpe = false; golpear(false); }
@@ -599,6 +617,15 @@
     if (entrada.usa) { entrada.usa = false; if (P.estado === 'livre') J.usar(); }
     if (entrada.trava) { entrada.trava = false; travar(); }
     if (entrada.poder) { entrada.poder = false; J.usarPoder(); }
+    // hora do dia: uma volta inteira em 10 minutos
+    { const antes = J.S.hora; J.S.hora = (J.S.hora + dt * 0.04) % 24; if (antes < 18 && J.S.hora >= 18) avisa('aviso', { t: 'A noite vem caindo. No escuro, uma tocha faz falta.' }); if (antes < 6 && J.S.hora >= 6) avisa('aviso', { t: 'O dia clareia.' }); }
+    if (entrada.tocha) {
+      entrada.tocha = false;
+      if (P.tochaT > 0) P.tochaLiga = !P.tochaLiga;
+      else if (J.S.tochas > 0) { J.S.tochas--; P.tochaT = 180; P.tochaLiga = true; avisa('aviso', { t: 'Tocha acesa.' }); }
+      else avisa('aviso', { t: 'Sem tochas. Dá para fazer uma na fogueira.' });
+    }
+    if (P.tochaLiga) { P.tochaT -= dt; if (P.tochaT <= 0) { P.tochaLiga = false; P.tochaT = 0; avisa('aviso', { t: 'A tocha apagou.' }); } }
     P.esperaPoder = Math.max(0, (P.esperaPoder || 0) - dt); P.guarda = Math.max(0, (P.guarda || 0) - dt); P.passoCaca = Math.max(0, (P.passoCaca || 0) - dt);
     for (const t of J.tirosH) {
       t.x += t.vx * dt; t.y += t.vy * dt; t.vida -= dt;
@@ -615,9 +642,12 @@
       case 'livre': {
         const m = Math.hypot(entrada.mx, entrada.my);
         if (m > 0.1) {
-          const k = Math.min(1, m), v = (P.alvo ? 60 : 78) * (1 - J.peso() * 0.05 + (raca().vel || 0)) * (P.passoCaca > 0 ? 1.3 : 1) * k;
+          if (P.vigor <= 1) P.cansou = true; else if (P.vigor > 22) P.cansou = false; // esgotou: só volta a correr depois de recuperar um pouco
+          const corre = entrada.corre && !P.cansou && !P.alvo;
+          if (corre) { P.vigor = Math.max(0, P.vigor - 15 * dt); P.espera = Math.max(P.espera, 0.3); }
+          const k = Math.min(1, m), v = (P.alvo ? 60 : 78) * (1 - J.peso() * 0.05 + (raca().vel || 0)) * (P.passoCaca > 0 ? 1.3 : 1) * (corre ? 1.6 : 1) * k;
           mover(P, (entrada.mx / m) * v * dt, (entrada.my / m) * v * dt, P.r);
-          P.passo += dt * 9 * k;
+          P.passo += dt * (corre ? 14 : 9) * k;
           if (!P.alvo) P.ang = Math.atan2(entrada.my, entrada.mx);
           P.andando = true;
         } else P.andando = false;
@@ -651,7 +681,7 @@
         }
         break;
       case 'dor':
-        if (P.t >= 0.42) { P.estado = 'livre'; P.t = 0; }
+        if (P.t >= 0.2) { P.estado = 'livre'; P.t = 0; }
         break;
       case 'morto': break;
     }

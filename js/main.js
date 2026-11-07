@@ -8,7 +8,7 @@
 
   // ---------- teclado e mouse ----------
   const teclas = {};
-  const ACAO = { Space: 'rola', KeyJ: 'golpe', KeyK: 'forte', KeyQ: 'bebe', KeyE: 'usa', KeyF: 'usa', Tab: 'trava', KeyR: 'poder' };
+  const ACAO = { Space: 'rola', KeyJ: 'golpe', KeyK: 'forte', KeyQ: 'bebe', KeyE: 'usa', KeyF: 'usa', Tab: 'trava', KeyR: 'poder', KeyT: 'tocha' };
   addEventListener('keydown', (e) => {
     teclas[e.code] = true;
     if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
@@ -29,6 +29,7 @@
   function eixo() {
     if (window.SINA.auto) return; // o robô de teste controla o herói
     if (toque.ativo) { en.mx = toque.x; en.my = toque.y; return; }
+    if (!Tela.temToque) en.corre = !!(teclas.ShiftLeft || teclas.ShiftRight);
     en.mx = (teclas.KeyD || teclas.ArrowRight ? 1 : 0) - (teclas.KeyA || teclas.ArrowLeft ? 1 : 0);
     en.my = (teclas.KeyS || teclas.ArrowDown ? 1 : 0) - (teclas.KeyW || teclas.ArrowUp ? 1 : 0);
   }
@@ -62,6 +63,7 @@
     document.querySelectorAll('#toque button').forEach((b) => b.addEventListener('touchstart', (e) => {
       e.preventDefault(); Som.ligar(); if (modal) return;
       if (b.dataset.a === 'menu') return abrirMenu('heroi');
+      if (b.dataset.a === 'corre') { en.corre = !en.corre; b.classList.toggle('ativa', en.corre); return; }
       if (b.dataset.a === 'golpe' || b.dataset.a === 'forte' || b.dataset.a === 'poder') mirarMaisPerto();
       en[b.dataset.a] = true;
     }, { passive: false }));
@@ -194,6 +196,12 @@
       b.onclick = () => J.subir(k);
       box.appendChild(b);
     }
+    const fz = document.createElement('button'); fz.className = 'niv';
+    fz.innerHTML = '<span>Fazer tocha (2 gravetos, 15 brasas)</span><em>' + J.S.tochas + '</em>';
+    fz.title = 'Gravetos: ' + J.S.gravetos;
+    fz.disabled = J.S.gravetos < 2 || J.S.brasas < 15 || J.S.tochas >= 5;
+    fz.onclick = () => { J.fazerTocha(); atualizarDescanso(); };
+    box.appendChild(fz);
   }
   function fecharDescanso() { $('descanso').hidden = true; modal = null; }
   $('d-sair').onclick = fecharDescanso;
@@ -366,6 +374,10 @@
     $('b-vigor').firstElementChild.style.width = pct(P.vigor, J.vigorMax());
     $('n-cabaca').textContent = P.cabaca;
     { const pd = J.poderAtual(), h_ = $('poder-hud'); if (pd) { const e_ = P.esperaPoder || 0; h_.innerHTML = '<b>' + (Tela.temToque ? '' : 'R') + '</b>' + pd.nome + (e_ > 0.05 ? ' (' + Math.ceil(e_) + ')' : ''); h_.style.opacity = e_ > 0.05 ? 0.55 : 1; } }
+    {
+      const m_ = J.momento(), h__ = J.S.hora, fase = P.y >= M.CRIPTA_Y * T ? 'Subterrâneo' : m_ >= 1 ? 'Dia' : m_ <= 0 ? 'Noite' : h__ < 12 ? 'Amanhecer' : 'Entardecer';
+      $('poder-hud').innerHTML += '<br><b>' + (Tela.temToque ? '' : 'T') + '</b>Tocha ' + (P.tochaLiga ? Math.ceil(P.tochaT) + ' s' : J.S.tochas) + ' · gravetos ' + J.S.gravetos + ' · ' + fase;
+    }
     $('n-brasas').textContent = J.S.brasas;
     const c = J.chefe;
     if (c) { $('b-chefe').firstElementChild.style.width = pct(c.hp, c.hpMax); $('b-chefe').lastElementChild.style.width = pct(c.hp, c.hpMax); }
