@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>SINA</title>
+<meta name="description" content="SINA: RPG de ação em mundo aberto, em pixel art, com o folclore brasileiro. Raças, magias, masmorras, cidades e uma estrela que partiu o destino.">
+<meta name="theme-color" content="#120e16">
+<meta property="og:title" content="SINA">
+<meta property="og:description" content="Uma estrela partiu o destino de todos. Menos o seu. RPG de ação em mundo aberto com o folclore brasileiro, no navegador e no celular.">
+<meta property="og:image" content="https://firstking1995.github.io/sina/img/capa-social.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://firstking1995.github.io/sina/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://firstking1995.github.io/sina/img/capa-social.jpg">
+<link rel="preload" as="image" href="img/capa-pc.jpg" media="(min-aspect-ratio: 4/5)">
+<link rel="preload" as="image" href="img/capa.jpg" media="(max-aspect-ratio: 4/5)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Pixelify+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/digits.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-mode="title">
+<canvas id="view" aria-label="Mundo do jogo"></canvas>
+
+<div id="loading" class="loading">
+  <div class="ld-card">
+    <div class="ld-wait"><p class="ld-msg">Abrindo Aruanã...</p><div class="ld-bar"><i></i></div></div>
+    <div class="jogar-wrap"><button id="btn-jogar" class="btn-jogar" type="button" disabled><span><b>Jogar</b></span></button></div>
+    <p class="jogar-dica"><span class="so-pc">Clique ou aperte Enter</span><span class="so-toque">Toque para começar</span></p>
+  </div>
+  <div class="brasas" aria-hidden="true"></div>
+</div>
+<div id="ui">
+  <!-- título -->
+  <section id="title" class="screen">
+    <div class="title-card">
+      <div class="sky" aria-hidden="true"></div>
+      <h1 class="wordmark logo"><img src="img/logo.webp" alt="SINA: A Cauda do Cometa" width="820" height="371"></h1>
+      <p class="pitch">Uma estrela partiu o destino de todos. Menos o seu.</p>
+      <div id="slots" class="slots"></div>
+      <div id="acct" class="acct"></div>
+      <p class="small muted foot">RPG de ação em mundo aberto · v0.3.4 · W A S D, mouse, E, Espaço · também no celular</p>
+    </div>
+  </section>
+
+  <!-- criação -->
+  <section id="create" class="screen" hidden>
+    <div class="create-card">
+      <h2>Quem é você?</h2>
+      <div class="c-grid">
+        <div>
+          <h3>Povo</h3>
+          <div id="c-races" class="cards"></div>
+          <h3>Origem</h3>
+          <div id="c-origins" class="cards two"></div>
+        </div>
+        <div class="c-side">
+          <canvas id="c-preview" width="222" height="84"></canvas>
+          <label class="field">Nome <input id="c-name" maxlength="18" placeholder="Sem-Sina" autocomplete="off"></label>
+          <h3>Aparência</h3>
+          <div id="c-look"></div>
+          <div class="acts"><button id="c-back" class="btn ghost">Voltar</button><button id="c-start" class="btn gold">Começar a jornada</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HUD -->
+  <div id="hud" hidden>
+    <div class="hud-tl">
+      <div class="lvl-badge"><span id="lvl">1</span><em id="pts" hidden></em></div>
+      <div class="bars">
+        <div id="b-hp" class="bar hp"><i></i><span></span></div>
+        <div id="b-mp" class="bar mp"><i></i><span></span></div>
+        <div id="b-st" class="bar st"><i></i><span></span></div>
+      </div>
+      <div id="buffs" class="buffs"></div>
+    </div>
+    <div class="hud-tr">
+      <canvas id="minimap" width="150" height="150"></canvas>
+      <div id="where" class="where"></div>
+      <div id="clock" class="clock"></div>
+      <div class="gold-line"><span class="coin"></span><span id="gold">0</span></div>
+    </div>
+    <div id="tracker" class="tracker"></div>
+    <div id="bossbar" class="bossbar" hidden><div id="boss-name"></div><div class="bb"><i id="boss-fill"></i></div></div>
+    <div id="banner" class="banner"></div>
+    <div id="boss-intro" class="boss-intro"></div>
+    <div id="prompt" class="prompt" hidden></div>
+    <div id="toasts" class="toasts"></div>
+    <div class="hotbar">
+      <button id="slot0" class="slot"><img class="sl-ic" alt="" hidden><kbd>1</kbd><span class="sl-name"></span><i class="sl-cd"></i></button>
+      <button id="slot1" class="slot"><img class="sl-ic" alt="" hidden><kbd>2</kbd><span class="sl-name"></span><i class="sl-cd"></i></button>
+      <button id="slot2" class="slot"><img class="sl-ic" alt="" hidden><kbd>3</kbd><span class="sl-name"></span><i class="sl-cd"></i></button>
+      <button id="slot3" class="slot"><img class="sl-ic" alt="" hidden><kbd>4</kbd><span class="sl-name"></span><i class="sl-cd"></i></button>
+      <div class="pot hp"><kbd>Q</kbd><b id="q-count">0</b></div>
+      <div class="pot mp"><kbd>R</kbd><b id="r-count">0</b></div>
+    </div>
+    <div class="xpbar"><i id="b-xp"></i></div>
+    <div class="hud-keys">I mochila · C personagem · K magias · J diário · M mapa · Esc pausa</div>
+    <!-- toque -->
+    <div id="tpad" class="tpad" hidden><div id="tknob" class="tknob"></div></div>
+    <div id="tbtns" class="tbtns" hidden>
+      <button id="t-atk" class="tb big">Atacar</button>
+      <button id="t-pow" class="tb">Forte</button>
+      <button id="t-roll" class="tb">Rolar</button>
+      <button id="t-use" class="tb">E</button>
+      <button id="t-pot" class="tb hp">Poção</button>
+      <button id="t-inv" class="tb sm">Mochila</button>
+      <button id="t-map" class="tb sm">Mapa</button>
+      <button id="t-menu" class="tb sm">Menu</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/net.js"></script>
+<script src="js/pacote.js"></script>
+<script src="js/art.js"></script>
+<script src="js/data.js"></script>
+<script src="js/story.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/world.js"></script>
+<script src="js/town.js"></script>
+<script src="js/dungeon.js"></script>
+<script src="js/game.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/boss.js"></script>
+<script src="js/acts.js"></script>
+<script src="js/render.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/cloud.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
