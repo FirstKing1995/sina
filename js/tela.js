@@ -103,6 +103,11 @@
         if (lista.length) pôr(lista[Math.floor(rnd(n, i, 37) * lista.length)], ax * T + 16, ay * T + 16, { base: 5, r: 9 });
       }
     }
+    // fontes secas e de água estranha, longe da vila
+    if (A.fontes && A.fontes.length) for (let n = 0; n < 60; n++) {
+      const x = Math.floor(rnd(n, 17, 41) * M.W), y = Math.floor(rnd(n, 19, 42) * M.CRIPTA_Y);
+      if (M.anda(x, y) && !reservado(x, y) && M.CHAO[y * M.W + x] !== M.TERRA) pôr(A.fontes[Math.floor(rnd(n, 2, 43) * A.fontes.length)], x * T + 16, y * T + 16, { base: 6, r: 14 });
+    }
     const cr = M.LUGARES.cripta;
     pôr('entrada', cr[0] * T, cr[1] * T, { base: 10, r: 46 });
     for (const k of ['mina', 'gruta']) pôr(k === 'mina' ? 'entrada_mina' : 'entrada_gruta', M.LUGARES[k][0] * T, (M.LUGARES[k][1] - 5) * T, { base: 10, r: 46 });
@@ -117,9 +122,11 @@
   // moita: aglomerado de folhas em blocos de 2 px, na cor da região, cada vez mais escura para dentro do mato
   const CORES_MOITA = { campos: ['#24401f', '#2f5028', '#172c1a', '#466a32'], mata: ['#10302b', '#173f37', '#0a2321', '#265a48'], mangue: ['#2c3a18', '#3c4c20', '#1c2810', '#566a2c'], serra: ['#2a3440', '#38444e', '#1c242e', '#55636e'], sertao: ['#4a3c20', '#5e4c28', '#352a16', '#7c6636'], cinzas: ['#2e1a18', '#3e2420', '#1e100e', '#5a3026'] };
   function moita(g, dx, dy, x, y, d) {
-    const c = CORES_MOITA[M.regiao(x, y).id] || CORES_MOITA.mata;
+    const idReg = M.regiao(x, y).id, c = CORES_MOITA[idReg] || CORES_MOITA.mata;
     const k = d >= 3 ? 0.55 : d === 2 ? 0.8 : 1;
-    for (let b = 0; b < T; b += 2) for (let a = 0; a < T; a += 2) {
+    const fol = IMG['moita_' + idReg];
+    if (fol) g.drawImage(fol, (x * T) % 96, (y * T) % 96, T, T, dx, dy, T, T);
+    else for (let b = 0; b < T; b += 2) for (let a = 0; a < T; a += 2) {
       const wx = x * T + a, wy = y * T + b, n = M.ruido(wx * 0.11, wy * 0.11) * 0.7 + M.hash(wx >> 1, wy >> 1) * 0.3;
       g.globalAlpha = k >= 1 ? 1 : 1;
       g.fillStyle = n > 0.68 ? c[3] : n > 0.52 ? c[1] : n > 0.34 ? c[0] : c[2];
@@ -139,9 +146,8 @@
       if (x >= M.W || y >= M.H) continue;
       const dx = (x - cc * CHUNK) * T, dy = (y - cl * CHUNK) * T, v = M.CHAO[y * M.W + x];
       if (v === M.AGUA) {
-        if (IMG.agua) g.drawImage(IMG.agua, 0, 0, 32, 32, dx, dy, T, T);
         const borda = [[0, -1], [0, 1], [-1, 0], [1, 0]].some(([a, b]) => M.anda(x + a, y + b));
-        if (borda) { g.fillStyle = 'rgba(30,40,30,0.5)'; g.fillRect(dx, dy, T, T); }
+        if (IMG.agua) g.drawImage(IMG.agua, Math.floor(M.hash(x, y) * 2) * 32, borda ? 32 : 0, 32, 32, dx, dy, T, T);
       } else if (v === M.PISO) {
         if (piso) g.drawImage(piso, (x % 4) * T, (y % 4) * T, T, T, dx, dy, T, T);
       } else if (v === M.PAREDE) {
@@ -195,6 +201,26 @@
       if (!M.anda(x, y) || y >= M.CRIPTA_Y || M.CHAO[y * M.W + x] === M.TERRA) continue;
       const n = A.musgos[Math.floor(M.hash(x, y) * A.musgos.length)];
       if (IMG[n] && M.regiao(x, y).id !== 'sertao') { g.globalAlpha = 0.55; g.drawImage(IMG[n], (x - cc * CHUNK) * T, (y - cl * CHUNK) * T); g.globalAlpha = 1; }
+    }
+    if (IMG.vitoria_regia) for (let y = cl * CHUNK + 1; y < (cl + 1) * CHUNK - 1; y++) for (let x = cc * CHUNK + 1; x < (cc + 1) * CHUNK - 1; x++) {
+      if (x >= M.W || y >= M.H || M.CHAO[y * M.W + x] !== M.AGUA || M.hash(x + 3, y + 91) > 0.03) continue;
+      g.drawImage(IMG.vitoria_regia, (x - cc * CHUNK) * T - 8, (y - cl * CHUNK) * T - 8);
+    }
+    // miúdos: plantinhas e sangue seco pintados no chão, sem custo por quadro
+    const fora = (x, y) => y >= M.CRIPTA_Y || !M.anda(x, y) || M.CHAO[y * M.W + x] === M.TERRA;
+    for (let q = 0; q < 24; q++) {
+      const px = 28 + Math.floor(M.hash(cc * 11 + q, cl * 3 + 1) * (CHUNK * T - 56)), py = 28 + Math.floor(M.hash(cl * 13 + q * 7, cc + 2) * (CHUNK * T - 56));
+      const x = cc * CHUNK + Math.floor(px / T), y = cl * CHUNK + Math.floor(py / T);
+      if (fora(x, y)) continue;
+      const lista = (A.miudos || {})[M.regiao(x, y).id] || [], n = lista[Math.floor(M.hash(x * 3 + q, y) * lista.length)], i = IMG[n];
+      if (i) { const s = A.spr[n]; g.drawImage(i, px - Math.floor(s.w / 2), py - s.h); }
+    }
+    for (let q = 0; q < 3; q++) {
+      const px = 24 + Math.floor(M.hash(cc * 17 + q, cl * 5 + 8) * (CHUNK * T - 48)), py = 24 + Math.floor(M.hash(cl * 19 + q, cc * 3 + 4) * (CHUNK * T - 48));
+      const x = cc * CHUNK + Math.floor(px / T), y = cl * CHUNK + Math.floor(py / T);
+      if (fora(x, y) || !A.sangue || M.hash(x, y + 77) > ({ cinzas: 0.5, sertao: 0.28, serra: 0.25, mangue: 0.2, mata: 0.14, campos: 0.1 }[M.regiao(x, y).id] || 0.1)) continue;
+      const i = IMG[A.sangue[Math.floor(M.hash(y, x + 9) * A.sangue.length)]];
+      if (i) { g.globalAlpha = 0.7; g.drawImage(i, px - 16, py - 16); g.globalAlpha = 1; }
     }
     // manchas grandes em blocos de 4 px: escondem a repetição dos blocos sem borrar o pixel
     for (let y = 0; y < CHUNK * T; y += 4) for (let x = 0; x < CHUNK * T; x += 4) {
@@ -440,6 +466,40 @@
     if (Math.random() < dt * 14) { const x = Math.floor((ox + Math.random() * VW) / T), y = Math.floor((oy + Math.random() * VH) / T); if (y >= 0 && y < M.CRIPTA_Y && x >= 0 && x < M.W && M.CHAO[y * M.W + x] === M.AGUA) pts.push({ x: x * T + Math.random() * T, y: y * T + Math.random() * T, vx: 0, vy: 0, g: 0, vida: 0.5, cor: '#7aa8a8' }); }
   }
 
+  // ---------- bichinhos ----------
+  // borboletas, ratos e sapos: não atacam, só fogem de quem chega perto
+  const bichinhos_ = [];
+  function bichinhos(dt, ox, oy) {
+    if (!A.fauna) return;
+    const P = J.P, limite = leve ? 5 : 12;
+    if (P.y / T < M.CRIPTA_Y && bichinhos_.length < limite && Math.random() < dt * 2) {
+      const lado = Math.floor(Math.random() * 4), m = 24;
+      const x = lado === 0 ? ox - m : lado === 1 ? ox + VW + m : ox + Math.random() * VW, y = lado === 2 ? oy - m : lado === 3 ? oy + VH + m : oy + Math.random() * VH;
+      const tx = Math.floor(x / T), ty = Math.floor(y / T);
+      if (ty >= 0 && ty < M.CRIPTA_Y && tx >= 0 && tx < M.W && M.anda(tx, ty)) {
+        const l = A.fauna[M.regiao(tx, ty).id] || [], n = l[Math.floor(Math.random() * l.length)];
+        if (n && IMG[n]) bichinhos_.push({ n, x, y, vx: 0, vy: 0, t: 0, f: Math.random() * 6, voa: /butterfly|bat|moth|mosquito|firefly/.test(n) });
+      }
+    }
+    for (let i = bichinhos_.length - 1; i >= 0; i--) {
+      const b = bichinhos_[i], dx = b.x - P.x, dy = b.y - P.y, d = Math.hypot(dx, dy) || 1;
+      if (d > VW * 1.1) { bichinhos_.splice(i, 1); continue; }
+      b.t -= dt;
+      if (d < 74) { const v = b.voa ? 70 : 118; b.vx = dx / d * v; b.vy = dy / d * v; b.t = 0.45; }
+      else if (b.t <= 0) {
+        if (!b.voa && Math.random() < 0.55) { b.vx = b.vy = 0; b.t = 0.8 + Math.random() * 2.4; }
+        else { const a = Math.random() * 6.28, v = b.voa ? 34 : 20 + Math.random() * 18; b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; b.t = 0.5 + Math.random() * 1.5; }
+      }
+      const nx = b.x + b.vx * dt, ny = b.y + b.vy * dt;
+      if (b.voa || M.anda(Math.floor(nx / T), Math.floor(ny / T))) { b.x = nx; b.y = ny; } else { b.vx = -b.vx; b.vy = -b.vy; }
+      const s = A.spr[b.n], alto = b.voa ? 14 + Math.sin(relogio * 7 + b.f) * 4 : (b.vx || b.vy ? Math.abs(Math.sin(relogio * 11 + b.f)) : 0);
+      if (b.voa) { cx.fillStyle = 'rgba(0,0,0,0.25)'; cx.fillRect(Math.round(b.x) - 3, Math.round(b.y), 6, 2); }
+      const px = Math.round(b.x), py = Math.round(b.y - alto);
+      if (b.vx < 0) { cx.save(); cx.translate(px, py); cx.scale(-1, 1); cx.drawImage(IMG[b.n], -Math.floor(s.w / 2), -s.h); cx.restore(); }
+      else cx.drawImage(IMG[b.n], px - Math.floor(s.w / 2), py - s.h);
+    }
+  }
+
   // ---------- quadro ----------
   let relogio = 0, leve = false, mediaMs = 0, amostras = 0;
   Tela.leve = () => leve;
@@ -471,6 +531,7 @@
       cx.drawImage(chunk(cc, cl), cc * lado_ - ox, cl * lado_ - oy);
     }
     cx.setTransform(1, 0, 0, 1, -ox, -oy);
+    bichinhos(dt, ox, oy);
 
     // mancha de brasas: pulsa no chão
     const R = J.S.resto;

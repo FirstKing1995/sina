@@ -17,3 +17,10 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 
 ## Versões do herói
 - `assets/herois/`: geradas pelo Google Gemini a partir da folha de poses do herói (PixelLab), recortadas por `tools/folha-poses.py`.
+
+## Árvores e plantas
+- `assets/spr/cp*`, `cpo*`, `mtp*`, `mg*`, `srv*`, `srd*`, `st*`, `cz*`, `moita_*` (exceto `moita_mata`): recortes de "[LPC] Trees Mega-Pack", bluecarrot16 e outros (lista em `baixados/lpc-trees/lpc-trees/CREDITS-trees.txt`), CC-BY-SA 3.0. https://opengameart.org/content/lpc-trees
+- `assets/spr/mt*`, `mgc*`, `sr*`, `pc*`, `pm*`, `pg*`, `ps*`, `pt*`, `pz*`, `moita_mata`: "Lots of trees and plants from OGA (DB32) tilesets pack 1", Jetrel, Zabin, Hyptosis, Surt, CC0. https://opengameart.org/content/lots-of-trees-and-plants-from-oga-db32-tilesets-pack-1
+
+## Acervo Dungeon Crawl Stone Soup (CC0)
+- Inimigos novos (`queixada`, `marimbondo`, `onca`, `jacare`, `cururu`, `jagunco`, `benzedor`, `tatu`, `cangaceiro`, `cao`, `esqueleto`, `mumia`, `espectro`), bichinhos `fau_*`, estátuas, altares, fontes, moitas, sangue `sg_*` e água.

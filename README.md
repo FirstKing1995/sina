@@ -12,7 +12,7 @@ Pelo preview `sina-parte1` (porta 8792) ou com qualquer servidor estático nesta
 | Ação | Teclado e mouse | Toque |
 |---|---|---|
 | Andar | WASD ou setas | Manche à esquerda |
-| Rolar (invulnerável por cerca de 0,3 s) | Espaço | Rolar |
+| Esquiva (invulnerável por cerca de 0,3 s) | Espaço | Esquiva |
 | Golpe / golpe forte | Clique / botão direito (ou J / K) | Golpe / Forte |
 | Beber da cabaça | Q | Beber |
 | Usar, falar, abrir | E | Usar |

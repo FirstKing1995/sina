@@ -46,6 +46,19 @@
     corpo: { nome: 'Corpo-seco Guardião', spr: 'corpo', hp: 1400, dano: 42, vel: 54, visao: 320, alcance: 60, prep: 0.6, golpe: 0.22, recua: 0.8, brasas: 2400, firme: 20, r: 16, chefe: 1.5, seguidos: 2, deixa: ['caco', 'placas'], tremor: true, poder: 'levanta' },
     ticao: { nome: 'Capitão Tição', spr: 'ticao', hp: 1700, dano: 46, vel: 60, visao: 320, alcance: 60, prep: 0.54, golpe: 0.2, recua: 0.7, brasas: 3200, firme: 22, r: 16, chefe: 1.25, seguidos: 3, deixa: ['caco', 'montante'], tremor: true, atiraFase2: true, poder: 'rastro', aura: '#ff8a30' },
     cauda: { nome: 'O Filho da Cauda', spr: 'cauda', hp: 2600, dano: 54, vel: 68, visao: 400, alcance: 66, prep: 0.5, golpe: 0.2, recua: 0.6, brasas: 8000, firme: 26, r: 18, chefe: 1.9, seguidos: 3, tremor: true, atiraFase2: true, final: true, poder: 'meteoro', aura: '#a890ff' },
+    queixada: { nome: 'Queixada', spr: 'queixada', hp: 72, dano: 24, vel: 104, visao: 200, alcance: 72, prep: 0.42, golpe: 0.26, recua: 0.8, brasas: 36, firme: 2, r: 10, salta: true },
+    marimbondo: { nome: 'Marimbondo-do-mato', spr: 'marimbondo', hp: 24, dano: 15, vel: 138, visao: 220, alcance: 66, prep: 0.3, golpe: 0.2, recua: 0.85, brasas: 22, firme: 0, r: 8, salta: true },
+    onca: { nome: 'Onça-pintada', spr: 'onca', hp: 120, dano: 36, vel: 116, visao: 240, alcance: 78, prep: 0.36, golpe: 0.24, recua: 0.62, brasas: 70, firme: 3, r: 11, salta: true },
+    jacare: { nome: 'Jacaré-do-mangue', spr: 'jacare', hp: 260, dano: 48, vel: 36, visao: 130, alcance: 54, prep: 0.46, golpe: 0.2, recua: 0.72, brasas: 90, firme: 6, r: 13 },
+    cururu: { nome: 'Sapo-cururu', spr: 'cururu', hp: 84, dano: 26, vel: 58, visao: 160, alcance: 82, prep: 0.56, golpe: 0.3, recua: 0.8, brasas: 38, firme: 2, r: 11, salta: true },
+    jagunco: { nome: 'Jagunço', spr: 'jagunco', hp: 150, dano: 38, vel: 58, visao: 200, alcance: 42, prep: 0.42, golpe: 0.2, recua: 0.48, brasas: 70, firme: 4, r: 12, seguidos: 2 },
+    benzedor: { nome: 'Benzedor torto', spr: 'benzedor', hp: 80, dano: 32, vel: 44, visao: 260, alcance: 200, prep: 0.7, golpe: 0.1, recua: 0.7, brasas: 66, firme: 1, r: 11, atira: true, distancia: 140 },
+    tatu: { nome: 'Tatu-canastra', spr: 'tatu', hp: 300, dano: 40, vel: 34, visao: 140, alcance: 44, prep: 0.6, golpe: 0.22, recua: 0.6, brasas: 92, firme: 9, r: 13 },
+    cangaceiro: { nome: 'Cangaceiro', spr: 'cangaceiro', hp: 170, dano: 42, vel: 70, visao: 220, alcance: 46, prep: 0.36, golpe: 0.18, recua: 0.44, brasas: 95, firme: 4, r: 12, seguidos: 3 },
+    cao: { nome: 'Cão de cinza', spr: 'cao', hp: 110, dano: 38, vel: 122, visao: 260, alcance: 76, prep: 0.34, golpe: 0.24, recua: 0.68, brasas: 88, firme: 2, r: 11, salta: true },
+    esqueleto: { nome: 'Soldado sem carne', spr: 'esqueleto', hp: 150, dano: 44, vel: 60, visao: 200, alcance: 44, prep: 0.4, golpe: 0.18, recua: 0.48, brasas: 92, firme: 4, r: 11, seguidos: 3 },
+    mumia: { nome: 'Enfaixado', spr: 'mumia', hp: 280, dano: 50, vel: 30, visao: 150, alcance: 44, prep: 0.68, golpe: 0.22, recua: 0.6, brasas: 110, firme: 7, r: 12, seguidos: 2 },
+    espectro: { nome: 'Sombra de Aruanã', spr: 'espectro', hp: 96, dano: 38, vel: 64, visao: 270, alcance: 210, prep: 0.66, golpe: 0.1, recua: 0.7, brasas: 104, firme: 1, r: 11, atira: true, distancia: 140 },
     // lendas: fortes, sem névoa, vagando em seu canto. Dá para fugir delas.
     cabra: { nome: 'Cabra-Cabriola', spr: 'cabra', hp: 300, dano: 34, vel: 92, visao: 230, alcance: 70, prep: 0.42, golpe: 0.26, recua: 0.72, brasas: 420, firme: 7, r: 14, salta: true, lenda: 1.35, seguidos: 2, deixa: ['pedra_vida'] },
     curupira: { nome: 'Curupira', spr: 'curupira', hp: 340, dano: 36, vel: 112, visao: 260, alcance: 66, prep: 0.36, golpe: 0.24, recua: 0.62, brasas: 620, firme: 7, r: 12, salta: true, lenda: 1.3, seguidos: 3, deixa: ['arco_curupira'] },
@@ -74,12 +87,12 @@
 
   // bandos por região
   const BANDOS = {
-    campos: [['morto'], ['morto', 'morto'], ['lobo', 'lobo'], ['bandido'], ['morto', 'morto', 'morto'], ['cobra', 'cobra'], ['cobra', 'morto']],
-    mata: [['lobo', 'lobo', 'lobo'], ['morto', 'apagado'], ['bandido', 'bandido'], ['aranha', 'aranha'], ['aranha', 'aranha', 'aranha'], ['cobra', 'cobra', 'lobo'], ['brutamontes']],
-    mangue: [['afogado', 'afogado'], ['afogado', 'morto', 'morto'], ['cobra', 'cobra', 'cobra'], ['alma', 'alma'], ['morto_forte', 'morto'], ['morcego', 'morcego', 'afogado']],
-    serra: [['bandido', 'bandido', 'bandido'], ['bandido', 'apagado'], ['brutamontes'], ['bandido', 'bandido', 'lobo'], ['brutamontes', 'bandido'], ['morcego', 'morcego', 'morcego']],
-    sertao: [['escorpiao', 'escorpiao'], ['escorpiao', 'escorpiao', 'escorpiao'], ['apagado', 'apagado', 'apagado'], ['bandido', 'bandido', 'apagado'], ['morto_forte', 'morto_forte'], ['brutamontes', 'escorpiao'], ['cavaleiro', 'escorpiao']],
-    cinzas: [['cavaleiro'], ['cavaleiro', 'cavaleiro'], ['morto_forte', 'morto_forte', 'apagado'], ['alma', 'alma', 'alma'], ['assombracao', 'assombracao', 'apagado'], ['brutamontes', 'brutamontes'], ['morcego', 'morcego', 'morcego', 'morcego'], ['assombracao', 'morto_forte']],
+    campos: [['morto'], ['morto', 'morto'], ['lobo', 'lobo'], ['bandido'], ['morto', 'morto', 'morto'], ['cobra', 'cobra'], ['cobra', 'morto'], ['queixada', 'queixada'], ['queixada', 'queixada', 'queixada'], ['marimbondo', 'marimbondo'], ['morto', 'queixada']],
+    mata: [['lobo', 'lobo', 'lobo'], ['morto', 'apagado'], ['bandido', 'bandido'], ['aranha', 'aranha'], ['aranha', 'aranha', 'aranha'], ['cobra', 'cobra', 'lobo'], ['brutamontes'], ['onca'], ['onca', 'queixada'], ['marimbondo', 'marimbondo', 'marimbondo'], ['benzedor', 'morto']],
+    mangue: [['afogado', 'afogado'], ['afogado', 'morto', 'morto'], ['cobra', 'cobra', 'cobra'], ['alma', 'alma'], ['morto_forte', 'morto'], ['morcego', 'morcego', 'afogado'], ['jacare'], ['jacare', 'cururu'], ['cururu', 'cururu', 'cururu'], ['jacare', 'jacare'], ['benzedor', 'afogado']],
+    serra: [['bandido', 'bandido', 'bandido'], ['bandido', 'apagado'], ['brutamontes'], ['bandido', 'bandido', 'lobo'], ['brutamontes', 'bandido'], ['morcego', 'morcego', 'morcego'], ['jagunco', 'jagunco'], ['jagunco', 'benzedor'], ['onca', 'onca'], ['jagunco', 'bandido', 'bandido']],
+    sertao: [['escorpiao', 'escorpiao'], ['escorpiao', 'escorpiao', 'escorpiao'], ['apagado', 'apagado', 'apagado'], ['bandido', 'bandido', 'apagado'], ['morto_forte', 'morto_forte'], ['brutamontes', 'escorpiao'], ['cavaleiro', 'escorpiao'], ['tatu'], ['tatu', 'escorpiao'], ['cangaceiro', 'cangaceiro'], ['cangaceiro', 'cangaceiro', 'benzedor'], ['cangaceiro', 'tatu']],
+    cinzas: [['cavaleiro'], ['cavaleiro', 'cavaleiro'], ['morto_forte', 'morto_forte', 'apagado'], ['alma', 'alma', 'alma'], ['assombracao', 'assombracao', 'apagado'], ['brutamontes', 'brutamontes'], ['morcego', 'morcego', 'morcego', 'morcego'], ['assombracao', 'morto_forte'], ['cao', 'cao'], ['cao', 'cao', 'cao'], ['esqueleto', 'esqueleto'], ['esqueleto', 'espectro'], ['mumia', 'espectro'], ['mumia', 'mumia']],
   };
   const zonasSeguras = Object.values(C.FOGUEIRAS).map((f) => [f.x, f.y, 13]).concat([[L.alvorada[0], L.alvorada[1], 28], [L.ermo[0], L.ermo[1], 12]]);
   for (const k of ['ze', 'lobisomem', 'ticao', 'cauda', 'cabra', 'curupira', 'boiuna', 'mapinguari', 'boitata', 'gigante']) zonasSeguras.push([L[k][0], L[k][1], 16]);
@@ -164,7 +177,7 @@
     povo('Velho do poço', 'velho_s0', 5, -8, ['Antes da Cauda, esse poço dava água boa. Hoje dá medo.', 'Se ouvir alguém chamando seu nome de noite, não responda.']),
     povo('Lavadeira', 'lavadeira_s0', -11, -3, ['Meu marido voltou da cova na semana passada. Tive de fechar a porta.', 'Fogueira acesa é a única coisa que ainda presta por aqui.']),
     povo('Menino sem nome', 'menino_s0', 6, 11, ['Eu vi o bicho grande lá no norte! Ninguém acredita.', 'Dizem que você não tem sina. Isso dói?']),
-    povo('Soldado cansado', 'guarda_s0', 15, -6, ['A Capitã diz que seguramos a vila. Seguramos nada.', 'Rola antes do golpe cair, não depois. Aprendi tarde.']),
+    povo('Soldado cansado', 'guarda_s0', 15, -6, ['A Capitã diz que seguramos a vila. Seguramos nada.', 'Esquiva antes do golpe cair, não depois. Aprendi tarde.']),
     povo('Benzedeira', 'benzedeira_s0', -3, 12, ['Não adianta benzer quem não tem sina. Mas eu benzo assim mesmo.', 'Cuidado com o mangue quando chove. E lá sempre chove.'])
   );
   for (const n of C.NPCS) if (!n.anda && n.id !== 'benta') n.anda = 40;
@@ -186,7 +199,7 @@
   C.PLACAS = [
     { x: L.mina[0] + 2, y: L.mina[1] + 2, t: 'Uma galeria desce para a Mina do Ferro. Vozes lá embaixo.' },
     { x: L.gruta[0] + 2, y: L.gruta[1] + 2, t: 'A água do mangue some dentro de uma gruta. Algo respira ali.' },
-    { x: L.ermo[0] + 2, y: L.ermo[1] - 4, t: 'WASD para andar. Espaço para rolar: rolar na hora certa evita o golpe. Rolar antes da hora, não.', toque: 'Use o manche para andar. Rolar na hora certa evita o golpe. Rolar antes da hora, não.' },
+    { x: L.ermo[0] + 2, y: L.ermo[1] - 4, t: 'WASD para andar. Espaço para esquivar: esquivar na hora certa evita o golpe. Antes da hora, não.', toque: 'Use o manche para andar. Esquivar na hora certa evita o golpe. Antes da hora, não.' },
     { x: L.ermo[0] + 6, y: L.ermo[1] - 12, t: 'Clique para golpear; botão direito para o golpe forte. Golpear sem parar deixa você sem vigor na hora errada.', toque: 'Golpe e Forte atacam o inimigo mais próximo. Golpear sem parar deixa você sem vigor na hora errada.' },
     { x: L.alvorada[0] - 10, y: L.alvorada[1] + 14, t: 'I abre seus equipamentos e missões. M abre o mapa. O mundo está aberto, e quase tudo nele pode matar você.', toque: 'Menu abre equipamentos, missões e mapa. O mundo está aberto, e quase tudo nele pode matar você.' },
     { x: L.alvorada[0], y: L.alvorada[1] - 17, t: 'Quanto mais longe de Alvorada, piores as criaturas. Vá para onde quiser, mas volte quando precisar.' },

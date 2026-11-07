@@ -13,7 +13,7 @@
     soldado: { nome: 'Soldado', desc: 'Mais vida e armadura de couro.', vida: 15, itens: ['espada', 'couro'], veste: 'couro', arma: 'espada', manto: 355,
       poder: { id: 'guarda', nome: 'Guarda de Ferro', desc: 'Por 4 segundos, recebe 60% menos dano.', espera: 14, vigor: 30 } },
     cacador: { nome: 'Caçador', desc: 'Lança de caça e mais vigor.', vigor: 14, itens: ['lanca'], arma: 'lanca', manto: 112,
-      poder: { id: 'passo', nome: 'Passo de Caça', desc: 'Por 5 segundos, corre mais e rola sem gastar vigor.', espera: 16, vigor: 15 } },
+      poder: { id: 'passo', nome: 'Passo de Caça', desc: 'Por 5 segundos, corre mais e esquiva sem gastar vigor.', espera: 16, vigor: 15 } },
     aprendiz: { nome: 'Aprendiz de feitiço', desc: 'Pouca vida, mas ataca de longe. Começa com uma faca.', vida: -12, itens: ['adaga'], arma: 'adaga', manto: 268,
       poder: { id: 'seta', nome: 'Seta de Brasa', desc: 'Dispara fogo de longe. Gasta vigor, e a Força aumenta o dano.', espera: 1.1, vigor: 22 } },
     andarilho: { nome: 'Andarilho', desc: 'Já viu de tudo. Mais um gole na cabaça e mais brasas.', brasas: 0.1, cabaca: 1, itens: [], manto: null,
