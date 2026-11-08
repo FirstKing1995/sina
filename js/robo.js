@@ -127,12 +127,19 @@
       let perto = null, pd = 1e9;
       for (const e of J.inimigos) { if (e.estado === 'morto') continue; const d = Math.hypot(e.x - J.P.x, e.y - J.P.y); if (d < pd) { pd = d; perto = e; } }
       en.mira = Math.atan2(perto.y - J.P.y, perto.x - J.P.x);
-      if (o.bom) {
+      if (o.bom && perto.d.atira) {
+        // contra quem atira: fecha a distância, esquiva o tiro para a frente e bate
+        const tiro = J.tiros.find((q) => Math.hypot(q.x - J.P.x, q.y - J.P.y) < 40);
+        en.mx = Math.cos(en.mira); en.my = Math.sin(en.mira);
+        if (tiro && J.P.vigor > 20 && pd > 70) { const a = en.mira + (Math.random() < 0.5 ? 0.7 : -0.7); en.mx = Math.cos(a); en.my = Math.sin(a); en.rola = true; }
+        else if (J.P.estado === 'livre') { if (J.P.vida < 40 && J.P.cabaca > 0) en.bebe = true; else if (pd < 44 + perto.d.r) en.golpe = true; }
+      } else if (o.bom) {
         // joga direito: rola quando o golpe está para sair, bate só na brecha, cura de longe e guarda vigor
         let perigo = null, anel = J.fx.find((f) => f.tipo === 'anel' && Math.abs(Math.hypot(J.P.x - f.x, J.P.y - f.y) - f.r) < 34);
         for (const e of J.inimigos) { if (e.estado === 'morto') continue; const d = Math.hypot(e.x - J.P.x, e.y - J.P.y); if (e.estado === 'prepara' && e.t / e.resta > 0.72 && d < (e.d.salta ? 110 : e.d.alcance + 28) && !e.d.atira) perigo = e; }
         const tiro = J.tiros.find((q) => Math.hypot(q.x - J.P.x, q.y - J.P.y) < 36);
-        const brecha = perto.estado === 'recua' || perto.estado === 'atordoado';
+        // quem atira não tem golpe de perto: colado nele, sempre é brecha
+        const brecha = perto.estado === 'recua' || perto.estado === 'atordoado' || (perto.d.atira && perto.estado !== 'prepara');
         en.mx = 0; en.my = 0;
         if ((perigo || anel || tiro) && J.P.vigor > 14) {
           const ref = perigo || perto, ang = Math.atan2(J.P.y - ref.y, J.P.x - ref.x) + (Math.random() < 0.5 ? 1.2 : -1.2);
@@ -141,7 +148,7 @@
           en.golpe = true;
         } else if (J.P.vida < 45 && J.P.cabaca > 0 && pd > 90 && J.P.estado === 'livre') {
           en.bebe = true;
-        } else if (J.P.vigor < 30 || J.P.vida < 45 && J.P.cabaca > 0) {
+        } else if (!perto.d.atira && (J.P.vigor < 30 || J.P.vida < 45 && J.P.cabaca > 0)) {
           en.mx = -Math.cos(en.mira); en.my = -Math.sin(en.mira);
         } else if (pd > 44 + perto.d.r) {
           en.mx = Math.cos(en.mira); en.my = Math.sin(en.mira);
