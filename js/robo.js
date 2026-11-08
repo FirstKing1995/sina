@@ -103,6 +103,7 @@
         if (log.filter((l) => l.startsWith('TRAVOU')).length > 6) break;
       }
     }
+    window.SINA.auto = false; en.mx = 0; en.my = 0;
     return { log, min: Math.round(J.tempo / 60), mortes: J.S.mortes, brasas: J.S.brasas, fim: J.S.fim, x: Math.round(J.P.x / T), y: Math.round(J.P.y / T), etapa, passos };
   };
 
@@ -164,6 +165,8 @@
     if (o.nivel) { J.S.nivel.forca = 0; J.S.nivel.vida = 0; J.S.nivel.vigor = 0; }
     J.S.mortes = 0; J.S.resto = null;
     { const g = JSON.parse(guardado); J.S.equip = g[0]; J.S.forja = g[1]; J.S.cabacaMax = g[2]; }
+    // devolve o controle: sem isso o herói segue andando na última direção do robô
+    window.SINA.auto = false; Object.assign(en, { mx: 0, my: 0, golpe: false, forte: false, rola: false, bebe: false });
     return { venceu, vida, tempo, goles };
   };
 })();

@@ -24,3 +24,6 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 
 ## Acervo Dungeon Crawl Stone Soup (CC0)
 - Inimigos novos (`queixada`, `marimbondo`, `onca`, `jacare`, `cururu`, `jagunco`, `benzedor`, `tatu`, `cangaceiro`, `cao`, `esqueleto`, `mumia`, `espectro`), bichinhos `fau_*`, estátuas, altares, fontes, moitas, sangue `sg_*` e água.
+
+## Efeitos de impacto (assets/vfx)
+- `hit-spark.png` e `crit-hit.png`: exportados do **pixelfx** (https://github.com/patch-gg/pixelfx), MIT, Copyright (c) 2026 Patch e Hugo Duprez. Os demais efeitos em pixel (corte, cura, alma, rachadura) foram escritos para o SINA a partir das ideias do mesmo pacote.

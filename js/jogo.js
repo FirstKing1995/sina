@@ -210,11 +210,11 @@
     while (dif > Math.PI) dif -= 2 * Math.PI; while (dif < -Math.PI) dif += 2 * Math.PI;
     return Math.abs(dif) < (P.forte ? 1.2 : 0.95);
   }
-  function acertarCom(e, dano) {
+  function acertarCom(e, dano, fogo) {
     e.hp -= dano; e.flash = 0.12;
     if (e.estado === 'dorme') acordar(e);
     if (e.estado === 'ronda' || e.estado === 'volta') { e.estado = 'caca'; e.t = 0; alertar(e); }
-    avisa('acerto', { x: e.x, y: e.y, dano });
+    avisa('acerto', { x: e.x, y: e.y, dano, fogo: !!fogo });
     if (e.hp <= 0) matar(e);
   }
   // firmeza: quantos golpes seguidos o bicho aguenta sem cambalear. Os pequenos caem com um; o resto pede sequência
@@ -461,6 +461,14 @@
       if (f.tipo === 'fogo') {
         f.vida -= dt; f.proximo -= dt;
         if (f.proximo <= 0 && Math.hypot(P.x - f.x, P.y - f.y) < f.r && J.ferir(Math.round(f.dano), f.x, f.y)) f.proximo = 0.8;
+        if (f.todos) { // o mato pegando fogo queima quem estiver nele, bicho ou gente
+          f.bichos = f.bichos || new Map();
+          for (const e of J.inimigos) {
+            if (e.estado === 'morto' || e.d.chefe || Math.hypot(e.x - f.x, e.y - f.y) > f.r + e.d.r) continue;
+            if ((f.bichos.get(e) || 0) > J.tempo) continue;
+            f.bichos.set(e, J.tempo + 0.8); acertarCom(e, Math.round(f.dano * 1.6), true);
+          }
+        }
       } else if (f.tipo === 'meteoro') {
         f.t += dt;
         if (f.t >= f.cai && !f.caiu) {

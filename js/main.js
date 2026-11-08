@@ -131,9 +131,9 @@
   function tratar(ev) {
     switch (ev.tipo) {
       case 'golpe': Som.tocar(ev.forte ? 'forte' : 'golpe', 0.6); break;
-      case 'rola': Som.tocar('golpe', 0.22, 0.6); break;
+      case 'rola': Som.tocar('golpe', 0.22, 0.6); for (let i = 0; i < 8; i++) { const a = Math.random() * 6.28; Tela.pts.push({ x: J.P.x + Math.cos(a) * 6, y: J.P.y - 2, vx: Math.cos(a) * 30, vy: Math.sin(a) * 8 - 6, g: 0, vida: 0.45, cor: Math.random() < 0.5 ? 'rgba(150,140,120,0.7)' : 'rgba(110,100,86,0.6)' }); } break;
       case 'semvigor': sussurrar('Sem vigor.', 900); break;
-      case 'acerto': Som.tocar('acerto', 0.8); parada = ev.forte || ev.brecha ? 0.09 : 0.045; treme(ev.forte ? 5 : 2.5); Tela.sangue(ev.x, ev.y, ev.brecha ? 16 : 8, '#7a1f1a'); break;
+      case 'acerto': if (ev.fogo) { Tela.fagulhas(ev.x, ev.y - 20, 4, '#ff9a3a', 20); break; } { const a_ = Math.atan2(ev.y - J.P.y, ev.x - J.P.x); Tela.faisca(ev.x, ev.y - 20, a_, ev.forte || ev.brecha); if (ev.forte) Tela.efeito('racha', ev.x, ev.y, { linhas: [0, 1, 2, 3].map((i) => [a_ + (i - 1.5) * 0.7, 10 + Math.random() * 12]) }); } Som.tocar('acerto', 0.8); parada = ev.forte || ev.brecha ? 0.09 : 0.045; treme(ev.forte ? 5 : 2.5); Tela.sangue(ev.x, ev.y, ev.brecha ? 16 : 8, '#7a1f1a'); break;
       case 'dor': Som.tocar('dor', 0.8); parada = 0.08; treme(7); Tela.sangue(ev.x, ev.y, 12, '#a02a24'); break;
       case 'notou': if (Math.random() < 0.5) Som.tocar(ev.quem === 'lobo' ? 'uivo' : 'inimigoDor', 0.28, 0.8); break;
       case 'prepara': if (ev.grande) { Som.tocar('rugido', 0.8, 0.8); treme(3); } break;
@@ -146,9 +146,9 @@
       case 'uivo': Som.tocar('uivo', 1); sussurrar('O uivo chama a matilha.', 2500); break;
       case 'meteoro': Som.tocar('quebra', 0.8, 0.7); treme(6); Tela.fagulhas(ev.x, ev.y, 18, '#ffb040', 40); break;
       case 'lendaCaiu': Som.tocar('raro', 0.9); anunciar(ev.nome + ' caiu', true); break;
-      case 'matou': Som.tocar(ev.chefe ? 'rugido' : 'morte', ev.chefe ? 1 : 0.5); Tela.fagulhas(ev.x, ev.y, ev.chefe ? 60 : 14, '#ff9a3a', 30); if (ev.chefe) { treme(12); parada = 0.25; } break;
+      case 'matou': if (!ev.chefe) Tela.efeito('alma', ev.x, ev.y); Som.tocar(ev.chefe ? 'rugido' : 'morte', ev.chefe ? 1 : 0.5); Tela.fagulhas(ev.x, ev.y, ev.chefe ? 60 : 14, '#ff9a3a', 30); if (ev.chefe) { treme(12); parada = 0.25; } break;
       case 'brasas': Som.tocar('moeda', 0.3); break;
-      case 'bebeu': Som.tocar('beber', 0.7); Tela.fagulhas(J.P.x, J.P.y - 16, 12, '#7ce0a8', 24); break;
+      case 'bebeu': Tela.efeito('cura', J.P.x, J.P.y); Som.tocar('beber', 0.7); Tela.fagulhas(J.P.x, J.P.y - 16, 12, '#7ce0a8', 24); break;
       case 'aviso': sussurrar(ev.t, 2600); break;
       case 'item': { const it = C.ITENS[ev.item]; Som.tocar('raro', 0.7); sussurrar(ev.item === 'brasas' ? ev.qtd + ' brasas.' : it.nome + (it.desc ? '. ' + it.desc : '') + (it.tipo === 'arma' || it.tipo === 'armadura' || it.tipo === 'amuleto' ? ' (I para equipar)' : ''), 6000); break; }
       case 'acendeu': Som.tocar('fogo', 0.8); anunciar(ev.nome, true); break;
@@ -401,7 +401,7 @@
   function passoMundo(dt) {
     eixo();
     if (parada > 0) { parada -= dt; return; }
-    if (!modal) { J.passo(dt); verArea(); }
+    if (!modal) { J.passo(dt); Tela.fogoPasso(dt); verArea(); }
     else if (modal === 'morte') J.passo(dt);
     while (J.eventos.length) tratar(J.eventos.shift());
   }

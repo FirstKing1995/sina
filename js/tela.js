@@ -19,7 +19,13 @@
   }
   addEventListener('resize', medir); medir();
 
+  // folhas de efeito do pixelfx (MIT, Patch e Hugo Duprez): quadro, pivô no pé, colunas, quadros, momento do impacto
+  const VFX = {
+    faisca: { arq: 'hit-spark', w: 136, h: 80, px: 44, py: 64, c: 4, q: 16, alto: 20 },
+    critico: { arq: 'crit-hit', w: 216, h: 136, px: 84, py: 106, c: 5, q: 28, alto: 20 },
+  };
   Tela.carregar = function (aoPasso) {
+    for (const k in VFX) { const i = new Image(); i.onload = () => { VFX[k].img = i; }; i.src = 'assets/vfx/' + VFX[k].arq + '.png'; }
     const nomes = Object.keys(A.spr);
     let feitos = 0;
     return Promise.all(nomes.map((n) => new Promise((ok) => {
@@ -62,9 +68,9 @@
       for (let dy = 1; dy <= 6 && !acima; dy++) for (let dx = -2; dx <= 2; dx++) if (M.anda(x + dx, y - dy)) { acima = true; break; }
       const r = rnd(x, y, 1), reg = M.regiao(x, y).id, B = A.biomas[reg];
       if (!acima && r < (pertoAberto ? 0.92 : 0.42)) { // a copa não pode cobrir o caminho: só onde não há nada aberto logo acima
-        pôr(B.arvores[Math.floor(rnd(x, y, 9) * B.arvores.length)], x * T + (rnd(x, y, 2) - 0.5) * 54, y * T + (rnd(x, y, 3) - 0.5) * 40, { base: 12 });
+        pôr(B.arvores[Math.floor(rnd(x, y, 9) * B.arvores.length)], x * T + (rnd(x, y, 2) - 0.5) * 54, y * T + (rnd(x, y, 3) - 0.5) * 40, { base: 12, verga: 1, reg });
       } else if (acima && pertoAberto && r < 0.78) {
-        pôr(B.objetos[Math.floor(rnd(x, y, 4) * B.objetos.length)], x * T + (rnd(x, y, 7) - 0.5) * 40, y * T + (rnd(x, y, 8) - 0.5) * 30, { base: 6 });
+        { const n_ = B.objetos[Math.floor(rnd(x, y, 4) * B.objetos.length)]; pôr(n_, x * T + (rnd(x, y, 7) - 0.5) * 40, y * T + (rnd(x, y, 8) - 0.5) * 30, { base: 6, verga: (A.baixos || []).includes(n_) ? 2 : 0, reg }); }
       }
     }
     for (let y = 0; y < M.H; y += 3) for (let x = 0; x < M.W; x += 3) {
@@ -78,8 +84,8 @@
       } else if (M.CHAO[y * M.W + x] !== M.TERRA) {
         const reg = M.regiao(x, y), B = A.biomas[reg.id], dens = { campos: 0.05, mata: 0.09, mangue: 0.08, serra: 0.075, sertao: 0.045, cinzas: 0.06 }[reg.id];
         const jx = (rnd(x, y, 11) - 0.5) * 60, jy = (rnd(x, y, 12) - 0.5) * 60;
-        if (r < dens * 0.32) pôr(B.arvores[Math.floor(rnd(x, y, 9) * B.arvores.length)], x * T + jx, y * T + jy, { base: 12, r: 10 });
-        else if (r < dens) { const n = B.objetos[Math.floor(rnd(x, y, 6) * B.objetos.length)]; pôr(n, x * T + jx, y * T + jy, { base: 6, r: (A.baixos || []).includes(n) ? 0 : 8, cogu: (A.cogumelos || []).includes(n) }); }
+        if (r < dens * 0.32) pôr(B.arvores[Math.floor(rnd(x, y, 9) * B.arvores.length)], x * T + jx, y * T + jy, { base: 12, r: 10, verga: 1, reg: reg.id });
+        else if (r < dens) { const n = B.objetos[Math.floor(rnd(x, y, 6) * B.objetos.length)], baixo = (A.baixos || []).includes(n); pôr(n, x * T + jx, y * T + jy, { base: 6, r: baixo ? 0 : 8, cogu: (A.cogumelos || []).includes(n), verga: baixo ? 2 : 0, reg: reg.id }); }
       }
     }
     // Ruínas de Alvorada, em volta da praça
@@ -271,19 +277,58 @@
     const w = info.w, h = info.h, f = ((Math.floor(q) % info.n) + info.n) % info.n;
     // os quadros maiores que 64 são centrados: o pé fica sempre na mesma altura
     const fundo = (info.fundo != null ? info.fundo : (h - 64) / 2 + 2) + (extraFundo || 0);
-    if (escalaFolha !== 1 || pose) { // chefes maiores e corpos em movimento: tudo gira e estica em volta do pé
-      const k = escalaFolha, dw = w * k, dh = h * k, p = pose || {};
-      cx.save(); cx.translate(Math.round(x + (p.dx || 0)), Math.round(y + fundo * k + (p.dy || 0)));
-      if (p.rot) cx.rotate(p.rot);
-      cx.scale((inverte ? -1 : 1) * (p.sx || 1), p.sy || 1);
-      cx.drawImage(im, f * w, 0, w, h, -dw / 2, -dh, dw, dh); cx.restore();
+    const k = escalaFolha, dw = w * k, dh = h * k, p = pose || {};
+    const pinta = (G, mx, my) => { // chefes maiores e corpos em movimento: tudo gira e estica em volta do pé
+      G.save(); G.translate(Math.round(x + (p.dx || 0)) + mx, Math.round(y + fundo * k + (p.dy || 0)) + my);
+      if (p.rot) G.rotate(p.rot);
+      G.scale((inverte ? -1 : 1) * (p.sx || 1), p.sy || 1);
+      G.drawImage(im, f * w, 0, w, h, -dw / 2, -dh, dw, dh); G.restore();
+    };
+    if (k === 1 && !pose && !aro) {
+      if (inverte) { cx.save(); cx.translate(Math.round(x), 0); cx.scale(-1, 1); cx.drawImage(im, f * w, 0, w, h, -w / 2, Math.round(y - h + fundo), w, h); cx.restore(); }
+      else cx.drawImage(im, f * w, 0, w, h, Math.round(x - w / 2), Math.round(y - h + fundo), w, h);
       return true;
     }
-    if (inverte) {
-      cx.save(); cx.translate(Math.round(x), 0); cx.scale(-1, 1);
-      cx.drawImage(im, f * w, 0, w, h, -w / 2, Math.round(y - h + fundo), w, h); cx.restore();
-    } else cx.drawImage(im, f * w, 0, w, h, Math.round(x - w / 2), Math.round(y - h + fundo), w, h);
+    pinta(cx, 0, 0);
+    if (aro) contorno(pinta, x, y, Math.max(dw, dh) * 0.75 + 12);
     return true;
+  }
+  // ---------- luz no relevo: o lado virado para o fogo ganha um contorno quente ----------
+  let aro = null, fontesLuz = [], camX = 0, camY = 0;
+  const aroC = document.createElement('canvas'), aroG = aroC.getContext('2d');
+  function luzPara(x, y) {
+    let melhor = null, nota = 0;
+    for (const L of fontesLuz) {
+      const dx = L[0] - x, dy = L[1] - (y - 26), d = Math.hypot(dx, dy);
+      if (d > L[2] || d < 4) continue;
+      const k = (1 - d / L[2]) * L[3];
+      if (k > nota) { nota = k; melhor = { dx: dx / d, dy: dy / d, k }; }
+    }
+    return melhor && melhor.k > 0.06 ? melhor : null;
+  }
+  function contorno(pinta, x, y, raio) {
+    if (aroC.width !== VW || aroC.height !== VH) { aroC.width = VW; aroC.height = VH; }
+    const sx = Math.round(x - camX - raio), sy = Math.round(y - camY - raio * 1.6), lw = Math.round(raio * 2), lh = Math.round(raio * 1.9);
+    aroG.setTransform(1, 0, 0, 1, 0, 0); aroG.clearRect(sx, sy, lw, lh);
+    aroG.imageSmoothingEnabled = false;
+    aroG.setTransform(1, 0, 0, 1, -camX, -camY);
+    aroG.globalCompositeOperation = 'source-over'; pinta(aroG, 0, 0);
+    // tira o próprio corpo deslocado para o lado do fogo: sobra só a borda que encara a luz
+    aroG.globalCompositeOperation = 'destination-out'; pinta(aroG, -Math.round(aro.dx * 2), -Math.round(aro.dy * 2));
+    aroG.setTransform(1, 0, 0, 1, 0, 0);
+    aroG.globalCompositeOperation = 'source-in'; aroG.fillStyle = '#ffa04a'; aroG.fillRect(sx, sy, lw, lh);
+    aroG.globalCompositeOperation = 'source-over';
+    cx.save(); cx.setTransform(1, 0, 0, 1, 0, 0); cx.globalCompositeOperation = 'lighter'; cx.globalAlpha = Math.min(0.9, aro.k);
+    cx.drawImage(aroC, sx, sy, lw, lh, sx, sy, lw, lh);
+    cx.restore();
+  }
+  // silhueta preta de qualquer peça: serve para sombra no chão e copa na frente da câmera
+  const SILH = {};
+  function silh(n, im) {
+    if (SILH[n]) return SILH[n];
+    const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+    const g = c.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#02070a'; g.fillRect(0, 0, c.width, c.height);
+    return (SILH[n] = c);
   }
   function sombra(x, y, r) {
     cx.fillStyle = 'rgba(2,6,10,0.5)';
@@ -411,9 +456,8 @@
     pose = null;
     cx.filter = 'none';
     if (e.estado === 'golpe' && !d.atira && e.tipoGolpe !== 'tremor') {
-      const k = escalaFolha, rr = (d.alcance * 0.7 + 16) * Math.min(1.25, k), prog = e.t / e.resta, ini = e.ang - 1 + prog * 1.2;
-      cx.strokeStyle = 'rgba(240,226,190,' + (0.85 - prog * 0.7) + ')'; cx.lineWidth = 3;
-      cx.beginPath(); cx.arc(e.x, e.y - 20, rr, ini, ini + 0.9); cx.stroke();
+      const k = escalaFolha, rr = (d.alcance * 0.7 + 16) * Math.min(1.25, k), prog = Math.min(1, e.t / e.resta);
+      meiaLua(e.x, e.y - 20, rr, e.ang - 0.9, e.ang - 0.9 + 1.8 * prog, 4 + (k > 1 ? 2 : 0), PAL.inimigo, prog > 0.8 ? (prog - 0.8) * 5 : 0);
     }
     if (e.hp < e.hpMax && !d.chefe) {
       const L_ = d.lenda ? 46 : 24, ty = d.lenda ? 84 : 56;
@@ -559,8 +603,199 @@
     mediaMs += performance.now() - ini_;
     if (++amostras >= 45) { if (mediaMs / amostras > 20) leve = true; mediaMs = 0; amostras = 0; }
   };
+  // ---------- plantas vivas: vento, quem passa empurra, fogo queima ----------
+  let rajada = 0;
+  const VENTO_REG = { campos: 1, mata: 0.7, mangue: 0.8, serra: 1.4, sertao: 1.2, cinzas: 0.9 };
+  function planta(o, im, dt) {
+    const alto = o.verga === 1, fx_ = (o.x * 0.011 + o.y * 0.007);
+    let sk = 0;
+    if (!o.queimado) {
+      const vr = VENTO_REG[o.reg] || 1;
+      sk = (Math.sin(relogio * 1.3 + fx_) * 0.5 + Math.sin(relogio * 2.9 + fx_ * 3) * 0.2) * (alto ? 0.022 : 0.05) * vr + rajada * (alto ? 0.03 : 0.07) * vr;
+      if (o.verga === 2) { // quem passa abre caminho no mato
+        let alvo = 0;
+        const empurra = (ex, ey, anda) => { const dx = o.x - ex, dy = o.y - ey; if (Math.abs(dy) < 14 && Math.abs(dx) < 24) { const k = (1 - Math.abs(dx) / 24) * (dx >= 0 ? 1 : -1); alvo += k * 0.42; if (anda && Math.random() < dt * 5) pts.push({ x: o.x + (Math.random() - 0.5) * 14, y: o.y - 8 - Math.random() * 10, vx: (dx >= 0 ? 1 : -1) * (14 + Math.random() * 20), vy: -16 - Math.random() * 12, g: 46, vida: 0.7, cor: Math.random() < 0.5 ? '#2c4a34' : '#3e5c38' }); } };
+        const P = J.P; empurra(P.x, P.y, P.andando || P.estado === 'rola');
+        for (const e of J.inimigos) if (e.estado !== 'morto' && Math.abs(e.x - o.x) < 26 && Math.abs(e.y - o.y) < 16) empurra(e.x, e.y, e.estado === 'caca');
+        o.dob = (o.dob || 0) + (Math.max(-0.5, Math.min(0.5, alvo)) - (o.dob || 0)) * Math.min(1, dt * 12);
+        sk += o.dob;
+      }
+    }
+    const queimando = o.fogo != null, meio = queimando && o.fogo > o.durFogo * 0.5;
+    const img = o.queimado || meio ? carvao(o.n, im) : im;
+    cx.save(); cx.translate(Math.round(o.x), Math.round(o.y + (o.base || 0)));
+    cx.transform(1, 0, -sk * (queimando ? 2.2 : 1), 1, 0, 0);
+    cx.drawImage(img, -Math.round(im.width / 2), -im.height);
+    cx.restore();
+    if (queimando) chamas(o);
+  }
+  // ---------- efeitos em pixel (ideias adaptadas do pixelfx, MIT, de Patch e Hugo Duprez) ----------
+  const efs = [];
+  const BRANCO = '#ffffff';
+  const PAL = {
+    faisca: ['#4a1712', '#c9281f', '#f2561d', '#ff8a2a', '#ffe26b', '#fff3a6'],
+    corte: ['#1a2a4a', '#2c4c86', '#5a8ad0', '#a8d0f0', '#e0f4ff', '#ffffff'],
+    forte: ['#3a1208', '#8a2a10', '#d0561a', '#ff9a3a', '#ffe08a', '#fff6d0'],
+    inimigo: ['#2a0808', '#6a1410', '#b02a1c', '#e06040', '#f8b090', '#fff0e0'],
+    cura: ['#0a2a1a', '#1c5a3a', '#3a9a62', '#7ce0a8', '#c8ffe0', '#ffffff'],
+    alma: ['#0a1a20', '#1c3a48', '#3a6a7a', '#7aa8b4', '#c0e0e8', '#f0ffff'],
+  };
+  Tela.efeito = function (tipo, x, y, o) { efs.push(Object.assign({ tipo, x, y, t: 0 }, o || {})); };
+  const px1 = (x, y, c) => { cx.fillStyle = c; cx.fillRect(Math.round(x), Math.round(y), 1, 1); };
+  // raio da faísca: grosso na raiz, um fio na ponta, branco esfriando para fora
+  function raio(x, y, a, L, w, C, de) {
+    const c = Math.cos(a), s_ = Math.sin(a);
+    for (let d = (de || 0) * L; d <= L; d += 0.7) {
+      const u = d / L, hw = w * Math.pow(1 - u, 1.6), cor = u < 0.3 ? BRANCO : u < 0.62 ? C[5] : u < 0.88 ? C[4] : C[3];
+      px1(x + c * d, y + s_ * d, cor);
+      for (let k = 0.7; k <= hw; k += 0.7) { px1(x + c * d - s_ * k, y + s_ * d + c * k, C[4]); px1(x + c * d + s_ * k, y + s_ * d - c * k, C[4]); }
+    }
+  }
+  function diamante(x, y, r, C) { for (let dy = -r - 1; dy <= r + 1; dy++) for (let dx = -r - 1; dx <= r + 1; dx++) { const m = Math.abs(dx) + Math.abs(dy); if (m <= r) px1(x + dx, y + dy, BRANCO); else if (m === r + 1) px1(x + dx, y + dy, C[3]); } }
+  function clarao(x, y, r, cor, a) { cx.save(); cx.globalCompositeOperation = 'lighter'; cx.globalAlpha = a; cx.fillStyle = cor; for (const k of [1, 0.62, 0.34]) { cx.beginPath(); cx.arc(x, y, r * k, 0, 7); cx.fill(); } cx.restore(); }
+  // meia-lua do corte: a ponta que vai na frente é branca, o rastro esfria e afina
+  function meiaLua(x, y, r, a0, a1, grosso, C, apaga) {
+    const passos = Math.max(8, Math.round(Math.abs(a1 - a0) * r / 1.2));
+    for (let i = 0; i <= passos; i++) {
+      const u = i / passos, a = a0 + (a1 - a0) * u, w = grosso * Math.sin(Math.PI * Math.min(1, u * 1.15)) * (1 - apaga * (1 - u));
+      if (w < 0.4) continue;
+      const cor = u > 0.86 ? BRANCO : u > 0.6 ? C[5] : u > 0.35 ? C[4] : u > 0.15 ? C[3] : C[2];
+      for (let k = -w / 2; k <= w / 2; k += 0.8) px1(x + Math.cos(a) * (r + k), y + Math.sin(a) * (r + k) * 0.8, k > w / 2 - 1.2 ? cor : u > 0.5 ? C[4] : C[3]);
+    }
+  }
+  // toca uma folha do pixelfx: o pivô vai no pé, gira em volta do ponto do golpe, espelha para a esquerda
+  function folhaVfx(v, t, x, y, ang, esc) {
+    if (!v.img) return false;
+    const q = Math.floor(t * 30); if (q >= v.q) return false;
+    const esq = Math.cos(ang) < 0, r = Math.max(-0.6, Math.min(0.6, esq ? ang - Math.PI * Math.sign(ang || 1) : ang)), alto = v.alto || 0;
+    cx.save(); cx.translate(Math.round(x), Math.round(y - alto * esc)); cx.rotate(r); cx.scale((esq ? -1 : 1) * esc, esc);
+    cx.drawImage(v.img, (q % v.c) * v.w, Math.floor(q / v.c) * v.h, v.w, v.h, -v.px, -v.py + alto, v.w, v.h);
+    cx.restore();
+    return true;
+  }
+  Tela.faisca = function (x, y, ang, grande) {
+    if (VFX.faisca.img) { Tela.efeito('vfx', x, y + 20, { v: grande ? VFX.critico : VFX.faisca, ang, esc: grande ? 0.8 : 1 }); return; }
+    const C = PAL.faisca, ti = (Math.random() - 0.5) * 0.16, e_ = grande ? 1.35 : 1;
+    Tela.efeito('faisca', x, y, { ang, grande, raios: [[ang + ti, 34 * e_, 2.2], [ang + Math.PI + ti, 9 * e_, 2.2], [ang - Math.PI / 2 + ti, 16 * e_, 2.6], [ang + Math.PI / 2 + ti, 11 * e_, 2.3], [ang - Math.PI / 4 + ti, 6, 1]] });
+    for (let i = 0; i < (grande ? 14 : 9); i++) { const a = ang + (Math.random() - 0.5) * 1.2 - 0.15, v = 120 + Math.random() * 150; pts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, g: 520, vida: 0.22 + Math.random() * 0.2, cor: [BRANCO, C[5], C[4], C[2]][i % 4] }); }
+    for (let i = 0; i < 6; i++) { const a = ang + (Math.random() - 0.7) * 1.6, v = 50 + Math.random() * 100; pts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 50, g: 380, vida: 0.4, cor: C[3 + (i % 3)] }); }
+  };
+  function efeitosPix(dt) {
+    const P = J.P;
+    // o corte do herói acompanha a lâmina, do começo ao fim do golpe
+    if (P && P.estado === 'golpe' && P.t >= P.hitIni - 0.05 && P.t <= P.hitFim + 0.14) {
+      const C = P.forte ? PAL.forte : PAL.corte, u = Math.min(1, (P.t - P.hitIni + 0.05) / (P.hitFim - P.hitIni + 0.06)), lado_ = Math.cos(P.ang) >= 0 ? 1 : -1;
+      const ab = P.forte ? 1.5 : 1.15, a0 = P.ang - ab * lado_, a1 = a0 + 2 * ab * lado_ * u, apaga = Math.max(0, (P.t - P.hitFim) / 0.14);
+      meiaLua(P.x, P.y - 18, P.forte ? 34 : 28, a0, a1, (P.forte ? 6 : 4) * (1 - apaga * 0.8), C, apaga);
+      if (u < 1) clarao(P.x + Math.cos(a1) * 30, P.y - 18 + Math.sin(a1) * 24, P.forte ? 16 : 10, C[3], 0.12);
+    }
+    for (let i = efs.length - 1; i >= 0; i--) {
+      const f = efs[i]; f.t += dt;
+      if (f.tipo === 'vfx') {
+        if (f.segue && J.P) { f.x = J.P.x; f.y = J.P.y; }
+        if (!folhaVfx(f.v, f.t, f.x, f.y, f.ang, f.esc || 1)) efs.splice(i, 1);
+      } else if (f.tipo === 'faisca') {
+        const C = PAL.faisca;
+        if (f.t < 0.03) { for (const r of f.raios) raio(f.x, f.y, r[0], r[1], r[2], C); diamante(f.x, f.y, f.grande ? 5 : 4, C); }
+        else if (f.t < 0.065) { for (const r of f.raios) raio(f.x, f.y, r[0], r[1] * 1.2, r[2] * 0.55, C, 0.12); diamante(f.x, f.y, 3, C); }
+        else if (f.t < 0.1) { const r = f.raios[0]; raio(f.x, f.y, r[0], r[1] * 1.3, 0.6, [C[0], C[1], C[2], C[3], C[3], C[4]], 0.4); }
+        const pop = Math.exp(-f.t / 0.05); if (pop > 0.03) clarao(f.x, f.y, f.grande ? 30 : 22, C[4], 0.22 * pop);
+        if (f.grande && f.t < 0.25) { // golpe crítico: um anel que se parte em arcos
+          const r_ = 10 + f.t * 120, al = 1 - f.t / 0.25;
+          for (let k = 0; k < 6; k++) { const a = k * 1.047 + f.t * 3; meiaLua(f.x, f.y, r_, a, a + 0.6 * al, 2, PAL.forte, 0); }
+        }
+        if (f.t > 0.3) efs.splice(i, 1);
+      } else if (f.tipo === 'racha') {
+        // golpe forte no chão: rachaduras que brilham e esfriam
+        const k = 1 - f.t / 0.9, C = PAL.forte;
+        for (const [a, L] of f.linhas) { let x = f.x, y = f.y; for (let d = 0; d < L * Math.min(1, f.t * 8); d += 1) { x += Math.cos(a + Math.sin(d * 0.7) * 0.3); y += Math.sin(a + Math.sin(d * 0.7) * 0.3) * 0.5; px1(x, y, k > 0.6 ? C[4] : k > 0.3 ? C[2] : C[1]); } }
+        if (f.t > 0.9) efs.splice(i, 1);
+      } else if (f.tipo === 'cura') {
+        // um aro de luz sobe pelo corpo e solta faíscas verdes
+        const C = PAL.cura, u = Math.min(1, f.t / 0.8), yy = f.y - 2 - u * 46, rx = 13 - u * 3;
+        for (let a = 0; a < 6.28; a += 0.12) { const fr = Math.sin(a) > 0; px1(f.x + Math.cos(a) * rx, yy + Math.sin(a) * rx * 0.32, fr ? C[4] : C[2]); }
+        if (f.t < 0.4) for (let a = 0; a < 6.28; a += 0.9) { const r = 6 + f.t * 30; px1(f.x + Math.cos(a + f.t * 2) * r, f.y + Math.sin(a + f.t * 2) * r * 0.35, C[3]); }
+        if (Math.random() < 0.7) { const a = Math.random() * 6.28; pts.push({ x: f.x + Math.cos(a) * 10, y: yy, vx: Math.cos(a) * 6, vy: -24 - Math.random() * 20, g: 0, vida: 0.7, cor: Math.random() < 0.4 ? BRANCO : C[4] }); }
+        clarao(f.x, yy, 16, C[3], 0.06 * (1 - u));
+        if (f.t > 0.85) efs.splice(i, 1);
+      } else if (f.tipo === 'alma') {
+        // o que sobra de quem cai: um fio pálido que sobe ondulando e se desfaz
+        const C = PAL.alma, u = f.t / 1.6, topo = f.y - 20 - u * 46;
+        for (let d = 0; d < 26 * (1 - u * 0.6); d++) { const yy = topo + d, w = Math.max(0, 4 - d * 0.14) * (1 - u), xx = f.x + Math.sin(d * 0.35 - f.t * 7) * (1.5 + d * 0.1); for (let k = -w; k <= w; k += 1) px1(xx + k, yy, d < 3 ? C[5] : Math.abs(k) > w - 1 ? C[2] : C[3 + (d % 2)]); }
+        if (Math.random() < 0.4) pts.push({ x: f.x + (Math.random() - 0.5) * 8, y: topo + 10, vx: (Math.random() - 0.5) * 8, vy: -18, g: 0, vida: 0.6, cor: C[4] });
+        if (f.t > 1.6) efs.splice(i, 1);
+      } else efs.splice(i, 1);
+    }
+  }
+  // ---------- fogo no mato: pega, espalha conforme a região e deixa carvão ----------
+  const focos = [];
+  const PEGA = { sertao: 0.55, campos: 0.34, cinzas: 0.3, mata: 0.2, serra: 0.16, mangue: 0 }; // o mangue é molhado demais
+  function perto(x, y, r, cada) {
+    const a0 = Math.floor((x - r) / 256), a1 = Math.floor((x + r) / 256), b0 = Math.floor((y - r) / 256), b1 = Math.floor((y + r) / 256);
+    for (let a = a0; a <= a1; a++) for (let b = b0; b <= b1; b++) { const l = baldeObj.get((a << 10) | b); if (l) for (const o of l) if (Math.abs(o.x - x) < r && Math.abs(o.y - y) < r) cada(o); }
+  }
+  Tela.acender = function (x, y, r) {
+    let n = 0;
+    perto(x, y, r, (o) => {
+      if (!o.verga || o.queimado || o.fogo != null || focos.length >= 48) return;
+      if (!(PEGA[o.reg] > 0)) return;
+      o.fogo = 0; o.durFogo = o.verga === 1 ? 10 + Math.random() * 4 : 5 + Math.random() * 2; o.prox = 0.4; focos.push(o); n++;
+      J.fx.push({ tipo: 'fogo', planta: true, todos: true, x: o.x, y: o.y - 4, r: o.verga === 1 ? 26 : 20, vida: o.durFogo, t: 0, dano: 9, proximo: 0.3, dePlanta: o });
+    });
+    return n;
+  };
+  Tela.focos = () => focos.length;
+  // chamado pelo laço do jogo: o fogo anda mesmo sem ninguém olhando
+  Tela.fogoPasso = function (dt) {
+    const P = J.P;
+    if (P) {
+      // a tocha acesa no golpe forte ateia o mato à frente; a seta de fogo ateia onde passa
+      if (P.tochaLiga && P.estado === 'golpe' && P.forte && P.t >= P.hitIni && P.t <= P.hitFim) Tela.acender(P.x + Math.cos(P.ang) * 26, P.y + Math.sin(P.ang) * 16, 26);
+      for (const t of J.tirosH) Tela.acender(t.x, t.y + 20, 14);
+      for (const f of J.fx) if ((f.tipo === 'fogo' && !f.planta && Math.random() < dt * 2) || (f.tipo === 'meteoro' && f.caiu && !f.ateou)) { f.ateou = true; Tela.acender(f.x, f.y, f.r); }
+    }
+    for (let i = focos.length - 1; i >= 0; i--) {
+      const o = focos[i]; o.fogo += dt; o.prox -= dt;
+      if (o.prox <= 0 && o.fogo > 1.2) { // a cada meio segundo, tenta pular para o vizinho
+        o.prox = 0.5;
+        const pega = PEGA[o.reg] || 0;
+        perto(o.x, o.y, o.verga === 1 ? 70 : 56, (v) => { if (v !== o && v.verga && v.fogo == null && !v.queimado && Math.random() < pega * 0.32) Tela.acender(v.x, v.y, 4); });
+      }
+      if (o.fogo >= o.durFogo) { o.queimado = true; o.fogo = null; focos.splice(i, 1); }
+    }
+  };
+  function chamas(o) { // línguas de fogo: largas na base, finas e tortas na ponta, esfriando do amarelo ao vermelho
+    const k = Math.min(1, o.fogo / 1.2) * Math.min(1, (o.durFogo - o.fogo) / 1.5), alto = o.verga === 1, im = IMG[o.n];
+    const larg = alto ? 30 : 18, base = o.y + (o.base || 0) - (alto ? 8 : 3), n = alto ? 7 : 4;
+    for (let i = 0; i < n; i++) {
+      // nas árvores, metade das línguas sobe pela copa
+      const naCopa = alto && i >= 3, by = naCopa && im ? base - im.height * (0.35 + M.hash(i, 7) * 0.3) : base;
+      const bx = o.x + (M.hash(i, 3) - 0.5) * (naCopa ? larg * 1.4 : larg), ph = relogio * (7 + i * 1.3) + i * 1.7;
+      const hh = Math.round((alto ? 30 : 18) * k * (0.6 + 0.4 * Math.abs(Math.sin(ph))) * (naCopa ? 0.8 : 1)), w0 = (alto ? 9 : 7) * (0.75 + 0.25 * Math.sin(ph * 1.7));
+      for (let r = 0; r < hh; r++) {
+        const fr = r / hh, w = Math.max(1, w0 * Math.pow(1 - fr, 0.85)), dx = Math.sin(ph * 1.3 + r * 0.28) * fr * 2.4, y = Math.round(by - r), x = Math.round(bx + dx - w / 2);
+        cx.fillStyle = fr < 0.3 ? '#f07a1e' : fr < 0.7 ? '#c84a16' : '#8a2410'; cx.fillRect(x, y, Math.round(w), 1);
+        if (w > 2.5) { cx.fillStyle = fr < 0.45 ? '#ffd25a' : '#f59a2a'; cx.fillRect(Math.round(bx + dx - w * 0.3), y, Math.max(1, Math.round(w * 0.6)), 1); }
+        if (fr < 0.25 && w > 4) { cx.fillStyle = '#fff3b0'; cx.fillRect(Math.round(bx + dx - 1), y, 2, 1); }
+      }
+    }
+    if (Math.random() < 0.6) Tela.fagulhas(o.x + (Math.random() - 0.5) * larg, base - 20 * k, 1, Math.random() < 0.5 ? '#ffb84a' : '#c8501e', 34);
+    if (Math.random() < 0.3) pts.push({ x: o.x + (Math.random() - 0.5) * larg, y: base - 24 * k, vx: (Math.random() - 0.3) * 10, vy: -22, g: -4, vida: 1.4, cor: 'rgba(40,36,34,0.55)' });
+  }
+  // o que o fogo deixa: a mesma planta, preta e cinza
+  const CARVAO = {};
+  function carvao(n, im) {
+    if (CARVAO[n]) return CARVAO[n];
+    const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+    const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+    for (let i = 0; i < p.length; i += 4) { const l = (p[i] + p[i + 1] + p[i + 2]) / 3; p[i] = l * 0.28 + 8; p[i + 1] = l * 0.25 + 6; p[i + 2] = l * 0.24 + 6; if (p[i + 3] && Math.random() < 0.22) p[i + 3] = 0; }
+    g.putImageData(d, 0, 0);
+    return (CARVAO[n] = c);
+  }
   function desenharQuadro(dt) {
     relogio += dt;
+    rajada = Math.pow(Math.max(0, Math.sin(relogio * 0.33) * Math.sin(relogio * 0.71 + 1)), 2);
     const P = J.P, cam = Tela.cam;
     if (!P) return;
     const alvoX = Math.max(0, Math.min(M.W * T - VW, P.x - VW / 2)), alvoY = Math.max(0, Math.min(M.H * T - VH, P.y - 26 - VH / 2));
@@ -569,6 +804,8 @@
     cam.tremor = Math.max(0, cam.tremor - dt * 14);
     const ox = Math.round(cam.x + (cam.tremor ? (Math.random() - 0.5) * cam.tremor : 0)), oy = Math.round(cam.y + (cam.tremor ? (Math.random() - 0.5) * cam.tremor : 0));
 
+    camX = ox; camY = oy;
+    const naCripta0 = P.y >= M.CRIPTA_Y * T, dia0 = naCripta0 ? 0 : J.momento(), reg0 = naCripta0 ? null : M.regiao(Math.floor(P.x / T), Math.floor(P.y / T));
     cx.setTransform(1, 0, 0, 1, 0, 0);
     cx.fillStyle = '#04070a'; cx.fillRect(0, 0, VW, VH);
     const lado_ = CHUNK * T;
@@ -596,6 +833,29 @@
         lista.push([o.y, 0, o]); visiveis.push(o);
       }
     }
+    // fontes de luz que desenham contorno nos corpos: [x, y, alcance, força]
+    const noite = naCripta0 ? 1 : 0.25 + 0.75 * (1 - dia0);
+    fontesLuz.length = 0;
+    if (!leve) {
+      for (const o of visiveis) { if (o.tocha) fontesLuz.push([o.x, o.y - 22, 150, 0.75 * noite]); else if (o.fogo != null) fontesLuz.push([o.x, o.y - 10, 120, 0.8 * noite]); }
+      for (const id in C.FOGUEIRAS) if (J.S.acesas.includes(id)) { const f = C.FOGUEIRAS[id]; fontesLuz.push([f.x * T + 16, f.y * T + 6, 190, 0.85 * noite]); }
+      if (P.tochaLiga) fontesLuz.push([P.x + (Math.cos(P.ang) >= 0 ? 13 : -13), P.y - 30, 230, 0.8 * noite]);
+      for (const f of J.fx) if (f.tipo === 'fogo') fontesLuz.push([f.x, f.y - 6, 110, 0.7 * noite]);
+    }
+    // sombra das copas no chão: o sol anda do leste para o oeste e a sombra gira e encolhe com ele
+    if (!naCripta0 && dia0 > 0.04 && !leve) {
+      const hs = ((J.S.hora % 24) + 24) % 24, t_ = Math.max(0, Math.min(1, (hs - 6) / 12)), sx_ = -Math.cos(Math.PI * t_), comp = 0.3 + (1 - Math.sin(Math.PI * t_)) * 0.9;
+      cx.globalAlpha = 0.3 * dia0;
+      for (const o of visiveis) {
+        if (o.verga !== 1 || o.queimado) continue; const im = IMG[o.n]; if (!im) continue;
+        const bal = Math.sin(relogio * 1.3 + o.x * 0.011 + o.y * 0.007) * 0.02 + rajada * 0.03;
+        cx.save(); cx.translate(Math.round(o.x), Math.round(o.y + (o.base || 0) - 4));
+        cx.transform(1, 0, -(sx_ * comp + bal), -0.42 * (0.6 + comp * 0.5), 0, 0);
+        cx.drawImage(silh(o.n, im), -Math.round(im.width / 2), -im.height);
+        cx.restore();
+      }
+      cx.globalAlpha = 1;
+    }
     for (const e of J.inimigos) if (e.x > ox - 80 && e.x < ox + VW + 80 && e.y > oy - 60 && e.y < oy + VH + 90) lista.push([e.y, 1, e]);
     for (const id in C.FOGUEIRAS) { const f = C.FOGUEIRAS[id]; lista.push([f.y * T + 18, 2, f, id]); }
     for (const id in M.PORTOES) { if (!J.S.portoes.includes(id)) { const p = M.PORTOES[id]; lista.push([(p.y0 + p.y1) / 2 * T + T, 3, p]); } }
@@ -606,9 +866,10 @@
       switch (it[1]) {
         case 0: { const o = it[2], im = IMG[o.n]; if (!im) break;
           if (A.spr[o.n].n > 1) folha(o.n, relogio * 8, o.x, o.y, false);
+          else if (o.verga || o.fogo != null) planta(o, im, dt);
           else cx.drawImage(im, Math.round(o.x - im.width / 2), Math.round(o.y - im.height + (o.base || 0)));
           break; }
-        case 1: inimigo(it[2]); break;
+        case 1: aro = it[2].estado !== 'morto' ? luzPara(it[2].x, it[2].y) : null; inimigo(it[2]); aro = null; break;
         case 2: { const f = it[2], acesa = J.S.acesas.includes(it[3]);
           if (acesa) folha('fogueira', relogio * 8, f.x * T + 16, f.y * T + 18, false);
           else folha('fogueira_apagada', 0, f.x * T + 16, f.y * T + 18, false);
@@ -621,8 +882,8 @@
           if (IMG.cerca) for (const y of abertos) { const i = IMG.cerca; cx.drawImage(i, Math.round((p.x0 + 1) * T - i.width / 2), Math.round((y + 1) * T - i.height + 4)); }
           if (IMG.portao && abertos.length) { const i = IMG.portao, y = abertos[abertos.length >> 1]; cx.drawImage(i, Math.round((p.x0 + 1) * T - i.width / 2), Math.round((y + 1) * T - i.height + 10)); }
           break; }
-        case 4: { const n = it[2]; sombra(n.px, n.py - 1, 12); { const q_ = A.spr[n.spr] && A.spr[n.spr].n >= 6 ? (n.andando ? 2 + Math.floor(relogio * 7 + n.fase) % 4 : Math.floor(relogio * 1.3 + n.fase) % 2) : relogio * 1.6 + n.fase; folha(n.spr, q_, n.px, n.py, n.vira); } break; }
-        case 5: heroi(); break;
+        case 4: { const n = it[2]; aro = luzPara(n.px, n.py); sombra(n.px, n.py - 1, 12); { const q_ = A.spr[n.spr] && A.spr[n.spr].n >= 6 ? (n.andando ? 2 + Math.floor(relogio * 7 + n.fase) % 4 : Math.floor(relogio * 1.3 + n.fase) % 2) : relogio * 1.6 + n.fase; folha(n.spr, q_, n.px, n.py, n.vira); } aro = null; break; }
+        case 5: aro = luzPara(P.x, P.y); heroi(); aro = null; break;
       }
     }
     // tiros e anéis
@@ -666,10 +927,13 @@
     cx.setTransform(1, 0, 0, 1, 0, 0);
     // névoa no ar
     cx.globalCompositeOperation = 'screen';
-    for (const [k, vel, al] of leve ? [[0.6, 5, 0.3]] : [[0.6, 5, 0.32], [1.15, -8, 0.22]]) {
-      const nx = -(((ox * k + relogio * vel) % 512) + 512) % 512, ny = -(((oy * k) % 256) + 256) % 256;
-      cx.globalAlpha = al;
-      for (let x = nx; x < VW; x += 512) for (let y = ny; y < VH; y += 256) cx.drawImage(nevoa, x, y);
+    // mais névoa no mangue e nas Cinzas, e de madrugada; quase nada no sertão ao meio-dia
+    const densa = (naCripta0 ? 0.7 : ({ mangue: 1.6, cinzas: 1.35, mata: 1.15, serra: 1.2, campos: 0.85, sertao: 0.5 }[reg0.id] || 1)) * (0.75 + (1 - dia0) * 0.35 + 4 * dia0 * (1 - dia0) * 0.3);
+    for (const [k, vel, al, esc_] of leve ? [[0.6, 5, 0.3, 1]] : [[0.6, 5, 0.3, 1], [1.15, -8, 0.2, 1], [0.8, 3, 0.26, 2]]) {
+      const L_ = 512 * esc_, A_ = 256 * esc_;
+      const nx = -(((ox * k + relogio * vel) % L_) + L_) % L_, ny = -(((oy * k + relogio * vel * 0.2) % A_) + A_) % A_;
+      cx.globalAlpha = Math.min(0.62, al * densa);
+      for (let x = nx; x < VW; x += L_) for (let y = ny; y < VH; y += A_) cx.drawImage(nevoa, x, y, L_, A_);
     }
     cx.globalAlpha = 1; cx.globalCompositeOperation = 'source-over';
 
@@ -703,6 +967,7 @@
       const qx = o.x - ox, qy = o.y - oy;
       if (o.tocha) { furo(qx, qy - 22, 130 * pisca, 0.88, leve ? 4 : 7); quentes.push([qx, qy - 22, 70]); }
       else if (o.cogu) furo(qx, qy - 12, 44, 0.42, 4);
+      if (o.fogo != null) { const k_ = Math.min(1, o.fogo) * pisca; furo(qx, qy - 14, (o.verga === 1 ? 170 : 110) * k_, 0.9, leve ? 4 : 7); quentes.push([qx, qy - 14, o.verga === 1 ? 90 : 60]); }
     }
     for (const e of J.inimigos) if (e.d.chefe && Math.abs(e.arenaX - P.x) < 700 && Math.abs(e.arenaY - P.y) < 500) furo(e.arenaX - ox, e.arenaY - oy, e.arenaR, 0.62, 12); // a arena é sempre visível: o medo vem de ver o que espera
     for (const e of J.inimigos) if (e.estado === 'prepara' || e.d.spr === 'apagado') furo(e.x - ox, e.y - oy - 26, 50, 0.45, 3);
@@ -728,6 +993,7 @@
     cx.globalAlpha = 0.42;
     for (const e of J.inimigos) if (e.estado !== 'morto' && e.x > ox - 60 && e.x < ox + VW + 60 && e.y > oy - 40 && e.y < oy + VH + 70) silhueta(e);
     cx.globalAlpha = 1;
+    efeitosPix(dt); // golpes, faíscas, cura e alma têm luz própria: ficam por cima do escuro
     cx.setTransform(1, 0, 0, 1, 0, 0);
 
     cx.globalCompositeOperation = 'lighter';
