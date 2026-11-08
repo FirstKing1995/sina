@@ -264,16 +264,18 @@
   }
 
   // ---------- sprites ----------
-  let escalaFolha = 1;
+  let escalaFolha = 1, pose = null; // pose: {dx, dy, sx, sy, rot} aplicada ao próximo desenho de folha
   function folha(nome, q, x, y, inverte, extraFundo) {
     const info = A.spr[nome], im = IMG[nome];
     if (!im) return false;
     const w = info.w, h = info.h, f = ((Math.floor(q) % info.n) + info.n) % info.n;
     // os quadros maiores que 64 são centrados: o pé fica sempre na mesma altura
     const fundo = (info.fundo != null ? info.fundo : (h - 64) / 2 + 2) + (extraFundo || 0);
-    if (escalaFolha !== 1) { // chefes desenhados maiores, com o pé no mesmo lugar
-      const k = escalaFolha, dw = w * k, dh = h * k;
-      cx.save(); cx.translate(Math.round(x), Math.round(y + fundo * k)); if (inverte) cx.scale(-1, 1);
+    if (escalaFolha !== 1 || pose) { // chefes maiores e corpos em movimento: tudo gira e estica em volta do pé
+      const k = escalaFolha, dw = w * k, dh = h * k, p = pose || {};
+      cx.save(); cx.translate(Math.round(x + (p.dx || 0)), Math.round(y + fundo * k + (p.dy || 0)));
+      if (p.rot) cx.rotate(p.rot);
+      cx.scale((inverte ? -1 : 1) * (p.sx || 1), p.sy || 1);
       cx.drawImage(im, f * w, 0, w, h, -dw / 2, -dh, dw, dh); cx.restore();
       return true;
     }
@@ -317,12 +319,28 @@
     if (P.estado === 'golpe') {
       const k = P.t / P.dGolpe;
       const n = 'golpe_' + base, info = A.spr[n] || A.spr.golpe_e;
+      // o corpo acompanha a lâmina: avança no meio do golpe e volta
+      const av = Math.sin(Math.min(1, k) * Math.PI) * (P.forte ? 5 : 3);
+      pose = { dx: Math.cos(P.ang) * av, dy: Math.sin(P.ang) * av * 0.5, sx: 1 + av * 0.012, sy: 1 - av * 0.008 };
       folha(A.spr[n] ? n : 'golpe_e', Math.min(info.n - 1, k * info.n), P.x, P.y, inv);
+      pose = null;
       if (P.forte && P.t < P.hitIni) { cx.fillStyle = 'rgba(255,190,90,0.7)'; cx.fillRect(Math.round(P.x + Math.cos(P.ang) * 20), Math.round(P.y - 30 + Math.sin(P.ang) * 8), 2, 2); }
       cx.globalAlpha = 1; return;
     }
-    if (P.andando && P.estado === 'livre') folha('heroi_' + base, P.passo, P.x, P.y, inv);
-    else folha('heroi_' + base + '0', 0, P.x, P.y, inv);
+    if (P.estado === 'dor') {
+      // tranco: o corpo joga para trás e volta
+      const a = Math.max(0, 1 - P.t / 0.22), lado_ = Math.cos(P.ang) >= 0 ? 1 : -1;
+      pose = { dx: -Math.cos(P.ang) * 4 * a, dy: -Math.sin(P.ang) * 2 * a, rot: -lado_ * 0.22 * a, sx: 1 - 0.06 * a, sy: 1 + 0.04 * a };
+      folha('heroi_' + base + '0', 0, P.x, P.y, inv);
+      pose = null;
+    } else if (P.andando && P.estado === 'livre') folha('heroi_' + base, P.passo, P.x, P.y, inv);
+    else {
+      // parado, respira: um fôlego lento, maior quando o vigor está baixo
+      const canso = 1 - Math.min(1, P.vigor / J.vigorMax()), f_ = Math.sin(J.tempo * (2.2 + canso * 2.5)) * (0.012 + canso * 0.02);
+      pose = { sy: 1 + f_, sx: 1 - f_ * 0.5 };
+      folha('heroi_' + base + '0', 0, P.x, P.y, inv);
+      pose = null;
+    }
     if (P.estado === 'bebe') Tela.fagulhas(P.x, P.y - 26, 1, '#7ce0a8', 8);
     cx.globalAlpha = 1;
   }
@@ -335,7 +353,10 @@
     const d = e.d, s = d.spr;
     if (e.estado === 'morto') {
       cx.globalAlpha = Math.max(0, 1 - e.t / (d.chefe ? 3 : 1.4));
+      // cai de lado antes de sumir; quem voa só desaba
+      if (!d.chefe) { const k = Math.min(1, e.t / 0.32), q = k * k, lado_ = Math.cos(e.ang) < 0 ? 1 : -1; pose = d.voa ? { sy: 1 - q * 0.5, dy: q * 4 } : { rot: lado_ * q * 1.35, dy: q * 3, sy: 1 - q * 0.15 }; }
       folha(s + '_e', 0, e.x, e.y, Math.cos(e.ang) < 0);
+      pose = null;
       cx.globalAlpha = 1; return;
     }
     sombra(e.x, e.y - 1, d.chefe ? 22 : 14);
@@ -354,6 +375,30 @@
     else if (e.estado === 'atordoado') cx.filter = 'brightness(0.7)';
     const inv = Math.cos(e.ang) < 0, sul = Math.sin(e.ang) > 0.75;
     const atk = e.estado === 'golpe' || e.estado === 'prepara';
+    // corpo em movimento: quem não tem quadros de ataque próprios recua, estica e avança no golpe
+    {
+      const temGolpe = !!A.spr[s + '_ge'], fr = inv ? -1 : 1, ca = Math.cos(e.ang), sa = Math.sin(e.ang);
+      const p = { dx: 0, dy: 0, sx: 1, sy: 1, rot: 0 };
+      if (e.estado === 'prepara' && e.tipoGolpe !== 'tremor') {
+        const k = Math.min(1, e.t / e.resta), tr = k > 0.8 ? Math.sin(e.t * 70) * 0.6 : 0; // treme no fim: o golpe vai sair
+        const forca = temGolpe ? 0.4 : 1;
+        p.dx = -ca * 4 * k * forca + tr; p.dy = -sa * 2 * k * forca;
+        p.rot = -fr * 0.14 * k * forca; p.sx = 1 + 0.05 * k * forca; p.sy = 1 - 0.08 * k * forca;
+      } else if (e.estado === 'prepara') { // tremor: agacha antes de bater no chão
+        const k = Math.min(1, e.t / e.resta); p.sy = 1 - 0.14 * k; p.sx = 1 + 0.1 * k;
+      } else if (e.estado === 'golpe' && !d.atira) {
+        const pr = e.t / e.resta, a = pr < 0.25 ? pr / 0.25 : Math.max(0, 1 - (pr - 0.25) / 0.75), forca = temGolpe ? 0.4 : 1;
+        p.dx = ca * 7 * a * forca; p.dy = sa * 3.5 * a * forca; p.rot = fr * 0.2 * a * forca; p.sx = 1 + 0.12 * a * forca; p.sy = 1 - 0.07 * a * forca;
+      } else if (e.estado === 'golpe' && d.atira) { // disparo: coice para trás
+        const a = Math.max(0, 1 - e.t / Math.max(0.08, e.resta)); p.dx = -ca * 3 * a; p.sy = 1 + 0.05 * a;
+      } else if (e.estado === 'atordoado') { // cambaleia
+        const a = Math.max(0, 1 - e.t / Math.max(0.1, e.atord)); p.rot = Math.sin(e.t * 34) * 0.16 * a; p.dx = Math.sin(e.t * 22) * 2 * a; p.sy = 1 - 0.06 * a;
+      } else if (d.voa) { // quem voa paira
+        p.dy = Math.sin(J.tempo * 4 + e.id) * 2.5;
+      }
+      if (e.flash > 0) { const f_ = e.flash / 0.12; p.sx *= 1 + 0.1 * f_; p.sy *= 1 - 0.1 * f_; }
+      pose = p;
+    }
     if (atk) {
       const pref = sul && A.spr[s + '_gs'] ? s + '_gs' : s + '_ge';
       if (A.spr[pref]) {
@@ -363,6 +408,7 @@
     } else if (sul && A.spr[s + '_s']) folha(s + '_s', e.passo, e.x, e.y, false);
     else if (Math.sin(e.ang) < -0.75 && A.spr[s + '_n']) folha(s + '_n', e.passo, e.x, e.y, false);
     else folha(s + '_e', e.passo, e.x, e.y, inv);
+    pose = null;
     cx.filter = 'none';
     if (e.estado === 'golpe' && !d.atira && e.tipoGolpe !== 'tremor') {
       const k = escalaFolha, rr = (d.alcance * 0.7 + 16) * Math.min(1.25, k), prog = e.t / e.resta, ini = e.ang - 1 + prog * 1.2;

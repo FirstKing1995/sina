@@ -124,7 +124,7 @@
       // a mesma criatura é pior nas regiões perigosas; na cripta, vale o perigo 4
       const perigo = d.chefe || d.lenda ? 1 : by >= M.CRIPTA_Y ? 4 : M.regiao(bx, by).perigo;
       const kHp = 1 + (perigo - 1) * 0.5, kDano = 1 + (perigo - 1) * 0.3, hp = d.hp * kHp;
-      const e = { id: i, tipo, d, x: bx * T + 16, y: by * T + 16, cx: bx * T + 16, cy: by * T + 16, hp, hpMax: hp, dano: d.dano * kDano, brasas: d.brasas * (1 + (perigo - 1) * 0.55), estado: 'ronda', t: Math.random() * 3, ang: Math.random() * 6.28, passo: Math.random() * 6, flash: 0, atord: 0, resta: 0, batida: false, firme: d.firme, fase: 1, vagar: 0 };
+      const e = { id: i, tipo, d, x: bx * T + 16, y: by * T + 16, cx: bx * T + 16, cy: by * T + 16, hp, hpMax: hp, dano: d.dano * kDano, brasas: d.brasas * (1 + (perigo - 1) * 0.55), estado: 'ronda', t: Math.random() * 3, ang: Math.random() * 6.28, passo: Math.random() * 6, flash: 0, atord: 0, resta: 0, batida: false, firme: firmeza(d), fase: 1, vagar: 0 };
       if (d.chefe) { e.estado = 'dorme'; e.arenaX = e.cx; e.arenaY = e.cy; e.arenaR = (tipo === 'corpo' ? 15 : 13.4) * T; }
       J.inimigos.push(e);
     });
@@ -217,21 +217,28 @@
     avisa('acerto', { x: e.x, y: e.y, dano });
     if (e.hp <= 0) matar(e);
   }
+  // firmeza: quantos golpes seguidos o bicho aguenta sem cambalear. Os pequenos caem com um; o resto pede sequência
+  function firmeza(d) { return d.chefe ? d.firme : d.hp <= 36 ? Math.max(1, d.firme) : Math.max(2, d.firme + 1); }
   function acertar(e) {
     const P = J.P;
     // castigo: acertar quem acabou de errar o golpe, ou está atordoado, vale muito mais. É isso que premia esperar.
-    const brecha = e.estado === 'recua' || e.estado === 'atordoado' ? 1.6 : 1;
+    // o atordoado vale menos que o golpe errado: o tranco é sorte do herói, a brecha é mérito de quem esperou
+    const brecha = e.estado === 'recua' ? 1.6 : e.estado === 'atordoado' ? 1.25 : 1;
     const dano = Math.round(J.danoArma(J.S.equip.arma) * (P.forte ? 2 : 1) * brecha);
     e.hp -= dano; e.flash = 0.12;
     if (e.estado === 'dorme') acordar(e);
     if (e.estado === 'ronda' || e.estado === 'volta') { e.estado = 'caca'; e.t = 0; alertar(e); }
     avisa('acerto', { x: e.x, y: e.y, dano, forte: P.forte, brecha: brecha > 1 });
+    if (J.tempo - (e.apanhou || -9) > 2.5) e.firme = firmeza(e.d);
+    e.apanhou = J.tempo;
     e.firme -= P.forte ? 2 : 1;
     // só agora ele é interrompido; antes disso, continua vindo. Depois de um tranco, fica um tempo sem tomar outro: nada de prender o bicho para sempre
-    if (e.firme <= 0 && e.hp > 0 && (e.d.chefe || !e.tranco || J.tempo - e.tranco > 1.9)) {
+    // a firmeza também volta sozinha: quem não apanha em sequência não cai
+    if (e.firme <= 0 && e.hp > 0 && !e.d.chefe && e.tranco && J.tempo - e.tranco < 3.2) e.firme = firmeza(e.d);
+    if (e.firme <= 0 && e.hp > 0) {
       const d = Math.hypot(e.x - P.x, e.y - P.y) || 1;
       e.tranco = J.tempo;
-      e.estado = 'atordoado'; e.t = 0; e.atord = e.d.chefe ? 1.1 : 0.42; e.firme = e.d.firme;
+      e.estado = 'atordoado'; e.t = 0; e.atord = e.d.chefe ? 1.1 : 0.34; e.firme = firmeza(e.d);
       mover(e, ((e.x - P.x) / d) * 10, ((e.y - P.y) / d) * 10, e.d.r);
       if (e.d.chefe) avisa('quebra', { x: e.x, y: e.y });
     }
@@ -289,7 +296,7 @@
     if (e.estado === 'morto') { e.t += dt; return; }
     const dx = P.x - e.x, dy = P.y - e.y;
     if (!d.chefe && (Math.abs(dx) > 620 || Math.abs(dy) > 460)) { // longe demais: volta para casa e não pesa no processador
-      if (e.estado !== 'ronda') { e.estado = 'ronda'; e.x = e.cx; e.y = e.cy; e.hp = e.hpMax; e.firme = d.firme; }
+      if (e.estado !== 'ronda') { e.estado = 'ronda'; e.x = e.cx; e.y = e.cy; e.hp = e.hpMax; e.firme = firmeza(d); }
       return;
     }
     if (d.chefe && e.estado === 'dorme' && Math.abs(dx) > 400) return;
@@ -340,7 +347,7 @@
         e.ang = Math.atan2(e.cy - e.y, e.cx - e.x);
         mover(e, Math.cos(e.ang) * d.vel * dt, Math.sin(e.ang) * d.vel * dt, d.r); e.passo += dt * 7;
         e.hp = Math.min(e.hpMax, e.hp + e.hpMax * 0.2 * dt);
-        if (Math.hypot(e.x - e.cx, e.y - e.cy) < 24) { e.estado = 'ronda'; e.hp = e.hpMax; e.firme = d.firme; }
+        if (Math.hypot(e.x - e.cx, e.y - e.cy) < 24) { e.estado = 'ronda'; e.hp = e.hpMax; e.firme = firmeza(d); }
         break;
       case 'prepara':
         if (e.t < e.resta * 0.82) e.ang = Math.atan2(dy, dx); // persegue a mira até quase o golpe: rolar cedo não salva
@@ -368,7 +375,7 @@
         if (e.t >= e.resta) { e.estado = 'caca'; e.t = 0; }
         break;
       case 'atordoado':
-        if (e.t >= e.atord) { e.estado = 'recua'; e.t = 0; e.resta = 0.15; }
+        if (e.t >= e.atord) { e.estado = 'caca'; e.t = 0.12; } // volta direto à caça, pronto para revidar
         break;
     }
     if (!d.chefe) for (const o of J.inimigos) { // separa quem está empilhado
@@ -383,7 +390,7 @@
     for (let i = 0; i < n; i++) {
       const a = (i / n) * 6.283 + Math.random(), x = e.x + Math.cos(a) * 80, y = e.y + Math.sin(a) * 80;
       if (!livre(x, y, d.r)) continue;
-      J.inimigos.push({ id: 5000 + Math.floor(Math.random() * 1e6), tipo, d, x, y, cx: x, cy: y, hp: d.hp, hpMax: d.hp, dano: d.dano, brasas: d.brasas * 0.3, estado: 'caca', t: 0, ang: a, passo: 0, flash: 0.3, atord: 0, resta: 0, batida: false, firme: d.firme, fase: 1, vagar: 0, invocado: true });
+      J.inimigos.push({ id: 5000 + Math.floor(Math.random() * 1e6), tipo, d, x, y, cx: x, cy: y, hp: d.hp, hpMax: d.hp, dano: d.dano, brasas: d.brasas * 0.3, estado: 'caca', t: 0, ang: a, passo: 0, flash: 0.3, atord: 0, resta: 0, batida: false, firme: firmeza(d), fase: 1, vagar: 0, invocado: true });
     }
     avisa('invocou', { x: e.x, y: e.y });
   }

@@ -50,16 +50,27 @@
   // ---------- toque ----------
   const toque = { ativo: false, x: 0, y: 0, id: null };
   if ('ontouchstart' in window && matchMedia('(pointer: coarse)').matches) {
-    const man = $('manche'), bola = man.firstElementChild;
+    // manche flutuante: nasce onde o dedo encosta na metade esquerda e some de volta ao canto quando solta
+    const man = $('manche'), bola = man.firstElementChild, zona = $('zona-manche'), centro = { x: 0, y: 0 };
     const mover = (t) => {
-      const b = man.getBoundingClientRect(), dx = t.clientX - b.left - b.width / 2, dy = t.clientY - b.top - b.height / 2, m = Math.hypot(dx, dy), k = Math.min(1, m / 50);
+      const raio = man.offsetWidth / 2, dx = t.clientX - centro.x, dy = t.clientY - centro.y, m = Math.hypot(dx, dy), k = Math.min(1, m / (raio * 0.8));
       toque.x = m ? (dx / m) * k : 0; toque.y = m ? (dy / m) * k : 0;
-      bola.style.transform = 'translate(' + toque.x * 40 + 'px,' + toque.y * 40 + 'px)';
+      bola.style.transform = 'translate(' + toque.x * raio * 0.66 + 'px,' + toque.y * raio * 0.66 + 'px)';
     };
-    man.addEventListener('touchstart', (e) => { e.preventDefault(); Som.ligar(); toque.ativo = true; toque.id = e.changedTouches[0].identifier; mover(e.changedTouches[0]); }, { passive: false });
-    man.addEventListener('touchmove', (e) => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === toque.id) mover(t); }, { passive: false });
-    const solta = (e) => { for (const t of e.changedTouches) if (t.identifier === toque.id) { toque.ativo = false; toque.x = toque.y = 0; en.mx = en.my = 0; bola.style.transform = ''; } };
-    man.addEventListener('touchend', solta); man.addEventListener('touchcancel', solta);
+    zona.addEventListener('touchstart', (e) => {
+      e.preventDefault(); Som.ligar();
+      const t = e.changedTouches[0], u = $('usar');
+      if (!u.hidden) { const r = u.getBoundingClientRect(); if (t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom) { if (!modal) en.usa = true; return; } }
+      if (toque.ativo) return;
+      const raio = man.offsetWidth / 2;
+      centro.x = Math.max(raio + 4, Math.min(innerWidth - raio - 4, t.clientX)); centro.y = Math.max(raio + 4, Math.min(innerHeight - raio - 4, t.clientY));
+      man.style.left = centro.x - raio + 'px'; man.style.top = centro.y - raio + 'px'; man.style.bottom = 'auto';
+      man.classList.add('vivo');
+      toque.ativo = true; toque.id = t.identifier; mover(t);
+    }, { passive: false });
+    zona.addEventListener('touchmove', (e) => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === toque.id) mover(t); }, { passive: false });
+    const solta = (e) => { for (const t of e.changedTouches) if (t.identifier === toque.id) { toque.ativo = false; toque.id = null; toque.x = toque.y = 0; en.mx = en.my = 0; bola.style.transform = ''; man.classList.remove('vivo'); man.style.left = man.style.top = man.style.bottom = ''; } };
+    zona.addEventListener('touchend', solta); zona.addEventListener('touchcancel', solta);
     document.querySelectorAll('#toque button').forEach((b) => b.addEventListener('touchstart', (e) => {
       e.preventDefault(); Som.ligar(); if (modal) return;
       if (b.dataset.a === 'menu') return abrirMenu('heroi');

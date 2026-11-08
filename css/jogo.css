@@ -80,7 +80,10 @@ button:disabled { opacity: .45; cursor: default; }
 #toque [data-a=corre] { left: 26px; bottom: 160px; }
 #toque [data-a=tocha] { left: 96px; bottom: 160px; }
 #toque button.ativa { background: #5a4a20d0; border-color: #e9c47a; }
-#manche { position: absolute; left: 26px; bottom: 26px; width: 120px; height: 120px; border: 1px solid #6a5a3480; border-radius: 50%; pointer-events: auto; background: #0a0d0e55; }
+#manche { position: absolute; left: 26px; bottom: 26px; width: 120px; height: 120px; border: 1px solid #6a5a3480; border-radius: 50%; pointer-events: none; background: #0a0d0e55; opacity: 0.45; transition: opacity 0.2s; }
+#manche.vivo { opacity: 1; transition: none; }
+/* o manche nasce onde o dedo toca, em qualquer ponto da metade esquerda */
+#zona-manche { position: absolute; left: 0; top: 70px; bottom: 0; width: 50%; pointer-events: auto; touch-action: none; }
 #manche i { position: absolute; left: 40px; top: 40px; width: 40px; height: 40px; border-radius: 50%; background: #c9a45a66; }
 
 /* painéis de RPG */
