@@ -27,3 +27,9 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 
 ## Efeitos de impacto (assets/vfx)
 - `hit-spark.png` e `crit-hit.png`: exportados do **pixelfx** (https://github.com/patch-gg/pixelfx), MIT, Copyright (c) 2026 Patch e Hugo Duprez. Os demais efeitos em pixel (corte, cura, alma, rachadura) foram escritos para o SINA a partir das ideias do mesmo pacote.
+
+## Círculos dos poderes (js/fxforge)
+- Motor do **Pixel Ability FX Forge** (https://github.com/GameDev-Toolkit/pixel-ability-fx-generator), Apache License 2.0 (texto em `js/fxforge/LICENCA-Apache-2.0.txt`). Copiados sem alteração `AbilityEffect.js` e `engine/LoopArt.js`; os efeitos são gerados no navegador na carga do jogo.
+
+## Ambientes das Cinzas e da cripta (som/amb)
+- `cinzas.mp3` ("From The Ashes") e `cripta.mp3` ("Those Who Wait"), do pacote **Dark Ambient Soundscape** de Nihilex (https://nihil-existentia.itch.io/free-audio-asset-collection), CC0 1.0. Convertidos para MP3 com entrada e saída suaves.

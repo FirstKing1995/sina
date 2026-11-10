@@ -673,6 +673,26 @@
     cx.restore();
     return true;
   }
+  // círculos dos poderes: desenhados uma vez na carga pelo motor do Pixel Ability FX Forge (Apache 2.0, js/fxforge)
+  const PODER_FX = {};
+  const RECEITAS_PODER = { guarda: ['barrier', 'earth', 79], passo: ['aura', 'nature', 94], folego: ['aura', 'holy', 11], seta: ['burst', 'fire', 23] };
+  Tela.prepararPoderes = function () {
+    import('./fxforge/AbilityEffect.js').then((m) => {
+      for (const id in RECEITAS_PODER) {
+        const [family, element, seed] = RECEITAS_PODER[id], rec = m.createEffectRecipe({ family, element, power: 'standard', seed }), ef = new m.AbilityEffect(rec), n = 24, quadros = [];
+        for (let i = 0; i < n; i++) { const c = document.createElement('canvas'); c.width = c.height = 160; ef.draw(c.getContext('2d'), ef.duration * i / n); quadros.push(c); }
+        PODER_FX[id] = { quadros, dur: ef.duration };
+      }
+    }).catch(() => {}); // sem o motor, os poderes seguem com as fagulhas de antes
+  };
+  // o círculo deitado no chão, girando aos pés de quem usou
+  function circuloPoder(id, x, y, t, alfa, esc) {
+    const f = PODER_FX[id]; if (!f) return;
+    const q = f.quadros[Math.floor((t / f.dur) * f.quadros.length) % f.quadros.length];
+    cx.save(); cx.globalCompositeOperation = 'lighter'; cx.globalAlpha = alfa;
+    cx.translate(Math.round(x), Math.round(y)); cx.scale(esc, esc * 0.42);
+    cx.drawImage(q, -80, -80); cx.restore();
+  }
   Tela.faisca = function (x, y, ang, grande) {
     if (VFX.faisca.img) { Tela.efeito('vfx', x, y + 20, { v: grande ? VFX.critico : VFX.faisca, ang, esc: grande ? 0.8 : 1 }); return; }
     const C = PAL.faisca, ti = (Math.random() - 0.5) * 0.16, e_ = grande ? 1.35 : 1;
@@ -682,6 +702,8 @@
   };
   function efeitosPix(dt) {
     const P = J.P;
+    if (P && P.guarda > 0) circuloPoder('guarda', P.x, P.y - 2, relogio, Math.min(1, P.guarda) * 0.9, 0.62);
+    if (P && P.passoCaca > 0) circuloPoder('passo', P.x, P.y - 2, relogio, Math.min(1, P.passoCaca) * 0.8, 0.55);
     // o corte do herói acompanha a lâmina, do começo ao fim do golpe
     if (P && P.estado === 'golpe' && P.t >= P.hitIni - 0.05 && P.t <= P.hitFim + 0.14) {
       const C = P.forte ? PAL.forte : PAL.corte, u = Math.min(1, (P.t - P.hitIni + 0.05) / (P.hitFim - P.hitIni + 0.06)), lado_ = Math.cos(P.ang) >= 0 ? 1 : -1;
@@ -691,7 +713,12 @@
     }
     for (let i = efs.length - 1; i >= 0; i--) {
       const f = efs[i]; f.t += dt;
-      if (f.tipo === 'vfx') {
+      if (f.tipo === 'poder') {
+        const fx_ = PODER_FX[f.id]; if (!fx_ || f.t > 1.4) { efs.splice(i, 1); continue; }
+        const a = f.t < 0.15 ? f.t / 0.15 : Math.max(0, 1 - (f.t - 0.9) / 0.5);
+        if (f.id === 'seta') { cx.save(); cx.globalCompositeOperation = 'lighter'; cx.globalAlpha = a; const q = fx_.quadros[Math.min(fx_.quadros.length - 1, Math.floor(f.t * 30))]; cx.translate(Math.round(f.x), Math.round(f.y)); cx.scale(0.42, 0.42); cx.drawImage(q, -80, -80); cx.restore(); }
+        else circuloPoder(f.id, J.P.x, J.P.y - 2, f.t, a, 0.7);
+      } else if (f.tipo === 'vfx') {
         if (f.segue && J.P) { f.x = J.P.x; f.y = J.P.y; }
         if (!folhaVfx(f.v, f.t, f.x, f.y, f.ang, f.esc || 1)) efs.splice(i, 1);
       } else if (f.tipo === 'faisca') {

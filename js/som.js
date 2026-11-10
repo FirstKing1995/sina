@@ -47,7 +47,7 @@
   let alvoAmb = null, alvoMus = null;
   S.ambiente = function (nome) {
     alvoAmb = nome; if (!ligado) return;
-    for (const n of ['noite', 'masmorra', 'brisa', 'chuva', 'rio']) laco('som/amb/' + n + '.mp3', n === nome ? (n === 'masmorra' ? 0.6 : 0.38) : 0);
+    for (const n of ['noite', 'masmorra', 'brisa', 'chuva', 'rio', 'cinzas', 'cripta']) laco('som/amb/' + n + '.mp3', n === nome ? (n === 'masmorra' ? 0.6 : n === 'cinzas' || n === 'cripta' ? 0.5 : 0.38) : 0);
   };
   S.fogueira = function (k) { if (ligado) { const el = lacos['som/amb/fogo.mp3']; if (!el) laco('som/amb/fogo.mp3', k); else { if (k > 0 && el.paused) el.play().catch(() => {}); el.volume = Math.min(1, k); if (!k) el.pause(); } } };
   S.musica = function (nome) {

@@ -114,7 +114,7 @@
       const id = p.x + ':' + p.y;
       if (!J.S.placas.includes(id) && Math.hypot(p.x * T - P.x, p.y * T - P.y) < 80) { J.S.placas.push(id); sussurrar(Tela.temToque && p.toque ? p.toque : p.t, 7000); }
     }
-    { const rid = by >= M.CRIPTA_Y ? 'cripta' : M.regiao(Math.floor(bx), Math.floor(by)).id; Som.ambiente({ cripta: 'masmorra', sertao: 'brisa', serra: 'brisa', cinzas: 'brisa', mangue: 'chuva' }[rid] || 'noite'); }
+    { const rid = by >= M.CRIPTA_Y ? 'cripta' : M.regiao(Math.floor(bx), Math.floor(by)).id; Som.ambiente({ cripta: 'cripta', sertao: 'brisa', serra: 'brisa', cinzas: 'cinzas', mangue: 'chuva' }[rid] || 'noite'); }
     let fogo = 0;
     for (const id in C.FOGUEIRAS) if (J.S.acesas.includes(id)) { const f = C.FOGUEIRAS[id], d = Math.hypot(f.x * T - P.x, f.y * T - P.y); fogo = Math.max(fogo, 1 - d / 240); }
     Som.fogueira(Math.max(0, fogo) * 0.6);
@@ -164,7 +164,7 @@
       case 'morreu': aoMorrer(); break;
       case 'nasceu': $('chefe').hidden = true; Som.musica(null); break;
       case 'subiu': Som.tocar('raro', 0.6); atualizarDescanso(); break;
-      case 'poder': { const pd = J.poderAtual(); if (ev.id === 'seta') Som.tocar('magia', 0.6); else { Som.tocar('raro', 0.6); Tela.fagulhas(ev.x, ev.y, 18, ev.id === 'guarda' ? '#c0d0e8' : ev.id === 'passo' ? '#90d870' : '#ffd070', 30); sussurrar(pd.nome + '.', 1200); } break; }
+      case 'poder': { if (ev.id === 'folego' || ev.id === 'seta') Tela.efeito('poder', ev.id === 'seta' ? J.P.x + Math.cos(J.P.ang) * 18 : ev.x, ev.id === 'seta' ? J.P.y - 20 + Math.sin(J.P.ang) * 10 : ev.y, { id: ev.id }); const pd = J.poderAtual(); if (ev.id === 'seta') Som.tocar('magia', 0.6); else { Som.tocar('raro', 0.6); Tela.fagulhas(ev.x, ev.y, 18, ev.id === 'guarda' ? '#c0d0e8' : ev.id === 'passo' ? '#90d870' : '#ffd070', 30); sussurrar(pd.nome + '.', 1200); } break; }
     }
   }
   function aoMorrer() {
@@ -524,7 +524,7 @@
     N.enviar(true); // explorar também fica salvo
   }
   Tela.carregar((k) => { $('carrega').textContent = 'Acordando os mortos... ' + Math.round(k * 100) + '%'; }).then(() => {
-    Tela.iniciar();
+    Tela.iniciar(); Tela.prepararPoderes();
     montarTitulo(); desenharConta();
     if (N.sessao()) N.baixar().then((trocou) => { if (trocou) montarTitulo(); });
     N.acordar();
