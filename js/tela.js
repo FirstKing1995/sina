@@ -378,7 +378,14 @@
       pose = { dx: -Math.cos(P.ang) * 4 * a, dy: -Math.sin(P.ang) * 2 * a, rot: -lado_ * 0.22 * a, sx: 1 - 0.06 * a, sy: 1 + 0.04 * a };
       folha('heroi_' + base + '0', 0, P.x, P.y, inv);
       pose = null;
-    } else if (P.andando && P.estado === 'livre') folha('heroi_' + base, P.passo, P.x, P.y, inv);
+    } else if (P.andando && P.estado === 'livre') {
+      const corre = J.entrada.corre && !P.cansou && !P.alvo, mx = Math.cos(P.ang), my = Math.sin(P.ang);
+      const passo_ = Math.abs(Math.sin(P.passo * Math.PI / 3)), inc = (corre ? 0.09 : 0.04) * mx;
+      pose = { rot: inc, dx: mx * (corre ? 1.5 : 0.5), dy: -passo_ * (corre ? 1.6 : 0.8), sy: 1 + (corre ? 0.02 : 0) * passo_ };
+      folha('heroi_' + base, P.passo, P.x, P.y, inv);
+      pose = null;
+      if (corre && Math.random() < 0.35) pts.push({ x: P.x - mx * 8 + (Math.random() - 0.5) * 6, y: P.y - 1, vx: -mx * 18 + (Math.random() - 0.5) * 10, vy: -my * 6 - 6, g: 0, vida: 0.35, cor: Math.random() < 0.5 ? 'rgba(140,130,110,0.6)' : 'rgba(100,92,80,0.5)' });
+    }
     else {
       // parado, respira: um fôlego lento, maior quando o vigor está baixo
       const canso = 1 - Math.min(1, P.vigor / J.vigorMax()), f_ = Math.sin(J.tempo * (2.2 + canso * 2.5)) * (0.012 + canso * 0.02);
@@ -440,7 +447,14 @@
         const a = Math.max(0, 1 - e.t / Math.max(0.1, e.atord)); p.rot = Math.sin(e.t * 34) * 0.16 * a; p.dx = Math.sin(e.t * 22) * 2 * a; p.sy = 1 - 0.06 * a;
       } else if (d.voa) { // quem voa paira
         p.dy = Math.sin(J.tempo * 4 + e.id) * 2.5;
+      } else if (e.passo !== e._pp && !d.chefe) { // andando: o corpo acompanha o passo
+        const b_ = Math.sin(e.passo * Math.PI / 2);
+        p.dy = -Math.abs(b_) * 1.6; p.rot = b_ * 0.05; p.sy = 1 + Math.abs(b_) * 0.03;
+      } else if (d.chefe && e.passo !== e._pp) { // chefe pesa: passo lento e fundo
+        const b_ = Math.sin(e.passo * Math.PI / 2);
+        p.dy = -Math.abs(b_) * 2.5; p.rot = b_ * 0.025;
       }
+      e._pp = e.passo;
       if (e.flash > 0) { const f_ = e.flash / 0.12; p.sx *= 1 + 0.1 * f_; p.sy *= 1 - 0.1 * f_; }
       pose = p;
     }

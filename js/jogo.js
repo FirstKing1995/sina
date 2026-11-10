@@ -134,7 +134,7 @@
   const entrada = J.entrada = { mx: 0, my: 0, mira: null, golpe: false, forte: false, rola: false, bebe: false, usa: false, trava: false, poder: false };
   J.rolar = function () {
     const P = J.P;
-    if (P.estado !== 'livre' && !(P.estado === 'golpe' && P.t > P.dGolpe * 0.75) && !(P.estado === 'dor' && P.t > 0.14)) return false; // apanhou: ainda dá para rolar e escapar
+    if (P.estado !== 'livre' && !(P.estado === 'golpe' && P.t > P.hitFim + 0.04) && !(P.estado === 'dor' && P.t > 0.1) && !(P.estado === 'bebe' && P.t < 0.25)) return false; // emenda a esquiva no fim do golpe, logo após apanhar ou ao desistir de beber
     const custo = J.P.passoCaca > 0 ? 0 : 20 + J.peso() * 7 + (raca().rola || 0);
     if (P.vigor < 10) { avisa('semvigor'); return false; }
     const m = Math.hypot(entrada.mx, entrada.my);
@@ -145,14 +145,16 @@
   };
   function golpear(forte) {
     const P = J.P;
-    if (P.estado !== 'livre' && !(P.estado === 'dor' && P.t > 0.1)) return; // apanhou: logo já dá para revidar
+    const emendaGolpe = P.estado === 'golpe' && P.t > P.hitFim + 0.06, emendaRola = P.estado === 'rola' && P.t > 0.32;
+    if (P.estado !== 'livre' && !(P.estado === 'dor' && P.t > 0.1) && !emendaGolpe && !emendaRola) return false; // apanhou: logo já dá para revidar
     const a = J.arma(), custo = a.custo * 0.75 * (forte ? 1.75 : 1);
-    if (P.vigor < 8) { avisa('semvigor'); return; }
+    if (P.vigor < 8) { avisa('semvigor'); return true; }
     P.vigor -= custo; P.espera = 0.55; P.estado = 'golpe'; P.t = 0; P.forte = forte; P.batido = new Set();
     P.dGolpe = (forte ? 0.86 : 0.5) * a.lento; P.hitIni = (forte ? 0.42 : 0.16) * a.lento; P.hitFim = P.hitIni + 0.14;
     if (P.alvo) P.ang = Math.atan2(P.alvo.y - P.y, P.alvo.x - P.x);
     else if (entrada.mira != null) P.ang = entrada.mira;
     avisa('golpe', { forte });
+    return true;
   }
   J.tirosH = [];
   J.usarPoder = function () {
@@ -625,9 +627,14 @@
     if (P.espera > 0) P.espera -= dt;
     else if (P.estado !== 'rola' && P.estado !== 'golpe') P.vigor = Math.min(J.vigorMax(), P.vigor + (P.estado === 'bebe' ? 8 : 34) * dt);
 
-    if (entrada.rola) { entrada.rola = false; J.rolar(); }
-    if (entrada.golpe) { entrada.golpe = false; golpear(false); }
-    if (entrada.forte) { entrada.forte = false; golpear(true); }
+    if (entrada.rola) { entrada.rola = false; P.pedido = { q: 'rola', t: 0.28 }; }
+    if (entrada.golpe) { entrada.golpe = false; P.pedido = { q: 'golpe', t: 0.32 }; }
+    if (entrada.forte) { entrada.forte = false; P.pedido = { q: 'forte', t: 0.32 }; }
+    if (P.pedido) {
+      const ok = P.pedido.q === 'rola' ? J.rolar() : golpear(P.pedido.q === 'forte');
+      P.pedido.t -= dt;
+      if (ok || P.pedido.t <= 0) P.pedido = null;
+    }
     if (entrada.bebe) { entrada.bebe = false; beber(); }
     if (entrada.usa) { entrada.usa = false; if (P.estado === 'livre') J.usar(); }
     if (entrada.trava) { entrada.trava = false; travar(); }
