@@ -33,3 +33,6 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 
 ## Ambientes das Cinzas e da cripta (som/amb)
 - `cinzas.mp3` ("From The Ashes") e `cripta.mp3` ("Those Who Wait"), do pacote **Dark Ambient Soundscape** de Nihilex (https://nihil-existentia.itch.io/free-audio-asset-collection), CC0 1.0. Convertidos para MP3 com entrada e saída suaves.
+
+## Filho da Cauda (assets/spr/cauda_*)
+- Gerado no **SpriteCook** (https://www.spritecook.ai) na conta do autor, plano gratuito; os termos dizem que o que se gera pode ser usado em jogos comerciais. Original em `arte-pixel/cauda-spritecook`. O golpe é feito por código a partir do primeiro quadro.
