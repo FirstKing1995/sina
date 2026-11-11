@@ -36,3 +36,6 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 
 ## Filho da Cauda (assets/spr/cauda_*)
 - Gerado no **SpriteCook** (https://www.spritecook.ai) na conta do autor, plano gratuito; os termos dizem que o que se gera pode ser usado em jogos comerciais. Original em `arte-pixel/cauda-spritecook`. O golpe é feito por código a partir do primeiro quadro.
+
+## Animações dos monstros comuns (assets/spr/*_e e *_ge)
+- Caminhada de bandido, apagado, aranha, cobra, escorpião, onça, jagunço, cangaceiro, esqueleto e cururu, e ataque de bandido, apagado, jagunço, cangaceiro e esqueleto: geradas no **PixelLab** (animate_image) a partir dos próprios sprites do jogo, na conta do autor. Originais em `arte-pixel/anim-pl`.
