@@ -1,4 +1,4 @@
-/* SINA · Parte I: som. Efeitos gravados e ambiente em laço; música só nos chefes, para o silêncio pesar. */
+/* SINA 2D: som. Efeitos gravados e ambiente em laço; música só nos chefes, para o silêncio pesar. (Igual ao da versão de cima.) */
 (function (raiz) {
   'use strict';
   const S = raiz.Som = {};
@@ -27,6 +27,17 @@
     const f = ctx.createBufferSource(), g = ctx.createGain();
     f.buffer = b; f.playbackRate.value = (tom || 1) * (0.92 + Math.random() * 0.16); g.gain.value = vol == null ? 0.8 : vol;
     f.connect(g); g.connect(saida); f.start();
+  };
+  // sons curtos feitos na hora, para o que não tem gravação: pulo, pouso, esquiva, carga
+  S.sopro = function (tipo) {
+    if (!ctx) return;
+    const t = ctx.currentTime, P = { pulo: [0.09, 900, 2400, 0.16], pouso: [0.08, 500, 180, 0.22], esquiva: [0.18, 1400, 500, 0.2], carga: [0.35, 300, 1300, 0.12], sina: [0.4, 600, 1800, 0.12] }[tipo];
+    if (!P) return;
+    const n = Math.floor(ctx.sampleRate * P[0]), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const f = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+    f.buffer = b; fl.type = 'bandpass'; fl.Q.value = 1.4; fl.frequency.setValueAtTime(P[1], t); fl.frequency.exponentialRampToValueAtTime(P[2], t + P[0]);
+    g.gain.value = P[3]; f.connect(fl); fl.connect(g); g.connect(saida); f.start();
   };
   // laços em elementos de áudio, com troca suave
   const lacos = {};

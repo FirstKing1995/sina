@@ -1,7 +1,66 @@
 # SINA · As Terras de Aruanã
 
-RPG soulslike de mundo aberto, em pixel art dark fantasy. Roda no navegador, sem instalar nada.
-Publicado em https://firstking1995.github.io/sina/ (a v0.3.4 antiga fica em /sina/antigo/). Para publicar: `node tools/publicar.js`, depois commit e push em site/.
+RPG soulslike em pixel art dark fantasy, agora **em 2D visto de lado** (plataforma e ação). Roda no navegador, sem instalar nada.
+Publicado em https://firstking1995.github.io/sina/.
+
+- **Versão principal (2D, de lado):** raiz do projeto (`index.html`, `js/`, `css/`).
+- **Versão vista de cima:** guardada inteira em `cima/` (abre em `/sina/cima/`). O save dela não se mistura com o da 2D.
+- **v0.3.4 antiga:** `antigo/`.
+
+## SINA 2D: o teste inicial
+
+Uma fase contínua: **Ermo das Covas → Campos da Aurora → Mata Funda → Clareira do Uivo**, com o **Lobisomem** como chefe. São 3 fogueiras, 4 baús e cerca de 35 criaturas.
+
+### Controles
+
+| Ação | Teclado e mouse | Toque |
+|---|---|---|
+| Andar | A/D ou setas | Manche à esquerda |
+| Pular (segure para ir mais alto) | Espaço (ou Z) | Pular |
+| Golpe, combo de 3 | J, X ou clique | Golpe |
+| Golpe para cima / para baixo no ar (quica) | W/S + golpe | manche para cima/baixo + Golpe |
+| Golpe forte carregado | segure K ou botão direito | segure Forte |
+| Esquiva (rolamento no chão, avanço no ar) | Shift, L ou C | Esquiva |
+| Magias | R e F | Magia e Magia 2 |
+| Beber da cabaça | Q | Beber |
+| Usar, falar, descansar | E | Usar |
+| Descer de um galho | S + Espaço | manche para baixo + Pular |
+| Pausa e ficha | Esc ou I | Menu |
+
+### Regras
+
+- Golpes e esquivas gastam vigor. Acertar quem acabou de atacar causa 60% a mais.
+- Cada golpe que acerta enche a **Sina** (orbe ao lado do retrato), que é gasta em magias.
+- Inimigos ficam vermelhos antes de atacar. Balas inimigas podem ser rebatidas com um golpe.
+- Fogueiras curam, enchem a cabaça e a Sina, mas levantam os mortos. Brasas sobem Vida, Vigor, Força e Sina.
+- Ao morrer, as brasas ficam onde você caiu. Espinhos ferem e te devolvem ao último chão firme.
+
+### Especialidades e magias
+
+| Especialidade | Arma | R | F |
+|---|---|---|---|
+| Soldado | Espada | Guarda de Ferro | Golpe Sísmico (ondas pelo chão) |
+| Caçador | Lança (estocada longa) | Passo de Caça | Lanças Fantasmas |
+| Aprendiz de feitiço | Faca rápida | Seta de Brasa | Coluna de Fogo |
+| Andarilho | Cajado | Segundo Fôlego | Lampejo da Sina (atordoa) |
+
+### Acabamento dos personagens
+
+Os personagens usam as mesmas folhas de perfil da versão de cima (`assets/herois/*/heroi_e.png`, `golpe_e.png`, `assets/spr/*_e.png` e `*_ge.png`), com acabamento feito por código em `js/sprites.js`: contorno escuro, luz de aro vinda da lua, clarão ao ser atingido, aviso vermelho antes do golpe, sombra, estica e amassa no pulo e no pouso, rastro na esquiva e arco de luz no golpe.
+
+### Código (2D)
+
+- `js/fase.js`: a fase (grade de blocos de 16 px montada por código), regiões, inimigos, fogueiras, baús, placas e enfeites.
+- `js/conteudo.js`: criaturas vistas de lado. `js/heroi.js`: povos, especialidades, armas e magias.
+- `js/motor.js`: física, combate, magias, IA e chefe. `js/desenho.js`: cenário em camadas, terreno, luz e efeitos.
+- `js/sprites.js`: carga e acabamento das imagens. `js/main.js`: telas, controles e HUD. `js/som.js`: som.
+- Pelo console: `SINA.J` (jogo), `SINA.F` (fase), `SINA.D` (desenho).
+
+Peças de fora: `ASSETS-TERCEIROS.md`.
+
+---
+
+# Versão vista de cima (em `cima/`)
 
 ## Rodar
 
@@ -49,7 +108,7 @@ Doze fogueiras, 67 baús, cerca de 610 criaturas, 3 masmorras e 6 lendas (Cabra-
 
 ## Código
 
-- `js/mapa.js`: o mundo. `js/conteudo.js`: criaturas, itens, missões e falas.
+- (os caminhos abaixo ficam dentro de `cima/`) `js/mapa.js`: o mundo. `js/conteudo.js`: criaturas, itens, missões e falas.
 - `js/jogo.js`: regras. `js/tela.js`: desenho e luz. `js/main.js`: controles e menus. `js/som.js`: som.
 - `js/robo.js`: testes. Abra com `?robo`: `SINA.robo({ imortal: true })` joga tudo e `SINA.duelo(['bandido'], { bom: true })` mede a dificuldade.
 - Sprites: `python tools/parte1-montar.py`, a partir de `apps meus/sina`. Teste do mundo: `node test/parte1-mapa-test.js`.
