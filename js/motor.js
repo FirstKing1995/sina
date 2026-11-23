@@ -181,7 +181,7 @@
   function comecaGolpe(h) {
     const a = h.ficha.arma;
     if (h.vigor <= 0) { texto(h.x, h.y - 40, 'sem vigor', '#9fc49a'); return; }
-    h.estado = 'golpe'; h.t = 0; h.acertou = new Set(); h.fila = 0;
+    h.estado = 'golpe'; h.t = 0; h.acertou = new Set(); h.fila = 0; h.investida = false;
     h.combo = h.combo >= 3 ? 1 : h.combo + 1;
     h.dirGolpe = J.ent.cima ? 'cima' : J.ent.baixo && !h.noChao ? 'baixo' : 'frente';
     if (h.dirGolpe !== 'frente') h.combo = 1;
@@ -271,7 +271,7 @@
       if (alvo > h.vx) h.vx = Math.min(alvo, h.vx + ac * dt); else h.vx = Math.max(alvo, h.vx - ac * dt);
       if (eixo && livre) h.dir = eixo;
     } else if (h.estado === 'golpe' || h.estado === 'magia') {
-      if (h.noChao) h.vx *= Math.pow(0.0005, dt); else { const alvo = eixo * vel * 0.8; h.vx += (alvo - h.vx) * Math.min(1, dt * 8); }
+      if (h.noChao) h.vx *= Math.pow(h.investida ? 0.02 : 0.0005, dt); else { const alvo = eixo * vel * 0.8; h.vx += (alvo - h.vx) * Math.min(1, dt * 8); }
     } else if (h.estado === 'forte') h.vx *= Math.pow(0.002, dt);
     else if (h.estado === 'carga') h.vx *= Math.pow(0.0001, dt);
     else if (h.estado === 'dor') h.vx *= Math.pow(0.05, dt);
@@ -307,6 +307,11 @@
     if (h.passo > 0 && Math.abs(h.vx) > 60 && Math.random() < 0.4) J.rastro.push({ x: h.x, y: h.y, dir: h.dir, vida: 0.18, max: 0.18, cor: '#9cff8a', anda: true });
 
     // golpes
+    // investida: golpear no meio da esquiva vira uma estocada forte
+    if (h.estado === 'rola' && h.t > 0.1 && !h.noAr && J.ja.golpe > 0 && h.vigor > 0) {
+      J.ja.golpe = 0; h.combo = 2; comecaGolpe(h); h.investida = true; h.dirGolpe = 'frente'; h.dur = h.ficha.arma.tempo * 1.2; h.vx = h.dir * 260;
+      J.rastro.push({ x: h.x, y: h.y, dir: h.dir, vida: 0.25, max: 0.25, cor: '#ffe2a0', anda: true });
+    }
     const podeGolpe = livre || (h.estado === 'golpe' && h.t > h.dur * 0.55);
     if (h.estado === 'golpe' && h.t > h.dur * 0.3 && J.ja.golpe > 0 && h.combo < 3) { h.fila = 1; J.ja.golpe = 0; }
     if (podeGolpe && (usa('golpe') || (h.estado === 'golpe' && h.fila))) {
@@ -370,7 +375,7 @@
 
   function acertaComGolpe(h) {
     const cx = golpeCaixa(h), a = h.ficha.arma;
-    let mult = h.estado === 'forte' ? 1.7 + (h.forcaCarga || 0) * 1.3 : h.combo === 3 ? 1.35 : 1;
+    let mult = h.estado === 'forte' ? 1.7 + (h.forcaCarga || 0) * 1.3 : h.investida ? 1.5 : h.combo === 3 ? 1.35 : 1;
     if (h.dirGolpe === 'baixo') mult *= 1.1;
     for (const e of J.inimigos) {
       if (!e.vivo || h.acertou.has(e)) continue;

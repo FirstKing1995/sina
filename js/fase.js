@@ -82,7 +82,7 @@
   F.PLACAS = [
     { x: 14 * T, y: chaoEm(14), t: 'A ou D para andar, Espaço para pular. Segure o pulo para ir mais alto.', toque: 'Arraste o dedo na metade esquerda para andar. Pular fica à direita.' },
     { x: 30 * T, y: chaoEm(30), t: 'J ou clique para golpear, até três vezes seguidas. Com W o golpe vai para cima. No ar, segure S e golpeie para baixo: o golpe quica em quem você acertar.', toque: 'Golpe ataca à frente. Puxe o manche para baixo no ar para golpear para baixo.' },
-    { x: 50 * T, y: chaoEm(50), t: 'Shift esquiva: por um instante, nada te acerta. Segure K ou o botão direito para carregar um golpe forte.', toque: 'Esquiva te deixa intocável por um instante. Segure Forte para carregar o golpe.' },
+    { x: 50 * T, y: chaoEm(50), t: 'Shift esquiva: por um instante, nada te acerta. Golpear no meio da esquiva faz uma investida. Segure K ou o botão direito para carregar um golpe forte.', toque: 'Esquiva te deixa intocável por um instante. Segure Forte para carregar o golpe.' },
     { x: 76 * T, y: chaoEm(76), t: 'Cada golpe que acerta enche a Sina (o orbe ao lado do retrato). R e F gastam a Sina em magia. Q bebe da cabaça.', toque: 'Golpes enchem a Sina. Os botões Magia gastam. Beber cura.' },
     { x: 100 * T, y: chaoEm(100), t: 'Campos da Aurora. Quem acabou de atacar fica aberto: acerte nesse instante e o golpe pesa mais.' },
     { x: 266 * T, y: chaoEm(266), t: 'Mata Funda. Os galhos aguentam seu peso. Para descer de um galho, segure S e aperte Espaço.', toque: 'Mata Funda. Para descer de um galho, puxe o manche para baixo e pule.' },

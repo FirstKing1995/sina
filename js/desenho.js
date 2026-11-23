@@ -278,7 +278,7 @@
     const k = h.t / h.dur; if (k < 0.12 || k > 0.75) return;
     const a = h.ficha.arma, forte = h.estado === 'forte', p = (k - 0.12) / 0.63;
     const cx = h.x, cy = h.y - h.h / 2 - 2, R = (a.alcance + (forte ? 14 : 4)) * 0.95;
-    const corA = forte ? '#ffe2a0' : h.combo === 3 ? '#fff1c8' : '#ffffff', corB = forte ? '#ff9a40' : h.ficha.cor;
+    const corA = forte || h.investida ? '#ffe2a0' : h.combo === 3 ? '#fff1c8' : '#ffffff', corB = forte ? '#ff9a40' : h.ficha.cor;
     g.save();
     g.globalCompositeOperation = 'lighter';
     if (h.ficha.arma.estoca && h.dirGolpe === 'frente' && !forte) { // estocada
