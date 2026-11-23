@@ -20,10 +20,12 @@
 
   // arma: dano, vigor por golpe, tempo do golpe (s), alcance (px à frente)
   H.ARMAS = {
-    espada: { nome: 'Espada gasta', dano: 17, custo: 14, tempo: 0.34, alcance: 34, altura: 26 },
-    lanca: { nome: 'Lança de caça', dano: 16, custo: 15, tempo: 0.38, alcance: 46, altura: 16 },
-    adaga: { nome: 'Faca de osso', dano: 11, custo: 9, tempo: 0.24, alcance: 26, altura: 22 },
-    cajado: { nome: 'Cajado de andarilho', dano: 14, custo: 12, tempo: 0.32, alcance: 36, altura: 28 },
+    espada: { nome: 'Espada gasta', ic: 'W_Sword001', dano: 17, custo: 14, tempo: 0.34, alcance: 34, altura: 26, preco: 500, desc: 'Equilibrada. Bom alcance e golpe firme.' },
+    lanca: { nome: 'Lança de caça', ic: 'W_Spear001', dano: 16, custo: 15, tempo: 0.38, alcance: 46, altura: 16, estoca: true, preco: 650, desc: 'Estocada longa e estreita. Fere de longe.' },
+    adaga: { nome: 'Faca de osso', ic: 'W_Dagger004', dano: 11, custo: 9, tempo: 0.24, alcance: 26, altura: 22, preco: 300, desc: 'Curta e muito rápida. Gasta pouco vigor.' },
+    cajado: { nome: 'Cajado de andarilho', ic: 'I_Book', dano: 14, custo: 12, tempo: 0.32, alcance: 36, altura: 28, preco: 0, desc: 'Madeira velha com alma de ferro.' },
+    machado: { nome: 'Machado de lenhador', ic: 'W_Axe003', dano: 29, custo: 24, tempo: 0.5, alcance: 38, altura: 30, req: 3, preco: 1400, desc: 'Lento e pesado. Quebra a guarda de quem apanha. Pede Força 3.' },
+    facao: { nome: 'Facão de Zé', ic: 'W_Dagger018', dano: 23, custo: 13, tempo: 0.3, alcance: 34, altura: 24, desc: 'Arrancado do chefe dos bandidos. Rápido e cruel.' },
   };
 
   H.MAGIAS = {
@@ -37,6 +39,7 @@
     lampejo: { ic: 'I_Crystal01', nome: 'Lampejo da Sina', desc: 'Uma explosão de luz ao redor: fere e atordoa quem estiver perto.', custo: 38, espera: 1.5, cor: '#fff2c0' },
   };
 
+  H.armaInicial = (h) => (H.ESPECIALIDADES[h.esp] || {}).arma || 'espada';
   H.padrao = () => ({ nome: 'Sem-Sina', sexo: 'm', raca: 'humano', esp: 'andarilho' });
   H.chave = (h) => h.sexo + '_' + h.raca + '_' + h.esp;
   const ORIGINAL = 'm_humano_andarilho';
@@ -56,14 +59,18 @@
   };
 
   // números do herói a partir da ficha e dos níveis gastos nas fogueiras
-  H.ficha = function (h, niv) {
+  H.ficha = function (h, niv, extra) {
     const r = H.RACAS[h.raca] || {}, e = H.ESPECIALIDADES[h.esp] || {}, n = niv || { vida: 0, vigor: 0, forca: 0, sina: 0 };
-    const arma = H.ARMAS[e.arma] || H.ARMAS.espada;
+    extra = extra || {};
+    const idArma = extra.arma || e.arma, arma = Object.assign({ id: idArma }, H.ARMAS[idArma] || H.ARMAS.espada);
+    const forja = (extra.forja && extra.forja[idArma]) || 0;
+    arma.forja = forja;
+    if (arma.req && n.forca < arma.req) { arma.fraca = true; }
     return {
       vida: 100 + (r.vida || 0) + (e.vida || 0) + n.vida * 14,
       vigor: 100 + (r.vigor || 0) + (e.vigor || 0) + n.vigor * 9,
       sina: 100 + (e.sina || 0) + n.sina * 12,
-      dano: arma.dano * (1 + (r.dano || 0)) * (1 + n.forca * 0.09),
+      dano: arma.dano * (1 + (r.dano || 0)) * (1 + n.forca * 0.09) * (1 + forja * 0.15) * (arma.fraca ? 0.6 : 1),
       magia: 1 + n.sina * 0.08 + n.forca * 0.03,
       def: Math.max(0, (r.def || 0) + (e.def || 0)),
       vel: 1 + (r.vel || 0),

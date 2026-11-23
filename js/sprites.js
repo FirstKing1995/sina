@@ -43,6 +43,18 @@
     return 2;
   }
 
+  // onde fica o alto da cabeça em cada quadro (para prender a faixa no pescoço)
+  function cabecas(img, w, h, n) {
+    const c = tela(w * n, h), g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, w * n, h).data, r = [];
+    for (let q = 0; q < n; q++) {
+      let topo = -1, sx = 0, k = 0;
+      for (let y = 0; y < h && topo < 0; y++) for (let x = 0; x < w; x++) if (d[(y * w * n + q * w + x) * 4 + 3] > 100) { topo = y; break; }
+      for (let y = topo; y < topo + 8 && y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w * n + q * w + x) * 4 + 3] > 100) { sx += x; k++; }
+      r.push({ y: topo, x: k ? sx / k : w / 2 });
+    }
+    return r;
+  }
   S.registra = function (nome, img, meta, opc) {
     if (!img) return null;
     const m = meta || { w: img.width, h: img.height, n: 1, fundo: 0 };
@@ -50,6 +62,7 @@
     const fundo = m.fundo == null ? fundoDe(img, m.w, m.h) : m.fundo;
     const base = opc && (opc.contorno || opc.aro) ? acabamento(img, m.w, m.h, n, opc) : img;
     const e = { img: base, w: m.w, h: m.h, n, fundo, vira: null, branco: null, personagem: !!(opc && opc.contorno) };
+    if (opc && opc.cabeca) e.cabeca = cabecas(img, m.w, m.h, n);
     banco[nome] = e;
     return e;
   };

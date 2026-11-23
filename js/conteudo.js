@@ -20,6 +20,8 @@
     brutamontes: { nome: 'Brutamontes', spr: 'brutamontes_e', hp: 300, dano: 42, vel: 36, visao: 180, alcance: 40, prep: 0.85, golpe: 0.26, recua: 1.05, brasas: 190, firme: 8, w: 22, h: 40, pesado: true },
     esqueleto: { nome: 'Soldado sem carne', spr: 'esqueleto_e', ge: 'esqueleto_ge', hp: 140, dano: 34, vel: 56, visao: 200, alcance: 34, prep: 0.42, golpe: 0.2, recua: 0.5, brasas: 92, firme: 4, w: 14, h: 32, seguidos: 3 },
     jagunco: { nome: 'Jagunço', spr: 'jagunco_e', ge: 'jagunco_ge', hp: 140, dano: 30, vel: 56, visao: 200, alcance: 32, prep: 0.44, golpe: 0.2, recua: 0.5, brasas: 70, firme: 4, w: 14, h: 32, seguidos: 2 },
+    // chefe do meio do caminho: sem arena, mas com barra de vida, e chama o bando
+    ze: { nome: 'Zé Facão, chefe dos bandidos', spr: 'ze_e', ge: 'ze_ge', hp: 560, dano: 26, vel: 70, visao: 230, alcance: 34, prep: 0.44, golpe: 0.2, recua: 0.62, brasas: 1100, firme: 12, w: 16, h: 34, mini: true, seguidos: 3, poder: 'bando', escala: 1.12, deixa: 'facao' },
     // chefe da primeira parte
     lobisomem: { nome: 'O Lobisomem', spr: 'lobisomem_e', ge: 'lobisomem_ge', hp: 1100, dano: 30, vel: 96, visao: 600, alcance: 46, prep: 0.5, golpe: 0.26, recua: 0.8, brasas: 1800, firme: 18, w: 30, h: 50, chefe: true, seguidos: 3, salta: true, poder: 'uivo', escala: 1.25 },
   };
@@ -29,6 +31,8 @@
       'Vinte anos atrás a Cauda rachou o céu de Aruanã. Três cacos dela caíram, e cada um enlouqueceu o que estava perto.',
       'Um está com o Lobisomem, depois da Mata Funda, a leste. O uivo dele chega até aqui.',
       'Acerte golpes e a Sina enche dentro de você. Gaste em magia. Descanse nas fogueiras. E não esqueça: morrer aqui não é o fim, é só o começo de novo.'],
+    lauro: ['Lauro, ao seu dispor. Brasa é brasa, venha de onde vier.', 'Tenho ferro para quem tem com que pagar. E um caco de cabaça, se a sua andar curta.'],
+    bento: ['Bento, ferreiro. A arma que você carrega aguenta mais do que parece.', 'Me traga brasas e uma pedra de forja, que eu deixo o fio dela mais faminto. Três vezes, no máximo.'],
     bentaDepois: ['O Lobisomem caiu? Então o primeiro caco é seu. Os outros dois ainda chamam, mas isso fica para outra vez.'],
   };
 })();

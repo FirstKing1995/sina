@@ -80,16 +80,18 @@
 
   // ---------- o herói ----------
   J.save = null;
-  J.novoSave = (ficha) => ({ ficha, niv: { vida: 0, vigor: 0, forca: 0, sina: 0 }, brasas: 0, fogueira: null, acesas: {}, abertos: {}, chefes: {}, perdidas: null, cabacaExtra: 0, conversou: {} });
+  J.novoSave = (ficha) => ({ ficha, niv: { vida: 0, vigor: 0, forca: 0, sina: 0 }, brasas: 0, fogueira: null, acesas: {}, abertos: {}, chefes: {}, perdidas: null, cabacaExtra: 0, conversou: {}, armas: [Hr.armaInicial(ficha)], arma: Hr.armaInicial(ficha), forja: {}, pedras: 0, comprou: {} });
+  J.fichaDe = (s) => { if (!s.armas) { s.armas = [Hr.armaInicial(s.ficha)]; s.arma = s.armas[0]; s.forja = {}; s.pedras = 0; s.comprou = {}; } return Hr.ficha(s.ficha, s.niv, { arma: s.arma, forja: s.forja }); };
+  const grande = (tp) => !!(tp.chefe || tp.mini);
   J.criarHeroi = function () {
-    const s = J.save, f = Hr.ficha(s.ficha, s.niv);
+    const s = J.save, f = J.fichaDe(s);
     const fg = F.FOGUEIRAS.find((x) => x.id === s.fogueira);
     const p = fg ? { x: fg.x + 20, y: fg.y } : F.INICIO;
     J.heroi = { x: p.x, y: p.y, vx: 0, vy: 0, w: 12, h: 30, dir: 1, noChao: true, coyote: 0, estado: fg ? 'livre' : 'acorda', t: 0, combo: 0, fila: 0,
       ficha: f, hp: f.vida, vigor: f.vigor, sina: fg ? f.sina * 0.5 : 0, cabaca: f.cabaca + s.cabacaExtra, inv: 0, semVigor: 0, espera: {}, guarda: 0, passo: 0,
       arDash: true, carga: 0, andou: 0, amassa: 0, ultimoSeguro: { x: p.x, y: p.y }, acertou: new Set(), dirGolpe: 'frente', desce: false };
   };
-  J.recalcular = function () { const h = J.heroi; const f = Hr.ficha(J.save.ficha, J.save.niv); h.ficha = f; h.hp = Math.min(h.hp, f.vida); };
+  J.recalcular = function () { const h = J.heroi; const f = J.fichaDe(J.save); h.ficha = f; h.hp = Math.min(h.hp, f.vida); h.vigor = Math.min(h.vigor, f.vigor); };
 
   // ---------- inimigos ----------
   J.inimigos = [];
@@ -97,7 +99,7 @@
     J.inimigos = [];
     for (const i of F.INIMIGOS) {
       const tp = C.TIPOS[i.t];
-      if (tp.chefe && J.save.chefes[i.t]) continue;
+      if (grande(tp) && J.save.chefes[i.t]) continue;
       J.inimigos.push({ tipo: i.t, T: tp, x: i.x, y: i.y, ox: i.x, oy: i.y, vx: 0, vy: 0, w: tp.w, h: tp.h, dir: -1, hp: tp.hp, hpMax: tp.hp,
         estado: 'vaga', t: rnd(0, 2), firmeza: tp.firme, flash: 0, andou: rnd(0, 50), seguidos: 0, noChao: true, vivo: true, fase: 1, uivos: 0, alvoY: i.y, acertou: false, pisca: 0 });
     }
@@ -144,12 +146,12 @@
     if (e.hp <= 0) { morreInimigo(e, dir); return true; }
     som('inimigoDor', 0.45);
     e.firmeza -= o.quebra || 1;
-    const peso = e.T.chefe ? 0.25 : e.T.pesado ? 0.5 : 1;
+    const peso = grande(e.T) ? 0.25 : e.T.pesado ? 0.5 : 1;
     if (e.firmeza <= 0 || o.atordoa) {
       e.estado = 'cambaleia'; e.t = 0; e.dur = o.atordoa || 0.55; e.firmeza = e.T.firme;
       e.vx = dir * 120 * peso * (o.empurra || 1);
-      if (!e.T.voa && !e.T.chefe) e.vy = -100 * peso;
-    } else if (!e.T.chefe) e.vx += dir * 60 * peso * (o.empurra || 1);
+      if (!e.T.voa && !grande(e.T)) e.vy = -100 * peso;
+    } else if (!grande(e.T)) e.vx += dir * 60 * peso * (o.empurra || 1);
     if (e.estado === 'vaga') { e.estado = 'persegue'; e.t = 0; }
     return true;
   }
@@ -162,7 +164,7 @@
     J.save.brasas += qtd;
     for (let i = 0; i < Math.min(14, 3 + qtd / 10); i++) fx({ tipo: 'alma', x: e.x + rnd(-8, 8), y: e.y - e.h / 2 + rnd(-8, 8), vx: rnd(-60, 60), vy: rnd(-90, -20), vida: rnd(0.8, 1.3), max: 1.3, cor: '#ffcf6a', tam: 2 });
     texto(e.x, e.y - e.h - 16, '+' + qtd, '#e9c47a');
-    if (e.T.chefe) J.venceuChefe(e);
+    if (grande(e.T)) J.venceuChefe(e);
   }
 
   // ---------- herói: um quadro ----------
@@ -349,6 +351,12 @@
       if (h.tremorNoAr) { h.tremorNoAr = false; ondas(h); }
     }
     if (h.naParede && h.estado === 'rola') { h.estado = 'livre'; }
+    // poeira dos passos
+    h.passoT = (h.passoT || 0) - dt;
+    if (h.noChao && Math.abs(h.vx) > 70 && h.passoT <= 0 && h.estado === 'livre') {
+      h.passoT = 0.28; const r = F.regiao(h.x);
+      fx({ tipo: 'poeira', x: h.x - h.dir * 4, y: h.y - 1, vx: -h.dir * rnd(10, 30), vy: rnd(-14, -4), vida: 0.4, max: 0.4, cor: r.id === 'clareira' ? '#4a4048' : r.id === 'mata' ? '#3a4a30' : '#6a5c48', tam: rnd(1.5, 2.5) });
+    }
     // espinhos
     if (tipoEm(h.x, h.y - 2) === 3 || tipoEm(h.x, h.y + 1) === 3) {
       J.feriHeroi(30, h.x, 'espinhos');
@@ -401,13 +409,14 @@
       return;
     }
     const dx = h.x - e.x, dist = Math.abs(dx), lado = Math.sign(dx) || 1;
-    const fase2 = tp.chefe && e.hp < e.hpMax * 0.5;
+    const fase2 = grande(tp) && e.hp < e.hpMax * 0.5;
     const vel = tp.vel * (fase2 ? 1.2 : 1);
     const prep = tp.prep * (fase2 ? 0.8 : 1);
     // chefe: uiva em 66% e 33% chamando a matilha
     if (tp.poder === 'uivo' && e.estado !== 'uiva' && ((e.uivos === 0 && e.hp < e.hpMax * 0.66) || (e.uivos === 1 && e.hp < e.hpMax * 0.33))) {
       e.uivos++; e.estado = 'uiva'; e.t = 0; e.vx = 0; som('uivo', 1); treme(8);
     }
+    if (tp.poder === 'bando' && !e.chamou && e.hp < e.hpMax * 0.5 && e.estado !== 'morto') { e.chamou = true; e.estado = 'chama'; e.t = 0; som('rugido', 0.8, 1.3); }
     switch (e.estado) {
       case 'vaga': {
         if (tp.voa) { e.vx = Math.cos(e.t * 0.8) * 30; e.vy = Math.sin(e.t * 2.1) * 20; }
@@ -416,12 +425,12 @@
           const d = Math.sign(alvo - e.x);
           if (Math.abs(alvo - e.x) > 4 && chaoAFrente(e, d)) { e.vx = d * vel * 0.35; e.dir = d; } else e.vx = 0;
         }
-        if (veHeroi(e) && (!tp.chefe || h.x > F.ARENA.x0 + 48)) { e.estado = 'persegue'; e.t = 0; e.pisca = 0.5; if (tp.chefe) J.acordaChefe(e); }
+        if (veHeroi(e) && (!tp.chefe || h.x > F.ARENA.x0 + 48)) { e.estado = 'persegue'; e.t = 0; e.pisca = 0.5; if (grande(tp)) J.acordaChefe(e); }
         break;
       }
       case 'persegue': {
         e.dir = lado;
-        if (!veHeroi(e) && e.t > 3 && !tp.chefe) { e.estado = 'volta'; e.t = 0; break; }
+        if (!veHeroi(e) && e.t > 3 && !tp.chefe) { e.estado = 'volta'; e.t = 0; if (J.chefeAtivo === e) J.soltaChefe(); break; }
         if (tp.voa) {
           const ax = h.x - lado * (tp.atira ? tp.distancia : 34), ay = h.y - 46 + Math.sin(e.t * 3) * 10;
           e.vx += (Math.sign(ax - e.x) * vel - e.vx) * Math.min(1, dt * 3);
@@ -432,7 +441,7 @@
           e.vx = quer && chaoAFrente(e, quer) ? quer * vel : 0;
           if (dist < tp.alcance && e.t > 0.5) { e.estado = 'prep'; e.t = 0; }
         } else {
-          if (tp.chefe && dist > 150 && e.t > 1.2 && e.noChao) { e.estado = 'salto'; e.t = 0; e.vx = 0; break; }
+          if (tp.poder === 'uivo' && dist > 150 && e.t > 1.2 && e.noChao) { e.estado = 'salto'; e.t = 0; e.vx = 0; break; }
           const perto = dist < tp.alcance * 0.8;
           e.vx = !perto && chaoAFrente(e, lado) ? lado * vel : 0;
           if (dist < tp.alcance + 4 && Math.abs(h.y - e.y) < 40 && e.t > 0.25) { e.estado = 'prep'; e.t = 0; e.seguidos = 0; }
@@ -484,6 +493,19 @@
         if (e.t > e.dur) { e.estado = 'persegue'; e.t = 0; }
         break;
       }
+      case 'chama': { // Zé grita e o bando aparece dos lados
+        e.vx = 0;
+        if (e.t > 0.35 && e.t - dt <= 0.35) {
+          J.anel(e.x, e.y - 30, 60, '#ffb070', 0.5, 3); treme(5);
+          for (const s of [-1, 1]) {
+            const x = e.x + s * 150, tp2 = C.TIPOS.bandido;
+            if (solido(x, e.y - 10)) continue;
+            J.inimigos.push({ tipo: 'bandido', T: tp2, x, y: e.y - 40, ox: x, oy: e.y, vx: 0, vy: 0, w: tp2.w, h: tp2.h, dir: -s, hp: tp2.hp, hpMax: tp2.hp, estado: 'persegue', t: 0, firmeza: 1, flash: 0, andou: 0, seguidos: 0, vivo: true, chamado: true, acertou: false, pisca: 0.6 });
+          }
+        }
+        if (e.t > 1) { e.estado = 'persegue'; e.t = 0; }
+        break;
+      }
       case 'uiva': {
         e.vx = 0;
         if (e.t > 0.4 && e.t - dt <= 0.4) {
@@ -514,7 +536,7 @@
     const antes = e.x;
     mover(e, dt);
     e.andou += Math.abs(e.x - antes);
-    if (e.chamado === undefined && !tp.chefe && !tp.voa && tipoEm(e.x, e.y - 2) === 3) feriInimigoSilencioso(e);
+    if (e.chamado === undefined && !grande(tp) && !tp.voa && tipoEm(e.x, e.y - 2) === 3) feriInimigoSilencioso(e);
   }
   function feriInimigoSilencioso(e) { e.hp = 0; e.estado = 'morto'; e.vivo = false; }
   function atira(e) {
@@ -563,7 +585,7 @@
         if (Math.random() < 0.9) for (let i = 0; i < 2; i++) fx({ tipo: 'brasa', x: m.x + rnd(-m.w / 2, m.w / 2), y: m.y - rnd(0, m.h * 0.8), vx: rnd(-20, 20), vy: rnd(-140, -60), vida: 0.5, max: 0.5, cor: Math.random() < 0.5 ? '#ffd27a' : '#ff6a2a', tam: rnd(1, 3) });
         if (m.t < m.dur - 0.15) for (const e of J.inimigos) {
           if (!e.vivo || (m.ultimo[J.inimigos.indexOf(e)] || -1) > m.t - m.bate) continue;
-          if (cruza(box, caixa(e))) { m.ultimo[J.inimigos.indexOf(e)] = m.t; feriInimigo(e, m.dano, Math.sign(e.x - m.x) || h.dir, { magia: true, forte: true }); if (!e.T.chefe && e.vivo) e.vy = -160; }
+          if (cruza(box, caixa(e))) { m.ultimo[J.inimigos.indexOf(e)] = m.t; feriInimigo(e, m.dano, Math.sign(e.x - m.x) || h.dir, { magia: true, forte: true }); if (!grande(e.T) && e.vivo) e.vy = -160; }
         }
         if (m.t < 0.05) treme(4);
       } else if (m.tipo === 'onda') {
@@ -572,12 +594,12 @@
         if (Math.random() < 0.8) fx({ tipo: 'pedra', x: px + rnd(-4, 4), y: m.y - 2, vx: m.d * rnd(0, 40), vy: rnd(-180, -80), grav: 700, vida: 0.5, max: 0.5, cor: m.inimiga ? '#6a5a80' : '#8a7458', tam: rnd(1.5, 3.5) });
         const box = { x0: px - 10, x1: px + 10, y0: m.y - 26, y1: m.y + 2 };
         if (m.inimiga) { if (!m.ja.has('h') && cruza(box, caixa(h))) { m.ja.add('h'); J.feriHeroi(m.dano, px - m.d * 10, 'onda'); } }
-        else for (const e of J.inimigos) if (e.vivo && !m.ja.has(e) && !e.T.voa && cruza(box, caixa(e))) { m.ja.add(e); feriInimigo(e, m.dano, m.d, { magia: true, forte: true, quebra: 3 }); if (!e.T.chefe) e.vy = -220; }
+        else for (const e of J.inimigos) if (e.vivo && !m.ja.has(e) && !e.T.voa && cruza(box, caixa(e))) { m.ja.add(e); feriInimigo(e, m.dano, m.d, { magia: true, forte: true, quebra: 3 }); if (!grande(e.T)) e.vy = -220; }
         if (solido(px + m.d * 8, m.y - 8) || !solido(px, m.y + 4)) m.t = m.dur;
       } else if (m.tipo === 'lampejo') {
         if (!m.feito && m.t > 0.06) {
           m.feito = true;
-          for (const e of J.inimigos) if (e.vivo && Math.hypot(e.x - m.x, e.y - e.h / 2 - m.y) < m.raio + e.w / 2) feriInimigo(e, m.dano, Math.sign(e.x - m.x) || 1, { magia: true, forte: true, atordoa: e.T.chefe ? 0.6 : 1.6 });
+          for (const e of J.inimigos) if (e.vivo && Math.hypot(e.x - m.x, e.y - e.h / 2 - m.y) < m.raio + e.w / 2) feriInimigo(e, m.dano, Math.sign(e.x - m.x) || 1, { magia: true, forte: true, atordoa: grande(e.T) ? 0.6 : 1.6 });
           for (const b of J.balas) if (b.dono === 'i' && Math.hypot(b.x - m.x, b.y - m.y) < m.raio) b.vida = 0;
           J.faiscas(m.x, m.y, 30, '#fff2c0', 2);
         }
@@ -590,12 +612,14 @@
   J.chefeAtivo = null;
   J.acordaChefe = function (e) {
     if (J.chefeAtivo) return;
-    J.chefeAtivo = e; F.fecharArena(true);
+    J.chefeAtivo = e; if (e.T.chefe) F.fecharArena(true);
     som('rugido', 1); treme(10); if (window.Som) Som.musica('batalha');
     J.aviso && J.aviso('chefe', e);
   };
+  J.soltaChefe = function () { J.chefeAtivo = null; if (window.Som) Som.musica(null); };
   J.venceuChefe = function (e) {
     J.save.chefes[e.tipo] = true; F.fecharArena(false); J.chefeAtivo = null;
+    if (e.T.deixa && !J.save.armas.includes(e.T.deixa)) { J.save.armas.push(e.T.deixa); texto(e.x, e.y - e.h - 30, Hr.ARMAS[e.T.deixa].nome + '!', '#ffd27a', true); som('raro', 0.8); }
     for (const o of J.inimigos) if (o.chamado && o.vivo) { o.vivo = false; o.estado = 'morto'; o.t = 0; }
     if (window.Som) Som.musica(null);
     J.clarao = 1; treme(12); J.pausa = 0.4;
@@ -617,7 +641,7 @@
   J.renascer = function () { J.criarHeroi(); J.povoar(); J.fx = []; J.rastro = []; J.textos = []; };
   J.descansar = function (fg) {
     const s = J.save; s.fogueira = fg.id; s.acesas[fg.id] = true;
-    const h = J.heroi, f = Hr.ficha(s.ficha, s.niv); h.ficha = f;
+    const h = J.heroi, f = J.fichaDe(s); h.ficha = f;
     h.hp = f.vida; h.vigor = f.vigor; h.sina = f.sina; h.cabaca = f.cabaca + s.cabacaExtra; h.espera = {};
     J.povoar(); J.salvar();
   };
@@ -643,6 +667,25 @@
     J.salvar();
   };
 
+  // ---------- loja e forja ----------
+  J.LOJA = ['adaga', 'espada', 'lanca', 'machado', 'caco_cabaca', 'pedra_forja'];
+  J.PRECOS = { caco_cabaca: 1200, pedra_forja: 350 };
+  J.comprar = function (id) {
+    const s = J.save, preco = Hr.ARMAS[id] ? Hr.ARMAS[id].preco : J.PRECOS[id];
+    if (s.brasas < preco) return false;
+    if (Hr.ARMAS[id]) { if (s.armas.includes(id)) return false; s.armas.push(id); }
+    else if (id === 'caco_cabaca') { if (s.comprou.caco) return false; s.comprou.caco = true; s.cabacaExtra++; J.heroi.cabaca++; }
+    else if (id === 'pedra_forja') s.pedras++;
+    s.brasas -= preco; som('moeda', 0.7); J.salvar(); return true;
+  };
+  J.CUSTO_FORJA = [400, 1100, 2600];
+  J.forjar = function () {
+    const s = J.save, n = s.forja[s.arma] || 0, c = J.CUSTO_FORJA[n];
+    if (n >= 3 || s.brasas < c || s.pedras < 1) return false;
+    s.brasas -= c; s.pedras--; s.forja[s.arma] = n + 1; J.recalcular(); som('minerar', 0.8); som('raro', 0.5); J.salvar(); return true;
+  };
+  J.empunhar = function (id) { const s = J.save; if (!s.armas.includes(id)) return; s.arma = id; J.recalcular(); som('equipar', 0.7); J.salvar(); };
+
   // ---------- quadro inteiro ----------
   J.passo = function (dt) {
     for (const k in J.ja) J.ja[k] = Math.max(0, J.ja[k] - dt);
@@ -651,10 +694,11 @@
     const h = J.heroi;
     passoHeroi(dt);
     for (const e of J.inimigos) {
-      if (Math.abs(e.x - h.x) > 700 && e.estado !== 'morto' && !e.T.chefe) continue; // longe demais: dorme
+      if (Math.abs(e.x - h.x) > 700 && e.estado !== 'morto' && !grande(e.T)) continue; // longe demais: dorme
       passoInimigo(e, dt);
     }
     J.inimigos = J.inimigos.filter((e) => e.vivo || e.t < 1.2);
+    if (J.chefeAtivo && J.chefeAtivo.T.mini && Math.abs(J.chefeAtivo.x - h.x) > 520) J.soltaChefe();
     passoBalas(dt); passoMagias(dt);
     // brasas perdidas
     const p = J.save.perdidas;

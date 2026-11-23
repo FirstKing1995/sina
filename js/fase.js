@@ -62,7 +62,7 @@
   F.INIMIGOS = [
     ini('morto', 34), ini('morto', 56), ini('morto', 66),
     ini('morto', 106), ini('lobo', 118), ini('lobo', 121), ini('cobra', 133), ini('bandido', 155), ini('morto', 164), ini('queixada', 180), ini('queixada', 183),
-    ini('bandido', 193), ini('morto_forte', 202), ini('apagado', 198, 23), ini('cobra', 228), ini('bandido', 240), ini('morto', 246),
+    ini('ze', 191), ini('bandido', 203), ini('apagado', 198, 23), ini('cobra', 228), ini('bandido', 240), ini('morto', 246),
     ini('aranha', 270), ini('aranha', 276), ini('marimbondo', 288, 20), ini('apagado', 293), ini('onca', 305), ini('morcego', 312, 24),
     ini('marimbondo', 330, 16), ini('marimbondo', 335, 17), ini('aranha', 352), ini('brutamontes', 368), ini('alma', 380, 20), ini('onca', 392), ini('jagunco', 404), ini('morcego', 414, 22), ini('esqueleto', 426),
     ini('lobisomem', 492),
@@ -88,7 +88,11 @@
     { x: 266 * T, y: chaoEm(266), t: 'Mata Funda. Os galhos aguentam seu peso. Para descer de um galho, segure S e aperte Espaço.', toque: 'Mata Funda. Para descer de um galho, puxe o manche para baixo e pule.' },
     { x: 438 * T, y: chaoEm(438), t: 'Rastros enormes e um uivo que não para. Descanse antes de seguir.' },
   ];
-  F.NPCS = [{ id: 'benta', nome: 'Vidente Benta', spr: 'benta_s0', x: 89 * T, y: chaoEm(89) }];
+  F.NPCS = [
+    { id: 'benta', nome: 'Vidente Benta', spr: 'benta_s0', x: 89 * T, y: chaoEm(89), papel: 'historia' },
+    { id: 'lauro', nome: 'Lauro, o mercador', spr: 'lauro_s0', x: 243 * T, y: chaoEm(243), papel: 'loja' },
+    { id: 'bento', nome: 'Bento, o ferreiro', spr: 'bento_s0', x: 257 * T, y: chaoEm(257), papel: 'forja' },
+  ];
 
   // ---------- enfeites: atrás (fundo do chão) e na frente ----------
   const D = (F.DECOR = []);

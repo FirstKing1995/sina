@@ -23,8 +23,9 @@
   }
   async function vestir(ficha) {
     const c = Hr.caminhos(ficha);
-    await S.carregarUm(D.ANDA, c.anda, { w: 64, h: 64, n: 6, fundo: null }, { contorno: true, aro: true });
-    await S.carregarUm(D.GOLPE, c.golpe, { w: c.golpeW, h: c.golpeW, n: c.golpeW === 88 ? 7 : 6, fundo: null }, { contorno: true, aro: true });
+    await S.carregarUm(D.ANDA, c.anda, { w: 64, h: 64, n: 6, fundo: null }, { contorno: true, aro: true, cabeca: true });
+    await S.carregarUm(D.GOLPE, c.golpe, { w: c.golpeW, h: c.golpeW, n: c.golpeW === 88 ? 7 : 6, fundo: null }, { contorno: true, aro: true, cabeca: true });
+    D.faixa = null;
   }
 
   // ---------- telas ----------
@@ -140,7 +141,12 @@
     const p = J.perto(); if (!p) return;
     if (p.tipo === 'fogueira') descanso(p.o);
     else if (p.tipo === 'bau') J.abrirBau(p.o);
-    else if (p.tipo === 'npc') conversa(p.o, J.save.chefes.lobisomem ? C.CONVERSAS.bentaDepois : C.CONVERSAS.benta);
+    else if (p.tipo === 'npc') {
+      const n = p.o;
+      if (n.papel === 'historia') conversa(n, J.save.chefes.lobisomem ? C.CONVERSAS.bentaDepois : C.CONVERSAS.benta);
+      else if (!J.save.conversou[n.id]) { J.save.conversou[n.id] = true; conversa(n, C.CONVERSAS[n.id], () => (n.papel === 'loja' ? loja() : forja())); }
+      else if (n.papel === 'loja') loja(); else forja();
+    }
   }
   function descanso(fg) {
     const nova = !J.save.acesas[fg.id];
@@ -172,9 +178,9 @@
   function levantar() { modo = 'jogo'; mostra(null); }
   $('d-sair').onclick = levantar;
 
-  let falas = null, falaI = 0;
-  function conversa(n, lista) {
-    falas = lista; falaI = 0; modo = 'conversa'; mostra('conversa'); $('conversa').hidden = false;
+  let falas = null, falaI = 0, depoisFala = null;
+  function conversa(n, lista, depois) {
+    falas = lista; falaI = 0; depoisFala = depois || null; modo = 'conversa'; mostra('conversa'); $('conversa').hidden = false;
     $('conv-nome').textContent = n.nome; $('conv-texto').textContent = falas[0];
     const i = S.info(n.spr), g = $('conv-rosto').getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, 64, 64);
     if (i) g.drawImage(i.img, 16, 4, 32, 32, 0, 0, 64, 64);
@@ -182,18 +188,63 @@
   }
   function segueConversa() {
     falaI++;
-    if (falaI >= falas.length) { $('conversa').hidden = true; modo = 'jogo'; mostra(null); return; }
+    if (falaI >= falas.length) { $('conversa').hidden = true; modo = 'jogo'; mostra(null); if (depoisFala) { const d = depoisFala; depoisFala = null; d(); } return; }
     $('conv-texto').textContent = falas[falaI];
   }
   $('conversa').onclick = segueConversa;
+
+  // ---------- loja do Lauro e forja do Bento ----------
+  const icone = (ic) => '<img class="ic" src="assets/ic/' + ic + '.png" alt="">';
+  const ITENS_LOJA = { caco_cabaca: { nome: 'Caco de cabaça', ic: 'P_Green01', desc: 'A cabaça passa a guardar mais um gole. Só há um.' }, pedra_forja: { nome: 'Pedra de forja', ic: 'I_Rock02', desc: 'Bento usa uma a cada vez que afia sua arma.' } };
+  function painel(titulo, nota, linhas) {
+    modo = 'loja'; mostra('__'); $('hud').hidden = false; $('loja').hidden = false;
+    $('l-titulo').textContent = titulo; $('l-nota').innerHTML = nota;
+    const c = $('l-corpo'); c.innerHTML = '';
+    for (const l of linhas) {
+      const d = document.createElement('div'); d.className = 'linha' + (l.atual ? ' atual' : '');
+      d.innerHTML = '<div class="l-txt">' + icone(l.ic) + '<div><b>' + l.nome + '</b><small>' + l.desc + '</small></div></div>';
+      if (l.botao) { const b = document.createElement('button'); b.textContent = l.botao; b.disabled = !!l.desliga; b.onclick = l.faz; d.appendChild(b); }
+      c.appendChild(d);
+    }
+  }
+  function fechaPainel() { $('loja').hidden = true; levantar(); }
+  $('l-fechar').onclick = fechaPainel;
+  function loja() {
+    const s = J.save;
+    painel('Lauro, o mercador', 'Você tem <b style="color:#e9c47a">' + s.brasas + '</b> brasas · ' + s.pedras + ' pedra(s) de forja', J.LOJA.map((id) => {
+      const A = Hr.ARMAS[id], I = A || ITENS_LOJA[id], preco = A ? A.preco : J.PRECOS[id];
+      const tem = A ? s.armas.includes(id) : id === 'caco_cabaca' && s.comprou.caco;
+      const desc = A ? A.desc + ' Dano ' + A.dano + '.' : I.desc;
+      return { ic: I.ic, nome: I.nome + (tem ? ' (já tem)' : ''), desc, botao: tem ? 'Comprado' : preco + ' brasas', desliga: tem || s.brasas < preco, faz: () => { if (J.comprar(id)) { loja(); hud(0); } } };
+    }));
+  }
+  function forja() {
+    const s = J.save, a = J.heroi.ficha.arma, n = s.forja[s.arma] || 0, c = J.CUSTO_FORJA[n];
+    const linhas = [{ ic: a.ic, nome: a.nome + (n ? ' +' + n : ''), desc: n >= 3 ? 'Já está no fio máximo.' : 'Afiar para +' + (n + 1) + ': ' + c + ' brasas e 1 pedra de forja (você tem ' + s.pedras + '). Cada nível dá 15% de dano.',
+      botao: n >= 3 ? 'Máximo' : 'Afiar', desliga: n >= 3 || s.brasas < c || s.pedras < 1, faz: () => { if (J.forjar()) { J.mostraArea(a.nome + ' +' + (n + 1)); forja(); } } }];
+    painel('Bento, o ferreiro', 'Você tem <b style="color:#e9c47a">' + s.brasas + '</b> brasas. Para afiar outra arma, empunhe-a antes (Pausa).', linhas);
+  }
 
   function pausa() {
     modo = 'pausa'; mostra('pausa');
     const h = J.heroi, f = h.ficha, s = J.save;
     $('p-ficha').innerHTML = '<div class="ficha"><span>' + s.ficha.nome + ', ' + Hr.RACAS[s.ficha.raca].nome + ' ' + Hr.ESPECIALIDADES[s.ficha.esp].nome.toLowerCase() + '</span><em></em>' +
       '<span>Vida</span><em>' + Math.ceil(h.hp) + ' / ' + f.vida + '</em><span>Vigor</span><em>' + f.vigor + '</em><span>Sina</span><em>' + Math.floor(h.sina) + ' / ' + f.sina + '</em>' +
-      '<span>Arma</span><em>' + f.arma.nome + ' (' + Math.round(f.dano) + ')</em><span>Brasas</span><em>' + s.brasas + '</em><span>Cacos da Sina</span><em>' + (s.chefes.lobisomem ? 1 : 0) + ' / 3</em></div>' +
+      '<span>Arma</span><em>' + f.arma.nome + (f.arma.forja ? ' +' + f.arma.forja : '') + ' (' + Math.round(f.dano) + ')</em><span>Brasas</span><em>' + s.brasas + '</em><span>Cacos da Sina</span><em>' + (s.chefes.lobisomem ? 1 : 0) + ' / 3</em></div>' +
+      '<h3>Armas</h3><div id="p-armas"></div>' +
       '<ul class="mag-lista">' + f.magias.map((id, i) => { const M = Hr.MAGIAS[id]; return '<li><b>' + (toque ? '' : (i ? 'F' : 'R') + ' · ') + M.nome + '</b> <span style="color:#a8a292">(' + M.custo + ' de Sina)</span><small>' + M.desc + '</small></li>'; }).join('') + '</ul>';
+    listaArmas();
+  }
+  function listaArmas() {
+    const el = $('p-armas'); if (!el) return; el.innerHTML = ''; const s = J.save;
+    for (const id of s.armas) {
+      const A = Hr.ARMAS[id], n = s.forja[id] || 0, d = document.createElement('div');
+      const fraca = A.req && s.niv.forca < A.req;
+      d.className = 'linha' + (s.arma === id ? ' atual' : '');
+      d.innerHTML = '<div class="l-txt">' + icone(A.ic) + '<div><b>' + A.nome + (n ? ' +' + n : '') + '</b><small>' + A.desc + (fraca ? ' <span style="color:#e07a6a">Força baixa: dano reduzido.</span>' : '') + '</small></div></div>';
+      const b = document.createElement('button'); b.textContent = s.arma === id ? 'Na mão' : 'Empunhar'; b.disabled = s.arma === id;
+      b.onclick = () => { J.empunhar(id); pausa(); }; d.appendChild(b); el.appendChild(d);
+    }
   }
   $('p-voltar').onclick = levantar;
   $('p-titulo').onclick = () => { J.salvar(); if (window.Som) Som.musica(null); titulo(); };
@@ -202,6 +253,7 @@
   // avisos do motor
   J.aviso = function (tipo, x) {
     if (tipo === 'chefe') J.mostraArea(x.T.nome, true);
+    else if (tipo === 'venceu' && x.T.mini) { setTimeout(() => J.mostraArea(x.T.nome.split(',')[0] + ' caiu', true), 500); setTimeout(() => sussurra('Ele largou o facão. Empunhe-o na Pausa (Esc).', 6), 2500); }
     else if (tipo === 'venceu') {
       setTimeout(() => {
         J.mostraArea('Caco da Sina', true);
@@ -227,7 +279,7 @@
     if (ev.target.tagName === 'INPUT') return;
     if (window.Som) Som.ligar();
     if (modo === 'conversa' && ['KeyE', 'Enter', 'Space'].includes(ev.code)) { ev.preventDefault(); if (!ev.repeat) segueConversa(); return; }
-    if (ev.code === 'Escape' || ev.code === 'KeyI') { if (modo === 'jogo') pausa(); else if (modo === 'pausa' || modo === 'descanso') levantar(); return; }
+    if (ev.code === 'Escape' || ev.code === 'KeyI') { if (modo === 'jogo') pausa(); else if (modo === 'loja') fechaPainel(); else if (modo === 'pausa' || modo === 'descanso') levantar(); return; }
     if (modo !== 'jogo') return;
     if (TECLAS[ev.code]) J.ent[TECLAS[ev.code]] = 1;
     if (ev.code === 'Space' || ev.code === 'KeyZ') J.ent.pula = 1;
@@ -273,10 +325,43 @@
     $('usar').addEventListener('pointerdown', usar);
   }
 
+  // ---------- controle (gamepad) ----------
+  // A pula · X golpe · B esquiva · Y usar · RB magia 1 · LB magia 2 · RT golpe forte (segure) · LT beber · Start pausa
+  const antesPad = {};
+  function controle() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const pad = [...pads].find((q) => q && q.connected); if (!pad) return;
+    const bt = (i) => !!(pad.buttons[i] && (pad.buttons[i].pressed || pad.buttons[i].value > 0.5));
+    const ax = pad.axes[0] || 0, ay = pad.axes[1] || 0;
+    const ja = {}; for (let i = 0; i < 16; i++) { const v = bt(i); ja[i] = v && !antesPad[i]; antesPad[i] = v; }
+    const novo = (i) => ja[i];
+    if (window.Som && pad.buttons.some((b) => b.pressed)) Som.ligar();
+    const ativo = Math.abs(ax) > 0.35 || Math.abs(ay) > 0.5 || pad.buttons.some((q) => q.pressed);
+    if (modo === 'jogo' && !ativo && padUsado) { padUsado = false; for (const k in J.ent) J.ent[k] = 0; }
+    if (modo === 'jogo' && (ativo || padUsado)) {
+      J.ent.esq = ax < -0.35 || bt(14) ? 1 : 0; J.ent.dir = ax > 0.35 || bt(15) ? 1 : 0;
+      J.ent.cima = ay < -0.5 || bt(12) ? 1 : 0; J.ent.baixo = ay > 0.5 || bt(13) ? 1 : 0;
+      J.ent.pula = bt(0) ? 1 : 0; J.ent.forte = bt(7) ? 1 : 0;
+      if (novo(0)) J.aperta('pula'); if (novo(2)) J.aperta('golpe'); if (novo(1)) J.aperta('rola');
+      if (novo(5)) J.aperta('magia1'); if (novo(4)) J.aperta('magia2'); if (novo(6)) J.aperta('bebe');
+      if (novo(3)) usar(); if (novo(9)) pausa();
+      padUsado = ativo;
+    } else {
+      const a = novo(0), s = novo(9), bb = novo(1);
+      if (modo === 'conversa' && (a || novo(3))) segueConversa();
+      else if ((modo === 'pausa' || modo === 'descanso') && (s || bb)) levantar();
+      else if (modo === 'loja' && (s || bb)) fechaPainel();
+      else if (modo === 'titulo' && a) { const b0 = document.querySelector('#titulo-menu button'); if (b0) b0.click(); }
+      else if (modo === 'fim' && a) levantar();
+    }
+  }
+  let padUsado = false;
+
   // ---------- laço ----------
   let antes = performance.now();
   function laco(agora) {
     const dt = Math.min(1 / 30, (agora - antes) / 1000); antes = agora;
+    controle();
     desenhaPrevia(dt);
     if (modo === 'jogo' || modo === 'morte' || modo === 'conversa' || modo === 'fim') {
       if (modo === 'jogo' || modo === 'morte') J.passo(dt);
@@ -287,7 +372,7 @@
         const r = F.regiao(h.x);
         if (r !== regiaoAtual && h.estado !== 'acorda') { if (regiaoAtual) J.mostraArea(r); else if (window.Som) Som.ambiente(r.amb); regiaoAtual = r; }
         const p = J.perto(), u = $('usar');
-        if (p) { u.hidden = false; u.innerHTML = '<b>' + (toque ? 'Usar' : 'E') + '</b>' + (p.tipo === 'fogueira' ? (J.save.acesas[p.o.id] ? 'Descansar' : 'Acender a fogueira') : p.tipo === 'bau' ? 'Abrir o baú' : 'Falar com ' + p.o.nome); } else u.hidden = true;
+        if (p) { u.hidden = false; u.innerHTML = '<b>' + (toque ? 'Usar' : 'E') + '</b>' + (p.tipo === 'fogueira' ? (J.save.acesas[p.o.id] ? 'Descansar' : 'Acender a fogueira') : p.tipo === 'bau' ? 'Abrir o baú' : p.o.papel === 'loja' ? 'Comprar com ' + p.o.nome.split(',')[0] : p.o.papel === 'forja' ? 'Afiar a arma com ' + p.o.nome.split(',')[0] : 'Falar com ' + p.o.nome); } else u.hidden = true;
         const pl = F.PLACAS.find((q) => Math.abs(q.x - h.x) < 40 && Math.abs(q.y - h.y) < 50);
         if (pl && pl !== placaVista) { placaVista = pl; sussurra(toque && pl.toque ? pl.toque : pl.t, 6); }
         if (!pl) placaVista = null;
@@ -300,6 +385,6 @@
   }
 
   D.iniciar(cv);
-  carregar().then(() => { titulo(); requestAnimationFrame(laco); });
+  carregar().then(() => D.prepintar((k) => { $('carrega').textContent = 'Erguendo a terra... ' + Math.round(k * 100) + '%'; })).then(() => { titulo(); requestAnimationFrame(laco); });
   window.SINA = { J, F, D }; // para testar pelo console
 })();
