@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>SINA - As Terras de Aruanã</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="2d-v1/css/jogo.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" hidden>
+  <div id="retrato"><canvas id="retrato-c" width="40" height="40"></canvas><div id="orbe"><i></i></div></div>
+  <div id="barras">
+    <div class="barra" id="b-vida"><i></i><u></u></div>
+    <div class="barra" id="b-vigor"><i></i></div>
+  </div>
+  <div id="cabaca"><img src="assets/spr/cabaca.png" alt=""><span id="n-cabaca">3</span></div>
+  <div id="magias"></div>
+  <div id="brasas"><span id="n-brasas">0</span><small>brasas</small></div>
+  <div id="chefe" hidden><div id="chefe-nome"></div><div class="barra" id="b-chefe"><i></i><u></u></div></div>
+  <div id="usar" hidden></div>
+  <div id="sussurro"></div>
+  <div id="area"></div>
+  <div id="girar">Gire o aparelho para jogar deitado.</div>
+</div>
+
+<div id="toque" hidden>
+  <div id="zona-manche"></div><div id="manche"><i></i></div>
+  <div id="botoes">
+    <button data-a="pula" class="g">Pular</button><button data-a="golpe" class="g">Golpe</button><button data-a="rola">Esquiva</button>
+    <button data-a="forte">Forte</button><button data-a="magia1">Magia</button><button data-a="magia2">Magia 2</button>
+    <button data-a="bebe">Beber</button><button data-a="usa">Usar</button><button data-a="menu">Menu</button>
+  </div>
+</div>
+
+<div id="titulo" class="tela">
+  <div class="fundo" style="background-image:url(assets/telas/titulo.webp)"></div>
+  <img id="logo" src="assets/logo.webp" alt="SINA">
+  <p class="sub">As Terras de Aruanã · <em>2D</em></p>
+  <div id="titulo-menu" class="menu"><div id="carrega">Acordando os mortos...</div></div>
+  <p class="rodape">A/D andar · Espaço pular · J ou clique golpe (W ou S muda a direção) · K ou botão direito: golpe forte (segure) · Shift esquiva · R e F magias · Q beber · E usar · Esc pausa<br>Nas setas: Z pula, X golpeia, C esquiva<br><a href="cima/">Versão vista de cima</a> · <a href="./">Versão nova</a></p>
+</div>
+
+<div id="criacao" class="tela" hidden>
+  <div class="fundo" style="background-image:url(assets/telas/casa.webp)"></div>
+  <div class="caixa-criacao">
+    <h2>Quem acordou na cova?</h2>
+    <div class="cria-topo">
+      <canvas id="cria-ver" width="128" height="96"></canvas>
+      <div class="cria-campos">
+        <label class="campo">Nome<input id="cria-nome" maxlength="18" value="Sem-Sina" autocomplete="off"></label>
+        <div class="grupo" id="cria-sexo"></div>
+        <p id="cria-aviso" class="nota"></p>
+      </div>
+    </div>
+    <h3>Povo</h3><div class="grupo cartoes" id="cria-raca"></div>
+    <h3>Especialidade</h3><div class="grupo cartoes" id="cria-esp"></div>
+    <div class="cria-acao"><button id="cria-voltar">Voltar</button><button id="cria-ir" class="ir">Começar a jornada</button></div>
+  </div>
+</div>
+
+<div id="morte" class="tela" hidden>
+  <div class="fundo" style="background-image:url(assets/telas/morte.webp)"></div>
+  <h1>A Sina te alcançou</h1>
+  <p id="morte-sub"></p>
+</div>
+
+<div id="descanso" class="tela" hidden>
+  <div class="fundo lado" style="background-image:url(assets/telas/fogueira.webp)"></div>
+  <div class="painel">
+    <h2 id="d-nome"></h2>
+    <p class="nota">Os mortos se levantaram de novo. Vida, cabaça e Sina estão cheias.</p>
+    <p class="nota forte">Nível <span id="d-nivel">1</span> · <span id="d-brasas">0</span> brasas · fortalecer custa <span id="d-custo">0</span></p>
+    <div class="menu" id="d-niveis"></div>
+    <h3>Viajar para outra fogueira</h3>
+    <div class="menu" id="d-viagem"></div>
+    <button id="d-sair" class="sair">Levantar</button>
+  </div>
+</div>
+
+<div id="pausa" class="tela" hidden>
+  <div class="caixa-pausa">
+    <h2>Pausa</h2>
+    <div id="p-ficha"></div>
+    <div class="menu"><button id="p-voltar">Voltar ao jogo</button><button id="p-titulo">Sair para o título</button></div>
+  </div>
+</div>
+
+<div id="loja" hidden><div class="caixa"><div class="topo"><h2 id="l-titulo"></h2><button id="l-fechar">Fechar</button></div><p class="nota" id="l-nota"></p><div id="l-corpo"></div></div></div>
+
+<div id="conversa" hidden>
+  <canvas id="conv-rosto" width="64" height="64"></canvas>
+  <div><b id="conv-nome"></b><p id="conv-texto"></p><small>E, Enter ou toque para continuar</small></div>
+</div>
+
+<div id="abertura" class="tela" hidden>
+  <div class="fundo" style="background-image:url(assets/telas/cripta.webp)"></div>
+  <p id="ab-texto"></p>
+  <small id="ab-pula">toque ou aperte qualquer tecla para pular</small>
+</div>
+
+<div id="fim" class="tela" hidden>
+  <div class="fundo" style="background-image:url(assets/telas/ruina.webp)"></div>
+  <h1>Um Caco da Sina</h1>
+  <p id="fim-txt"></p>
+  <div class="menu"><button id="fim-seguir">Continuar</button></div>
+</div>
+
+<script src="assets/arte.js"></script>
+<script src="2d-v1/js/som.js"></script>
+<script src="2d-v1/js/heroi.js"></script>
+<script src="2d-v1/js/conteudo.js"></script>
+<script src="2d-v1/js/fase.js"></script>
+<script src="2d-v1/js/sprites.js"></script>
+<script src="2d-v1/js/motor.js"></script>
+<script src="2d-v1/js/desenho.js"></script>
+<script src="2d-v1/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Corpo - teste</title>
+<style>body{background:#1d2a2a;margin:0}canvas{image-rendering:pixelated}</style></head><body>
+<canvas id="c"></canvas>
+<script src="../js/corpo.js"></script>
+<script>
+// folha de poses: uma linha por roupa/arma, uma coluna por estado
+const c = document.getElementById('c'), g = c.getContext('2d');
+const CEL = 64, ESC = 3;
+const estados = [
+  ['parado', { estado: 'livre', noChao: true, vx: 0 }],
+  ['corre1', { estado: 'livre', noChao: true, vx: 120, fase: 0.0 }],
+  ['corre2', { estado: 'livre', noChao: true, vx: 120, fase: 0.25 }],
+  ['corre3', { estado: 'livre', noChao: true, vx: 120, fase: 0.5 }],
+  ['corre4', { estado: 'livre', noChao: true, vx: 120, fase: 0.75 }],
+  ['sobe', { estado: 'livre', noChao: false, vy: -300 }],
+  ['cai', { estado: 'livre', noChao: false, vy: 400 }],
+  ['golpe a', { estado: 'golpe', combo: 1, t: 0.08, dur: 0.34, dirGolpe: 'frente', noChao: true }],
+  ['golpe b', { estado: 'golpe', combo: 1, t: 0.19, dur: 0.34, dirGolpe: 'frente', noChao: true }],
+  ['golpe2', { estado: 'golpe', combo: 2, t: 0.2, dur: 0.34, dirGolpe: 'frente', noChao: true }],
+  ['golpe3', { estado: 'golpe', combo: 3, t: 0.2, dur: 0.4, dirGolpe: 'frente', noChao: true }],
+  ['carga', { estado: 'carga', carga: 0.9, noChao: true }],
+  ['cima', { estado: 'golpe', combo: 1, t: 0.2, dur: 0.34, dirGolpe: 'cima', noChao: true }],
+  ['baixo', { estado: 'golpe', combo: 1, t: 0.2, dur: 0.34, dirGolpe: 'baixo', noChao: false }],
+  ['rola', { estado: 'rola', t: 0.08, noChao: true, noAr: false }],
+  ['magia', { estado: 'magia', t: 0.3, dur: 0.36, noChao: true }],
+  ['dor', { estado: 'dor', t: 0.05, noChao: true }],
+  ['coleta', { estado: 'coleta', t: 0.3, noChao: true }],
+  ['morto', { estado: 'morto', t: 0.8, noChao: true }],
+];
+const linhas = [
+  ['nu', {}, 'punho'],
+  ['tanga+galho', { corpo: 'tanga' }, 'galho'],
+  ['clava+casca', { corpo: 'tanga', bracos: 'casca' }, 'clava'],
+  ['lança+manto', { corpo: 'tanga', manto: 'folhas', cabeca: 'capuz', bracos: 'casca' }, 'lanca_pedra'],
+  ['machado+gibão', { corpo: 'gibao', manto: 'pano', pernas: 'couro', pes: true }, 'machado_pedra'],
+];
+c.width = estados.length * CEL * ESC; c.height = linhas.length * CEL * ESC;
+g.imageSmoothingEnabled = false;
+const tmp = document.createElement('canvas'); tmp.width = estados.length * CEL; tmp.height = linhas.length * CEL; const tg = tmp.getContext('2d');
+linhas.forEach(([nome, roupa, arma], li) => estados.forEach(([en, st], ei) => {
+  const h = Object.assign({ x: ei * CEL + 32, y: li * CEL + 56, dir: 1, vx: 0, vy: 0, roupa, arma, amassa: 0 }, st);
+  if (roupa.manto) { for (let k = 0; k < 40; k++) Corpo.prepara(h, 1 / 60); }
+  Corpo.desenha(tg, h, 0.3);
+}));
+g.drawImage(tmp, 0, 0, c.width, c.height);
+document.title = 'pronto';
+</script></body></html>

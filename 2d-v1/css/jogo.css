@@ -1,0 +1,180 @@
+/* SINA 2D · estilo das telas e do HUD. O jogo é desenhado no canvas; o texto fica aqui para ficar nítido. */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: #04070a; overflow: hidden; color: #d8d2bf; font: 17px/1.45 'Crimson Pro', Georgia, serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+[hidden] { display: none !important; }
+#c { position: fixed; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+a { color: #c9a45a; }
+
+/* HUD */
+#hud { position: fixed; inset: 0; pointer-events: none; }
+#retrato { position: absolute; left: 16px; top: 14px; width: 58px; height: 58px; }
+#retrato-c { width: 58px; height: 58px; image-rendering: pixelated; border-radius: 50%; background: radial-gradient(#1a2124, #07090a); border: 2px solid #6a5a34; }
+#orbe { position: absolute; right: -6px; bottom: -4px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid #6a5a34; background: #05080a; overflow: hidden; }
+#orbe i { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(#ffd27a, #e0702a); box-shadow: 0 0 10px #ff9a40; transition: height .12s; }
+#barras { position: absolute; left: 84px; top: 22px; width: min(36vw, 340px); }
+.barra { position: relative; height: 12px; background: #0b0d0ed9; border: 1px solid #5a4c30; margin-bottom: 5px; }
+.barra i { position: absolute; inset: 1px auto 1px 1px; background: linear-gradient(#b8382e, #7e1f1a); width: 100%; transition: width .08s linear; z-index: 1; }
+.barra u { position: absolute; inset: 1px auto 1px 1px; background: #d8a24a80; transition: width .7s ease .25s; z-index: 0; }
+#b-vigor { height: 7px; width: 80%; }
+#b-vigor i { background: linear-gradient(#6c9c64, #3f6a3d); }
+#cabaca { position: absolute; left: 84px; top: 50px; display: flex; align-items: center; gap: 4px; font: 700 17px Cinzel, serif; text-shadow: 0 1px 3px #000; }
+#cabaca img { width: 26px; height: 26px; image-rendering: pixelated; }
+#magias { position: absolute; left: 140px; top: 50px; display: flex; gap: 6px; }
+.mg { position: relative; width: 30px; height: 30px; border: 1px solid #6a5a34; background: #0a0e10d9; display: grid; place-items: center; font: 700 11px Cinzel, serif; color: #e9c47a; text-shadow: 0 1px 2px #000; }
+.mg canvas { width: 22px; height: 22px; image-rendering: pixelated; }
+.mg b { position: absolute; right: 1px; bottom: -1px; font-size: 10px; color: #c9bfa2; }
+.mg.falta { opacity: .45; }
+.mg s { position: absolute; inset: 0; background: #000a; text-decoration: none; transform-origin: bottom; }
+#brasas { position: absolute; right: 22px; bottom: 18px; text-align: right; font: 700 24px Cinzel, serif; color: #e9c47a; text-shadow: 0 1px 4px #000; }
+#brasas small { display: block; font: 400 13px 'Crimson Pro', serif; color: #a79a7c; }
+#chefe { position: absolute; left: 50%; bottom: 30px; width: min(68vw, 720px); transform: translateX(-50%); }
+#chefe-nome { font: 500 16px Cinzel, serif; letter-spacing: .06em; margin-bottom: 4px; text-shadow: 0 1px 3px #000; }
+#usar { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); padding: 5px 14px; background: #0a0d0ee6; border: 1px solid #5a4c30; white-space: nowrap; pointer-events: auto; cursor: pointer; }
+#usar b { color: #e9c47a; font-family: Cinzel, serif; margin-right: 8px; }
+#sussurro { position: absolute; left: 50%; bottom: 122px; width: min(80vw, 640px); transform: translateX(-50%); text-align: center; font-style: italic; color: #cfd8d0; text-shadow: 0 1px 4px #000, 0 0 10px #000; opacity: 0; transition: opacity .6s; }
+#sussurro.ver { opacity: 1; }
+#area { position: absolute; left: 0; right: 0; top: 24%; text-align: center; font: 500 clamp(18px, 4vw, 34px) Cinzel, serif; letter-spacing: .1em; color: #e6dcc0; text-shadow: 0 2px 8px #000; opacity: 0; transition: opacity 1.1s; }
+#area.ver { opacity: 1; }
+#area.grande { font-size: clamp(22px, 5vw, 44px); color: #e9c47a; }
+
+/* telas cheias */
+.tela { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; background: #04070a; pointer-events: auto; }
+.fundo { position: absolute; inset: 0; background-size: cover; background-position: center; image-rendering: pixelated; filter: brightness(.55); }
+.tela > *:not(.fundo) { position: relative; }
+#logo { width: min(66vw, 560px); filter: drop-shadow(0 6px 20px #000); }
+.sub { font: 500 20px Cinzel, serif; letter-spacing: .06em; margin: 2px 0 22px; text-shadow: 0 2px 6px #000; }
+.sub em { color: #e9c47a; font-style: normal; }
+.rodape { position: absolute !important; bottom: 12px; left: 0; right: 0; font-size: 14px; color: #a9b0a4; margin: 0; }
+.menu { display: flex; flex-direction: column; gap: 8px; width: min(84vw, 320px); }
+button { font: 600 17px 'Crimson Pro', serif; color: #e8d9b0; background: #11171ae6; border: 1px solid #6a5a34; padding: 9px 14px; cursor: pointer; }
+button:hover, button:focus-visible { background: #2a2618; border-color: #c9a45a; outline: none; }
+button:disabled { opacity: .45; cursor: default; }
+#carrega { font-style: italic; color: #c7bfa8; text-shadow: 0 1px 3px #000; }
+
+#morte { background: #020304; animation: surge 1.4s ease; }
+#morte .fundo { filter: brightness(.34) saturate(.7); }
+#morte h1 { font: 700 clamp(30px, 6vw, 62px) Cinzel, serif; color: #a8332b; letter-spacing: .08em; margin: 0 0 8px; text-shadow: 0 2px 12px #000; }
+#morte p { font-style: italic; text-shadow: 0 1px 4px #000; }
+@keyframes surge { from { opacity: 0; } to { opacity: 1; } }
+
+#descanso { align-items: flex-end; padding: 0; }
+#descanso .fundo.lado { filter: brightness(.82); background-position: center 80%; }
+#descanso .painel { width: min(100vw, 400px); height: 100%; padding: 26px 24px; background: linear-gradient(90deg, #04070a00, #04070af2 22%); overflow-y: auto; text-align: left; touch-action: pan-y; }
+#descanso h2 { font: 700 24px Cinzel, serif; color: #e9c47a; margin: 0 0 6px; text-shadow: 0 1px 4px #000; }
+#descanso h3 { font: 500 15px Cinzel, serif; margin: 18px 0 8px; color: #c9bfa2; }
+.nota { margin: 0 0 10px; font-size: 15px; color: #c7c2b0; }
+.nota.forte { color: #e9c47a; font-weight: 600; }
+.menu .niv { display: flex; justify-content: space-between; gap: 10px; }
+.menu .niv em { color: #a79a7c; font-style: normal; }
+.sair { margin-top: 18px; width: 100%; background: #2a2010e6; }
+
+#pausa { background: #03060ad0; }
+.caixa-pausa { width: min(94vw, 520px); padding: 16px 20px; background: #080c0ef5; border: 1px solid #6a5a34; text-align: left; max-height: 92vh; overflow-y: auto; touch-action: pan-y; }
+.caixa-pausa h2 { font: 700 22px Cinzel, serif; color: #e9c47a; margin: 0 0 8px; text-align: center; }
+.caixa-pausa .menu { width: 100%; margin-top: 12px; }
+.ficha { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 15px; }
+.ficha em { font-style: normal; color: #e9c47a; text-align: right; }
+.mag-lista { margin: 10px 0 0; padding: 0; list-style: none; font-size: 15px; }
+.mag-lista li { padding: 5px 0; border-top: 1px solid #1d2426; }
+.mag-lista b { color: #e9c47a; font-family: Cinzel, serif; font-weight: 500; }
+.mag-lista small { display: block; color: #a8a292; }
+
+#conversa { position: fixed; left: 50%; bottom: 26px; width: min(92vw, 720px); transform: translateX(-50%); display: flex; gap: 14px; padding: 14px 16px; background: #080c0ef2; border: 1px solid #6a5a34; pointer-events: auto; cursor: pointer; }
+#conv-rosto { width: 96px; height: 96px; image-rendering: pixelated; flex: none; background: #11181a; }
+#conversa b { font: 500 16px Cinzel, serif; color: #e9c47a; }
+#conversa p { margin: 4px 0; min-height: 3em; }
+#conversa small { color: #8f8a78; }
+
+#fim h1 { font: 700 clamp(30px, 6vw, 56px) Cinzel, serif; color: #e9c47a; margin: 0 0 10px; text-shadow: 0 2px 10px #000; }
+#fim p { max-width: 560px; text-shadow: 0 1px 4px #000; margin: 0 0 20px; }
+
+/* criação de personagem */
+#criacao { overflow-y: auto; justify-content: flex-start; touch-action: pan-y; padding: 14px; }
+.caixa-criacao { width: min(96vw, 680px); padding: 14px 18px; background: #070b0df0; border: 1px solid #6a5a34; text-align: left; margin: auto 0; }
+.caixa-criacao h2 { font: 700 22px Cinzel, serif; color: #e9c47a; margin: 0 0 10px; text-align: center; }
+.caixa-criacao h3 { font: 500 15px Cinzel, serif; color: #c9bfa2; margin: 12px 0 6px; }
+.cria-topo { display: flex; gap: 14px; align-items: center; }
+#cria-ver { width: 192px; height: 144px; image-rendering: pixelated; background: #11181a; border: 1px solid #2a3a3a; flex: none; }
+.cria-campos { flex: 1; min-width: 0; }
+.grupo { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.grupo button { flex: 1 1 auto; padding: 6px 8px; font-size: 15px; }
+.grupo button.ativa { background: #2a2618; border-color: #e0b860; color: #f4e2b4; }
+.cartoes button { flex: 1 1 46%; text-align: left; font-weight: 400; padding: 7px 9px; }
+.cartoes b { display: block; font: 600 15px 'Crimson Pro', serif; color: #e8d9b0; }
+.cartoes small { display: block; font-size: 13.5px; line-height: 1.2; color: #a8a292; }
+.cartoes em { display: block; font-style: normal; font-size: 13.5px; color: #d8a860; line-height: 1.2; margin-top: 2px; }
+.cria-acao { display: flex; gap: 8px; margin-top: 10px; }
+.cria-acao .ir { flex: 1; background: #2a2010; border-color: #c9a45a; color: #f4e2b4; font-weight: 700; }
+input { font: 17px 'Crimson Pro', serif; color: #eee4c8; background: #0d1214; border: 1px solid #5a4c30; padding: 8px 10px; width: 100%; user-select: text; -webkit-user-select: text; touch-action: auto; }
+.campo { display: block; margin-bottom: 10px; font-size: 15px; color: #c9bfa2; }
+
+/* toque */
+#toque { position: fixed; inset: 0; pointer-events: none; }
+#botoes button { position: absolute; pointer-events: auto; width: 56px; height: 56px; padding: 0; border-radius: 50%; font-size: 12px; background: #11171ab0; border-color: #6a5a34a0; }
+#botoes button.ativa { background: #5a4a20d0; border-color: #e9c47a; }
+#botoes [data-a=pula] { right: 14px; bottom: 14px; width: 74px; height: 74px; font-size: 14px; }
+#botoes [data-a=golpe] { right: 98px; bottom: 30px; width: 70px; height: 70px; font-size: 14px; }
+#botoes [data-a=rola] { right: 22px; bottom: 98px; }
+#botoes [data-a=forte] { right: 176px; bottom: 16px; }
+#botoes [data-a=magia1] { right: 92px; bottom: 110px; }
+#botoes [data-a=magia2] { right: 156px; bottom: 82px; }
+#botoes [data-a=bebe] { right: 22px; bottom: 164px; }
+#botoes [data-a=usa] { right: 86px; bottom: 176px; }
+#botoes [data-a=menu] { right: 16px; top: 16px; width: 50px; height: 50px; }
+#manche { position: absolute; left: 20px; bottom: 20px; width: 116px; height: 116px; border: 1px solid #6a5a3480; border-radius: 50%; pointer-events: none; background: #0a0d0e55; opacity: 0.45; transition: opacity 0.2s; }
+#manche.vivo { opacity: 1; transition: none; }
+#zona-manche { position: absolute; left: 0; top: 70px; bottom: 0; width: 45%; pointer-events: auto; touch-action: none; }
+#manche i { position: absolute; left: 38px; top: 38px; width: 40px; height: 40px; border-radius: 50%; background: #c9a45a66; }
+
+@media (pointer: coarse) {
+  html, body { font-size: 16px; position: fixed; width: 100%; height: 100%; }
+  .rodape { font-size: 12px; }
+  #barras { width: min(40vw, 260px); }
+  #brasas { right: 76px; bottom: auto; top: 12px; font-size: 19px; }
+  #chefe { bottom: auto; top: 84px; width: min(70vw, 620px); }
+  #usar { bottom: 220px; padding: 9px 16px; font-size: 16px; }
+  #sussurro { bottom: 250px; font-size: 15px; }
+  #conversa { bottom: 12px; padding: 10px 12px; }
+  #conv-rosto { width: 64px; height: 64px; }
+  #descanso .painel { width: 100%; background: linear-gradient(180deg, #04070a66, #04070af2 30%); padding: 14px 16px; }
+}
+@media (pointer: coarse) and (orientation: landscape) {
+  #logo { width: min(42vw, 340px); }
+  .sub { margin-bottom: 10px; font-size: 16px; }
+  #usar { bottom: 12px; left: 40%; }
+  #sussurro { bottom: 56px; width: 50vw; left: 40%; }
+  #chefe { top: 8px; width: 34vw; }
+  #chefe-nome { font-size: 12px; margin-bottom: 1px; }
+}
+@media (max-width: 520px) {
+  .cria-topo { flex-direction: column; }
+  #cria-ver { width: 160px; height: 120px; }
+}
+
+#girar { display: none; }
+@media (pointer: coarse) and (orientation: portrait) {
+  #girar { display: block; position: absolute; left: 50%; top: 40%; transform: translateX(-50%); padding: 10px 16px; background: #080c0ee6; border: 1px solid #6a5a34; font: 500 15px Cinzel, serif; color: #e9c47a; text-align: center; animation: pulsa 2s ease infinite; }
+}
+@keyframes pulsa { 50% { opacity: .55; } }
+
+/* loja, forja e armas */
+#loja { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #03060899; pointer-events: auto; touch-action: pan-y; }
+#loja .caixa { width: min(94vw, 560px); max-height: 90vh; overflow-y: auto; padding: 16px 18px; background: #080c0ef5; border: 1px solid #6a5a34; }
+.topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+#loja h2 { font: 700 20px Cinzel, serif; color: #e9c47a; margin: 0; }
+.linha { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid #1d2426; }
+.linha .l-txt { display: flex; align-items: center; gap: 10px; min-width: 0; text-align: left; }
+.linha small { display: block; color: #a8a292; font-size: 14px; line-height: 1.25; }
+.linha b { font-weight: 600; }
+.linha button { flex: none; white-space: nowrap; padding: 6px 10px; font-size: 15px; }
+.linha.atual b { color: #e9c47a; }
+.ic { width: 32px; height: 32px; image-rendering: pixelated; flex: none; }
+.caixa-pausa h3 { font: 500 15px Cinzel, serif; color: #c9bfa2; margin: 14px 0 4px; }
+.mapa { display: block; width: 100%; height: 84px; image-rendering: pixelated; background: #05080a; border: 1px solid #2a2a24; }
+.vol { display: flex; align-items: center; gap: 10px; font-size: 15px; margin: 2px 0; }
+.vol span { width: 80px; color: #c9bfa2; }
+.vol input { flex: 1; padding: 0; accent-color: #c9a45a; background: none; border: none; }
+#abertura .fundo { filter: brightness(.3) saturate(.6); }
+#ab-texto { max-width: 620px; font: 400 clamp(18px, 2.6vw, 24px)/1.5 'Crimson Pro', serif; font-style: italic; color: #e6dcc0; text-shadow: 0 2px 8px #000; opacity: 0; transition: opacity 1.2s; }
+#ab-texto.ver { opacity: 1; }
+#ab-pula { position: absolute !important; bottom: 18px; color: #8f8a78; }
