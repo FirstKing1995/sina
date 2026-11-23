@@ -340,6 +340,7 @@
     if (e.estado === 'salto' && e.t < 0.45) { o.sy = 0.85; o.sx = 1.12; }
     if (e.flash > 0) o.branco = (e.flash / 0.12) * 0.6;
     if (!tp.voa) sombra(e.x, e.y, e.w * 0.45);
+    if (e.estado === 'golpe' && !tp.atira) garra(e, tp);
     S.desenha(g, nome, q, e.x, e.y + (tp.voa ? Math.sin(tempo * 6 + e.ox) * 2 : 0), e.dir < 0, o);
     // olhos acendem quando ele te vê
     if (e.pisca > 0) { g.fillStyle = 'rgba(255,60,40,' + e.pisca * 2 + ')'; g.fillRect(e.x - 1, e.y - e.h * (tp.escala || 1) - 10, 2, 5); g.fillRect(e.x - 1, e.y - e.h * (tp.escala || 1) - 3, 2, 2); }
@@ -348,6 +349,28 @@
       const w = Math.max(16, e.w), x = Math.round(e.x - w / 2), y = Math.round(e.y - e.h * (tp.escala || 1) - 8);
       g.fillStyle = '#0a0808cc'; g.fillRect(x - 1, y - 1, w + 2, 4); g.fillStyle = '#a8332b'; g.fillRect(x, y, w * Math.max(0, e.hp / e.hpMax), 2);
     }
+  }
+  // o golpe do inimigo também deixa rastro: garras para quem salta, arco escuro para quem bate
+  function garra(e, tp) {
+    const dur = tp.salta ? Math.max(tp.golpe, 0.32) : tp.golpe, k = e.t / dur;
+    if (k > 0.85) return;
+    const esc = tp.escala || 1, cx = e.x + e.dir * e.w * 0.5, cy = e.y - e.h * 0.55 * esc;
+    g.save(); g.globalAlpha = (1 - k) * 0.9;
+    if (tp.salta) {
+      g.strokeStyle = tp.chefe ? '#c8a0ff' : '#ffd0c0'; g.lineWidth = 1;
+      for (let i = -1; i <= 1; i++) {
+        const ox = cx + e.dir * 6, oy = cy + i * 5 * esc;
+        g.beginPath(); g.moveTo(ox - e.dir * 10 * esc, oy - 7 * esc); g.lineTo(ox + e.dir * 8 * esc, oy + 7 * esc); g.stroke();
+      }
+    } else {
+      const R = (tp.alcance + 4) * esc, a0 = e.dir > 0 ? -1.2 : Math.PI + 1.2, a1 = e.dir > 0 ? 0.9 : Math.PI - 0.9;
+      const p = Math.min(1, k * 2), ponta = a0 + (a1 - a0) * p;
+      g.strokeStyle = 'rgba(255,90,70,0.8)'; g.lineWidth = 2;
+      g.beginPath(); g.arc(e.x, cy, R * 0.8, Math.min(a0, ponta), Math.max(a0, ponta)); g.stroke();
+      g.strokeStyle = 'rgba(255,230,220,0.9)'; g.lineWidth = 1;
+      g.beginPath(); g.arc(e.x, cy, R * 0.8, Math.min(a0, ponta), Math.max(a0, ponta)); g.stroke();
+    }
+    g.restore();
   }
   function desenhaBala(b) {
     g.save(); g.globalCompositeOperation = 'lighter';
@@ -526,7 +549,7 @@
     gl.globalCompositeOperation = 'source-over'; gl.fillStyle = 'rgb(' + a + ',' + a + ',' + ab + ')'; gl.fillRect(0, 0, VW, VH);
     gl.globalCompositeOperation = 'lighter';
     const L = (x, y, r, c, al) => brilho(x - ox, y - oy, r, c, al);
-    L(h.x, h.y - 16, 110, 'rgba(255,200,140,A)', 0.42);
+    L(h.x, h.y - 16, 135, 'rgba(255,200,140,A)', 0.5);
     for (const fg of F.FOGUEIRAS) if (J.save.acesas[fg.id] && Math.abs(fg.x - h.x) < VW) L(fg.x, fg.y - 10, 150 + Math.sin(tempo * 13) * 6, 'rgba(255,160,70,A)', 0.85);
     for (const b of J.balas) L(b.x, b.y, 60, b.dono === 'h' ? 'rgba(255,170,80,A)' : 'rgba(170,110,255,A)', 0.7);
     for (const m of J.magias) L(m.px || m.x, m.y - 20, m.tipo === 'coluna' ? 140 : 90, m.tipo === 'lampejo' ? 'rgba(255,250,220,A)' : 'rgba(255,150,70,A)', m.tipo === 'onda' ? 0.3 : 0.9);

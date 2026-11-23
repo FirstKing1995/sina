@@ -55,11 +55,32 @@
     }
     return r;
   }
+  // repinturas: a onça do acervo veio cinza; aqui ela ganha pelo dourado e rosetas
+  const PINTA = {
+    onca_e: (img) => {
+      const c = tela(img.width, img.height), g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0);
+      const im = g.getImageData(0, 0, c.width, c.height), d = im.data;
+      const h = (x, y) => { let k = (x * 374761393 + y * 668265263) | 0; k = (k ^ (k >>> 13)) * 1274126177; return ((k ^ (k >>> 16)) >>> 0) / 4294967296; };
+      for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+        const i = (y * c.width + x) * 4; if (d[i + 3] < 60) continue;
+        const r = d[i], gg = d[i + 1], b = d[i + 2], mx = Math.max(r, gg, b), mn = Math.min(r, gg, b);
+        if (mx - mn > 40) continue; // olhos e boca ficam
+        const l = (r + gg + b) / 3;
+        if (l > 200) { d[i] = 236; d[i + 1] = 222; d[i + 2] = 190; continue; } // barriga clara
+        const xx = x % 64;
+        const roseta = h(xx >> 1, y >> 1) < 0.13 && l > 70 && l < 190;
+        if (roseta) { d[i] = 40; d[i + 1] = 26; d[i + 2] = 14; }
+        else { d[i] = Math.min(255, l * 1.35 + 30); d[i + 1] = Math.min(255, l * 0.98 + 6); d[i + 2] = l * 0.42; }
+      }
+      g.putImageData(im, 0, 0); return c;
+    },
+  };
   S.registra = function (nome, img, meta, opc) {
     if (!img) return null;
     const m = meta || { w: img.width, h: img.height, n: 1, fundo: 0 };
     const n = Math.max(1, Math.min(m.n || 1, Math.floor(img.width / m.w)));
     const fundo = m.fundo == null ? fundoDe(img, m.w, m.h) : m.fundo;
+    if (PINTA[nome]) img = PINTA[nome](img);
     const base = opc && (opc.contorno || opc.aro) ? acabamento(img, m.w, m.h, n, opc) : img;
     const e = { img: base, w: m.w, h: m.h, n, fundo, vira: null, branco: null, personagem: !!(opc && opc.contorno) };
     if (opc && opc.cabeca) e.cabeca = cabecas(img, m.w, m.h, n);

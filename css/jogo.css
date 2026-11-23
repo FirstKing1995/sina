@@ -170,3 +170,11 @@ input { font: 17px 'Crimson Pro', serif; color: #eee4c8; background: #0d1214; bo
 .linha.atual b { color: #e9c47a; }
 .ic { width: 32px; height: 32px; image-rendering: pixelated; flex: none; }
 .caixa-pausa h3 { font: 500 15px Cinzel, serif; color: #c9bfa2; margin: 14px 0 4px; }
+.mapa { display: block; width: 100%; height: 84px; image-rendering: pixelated; background: #05080a; border: 1px solid #2a2a24; }
+.vol { display: flex; align-items: center; gap: 10px; font-size: 15px; margin: 2px 0; }
+.vol span { width: 80px; color: #c9bfa2; }
+.vol input { flex: 1; padding: 0; accent-color: #c9a45a; background: none; border: none; }
+#abertura .fundo { filter: brightness(.3) saturate(.6); }
+#ab-texto { max-width: 620px; font: 400 clamp(18px, 2.6vw, 24px)/1.5 'Crimson Pro', serif; font-style: italic; color: #e6dcc0; text-shadow: 0 2px 8px #000; opacity: 0; transition: opacity 1.2s; }
+#ab-texto.ver { opacity: 1; }
+#ab-pula { position: absolute !important; bottom: 18px; color: #8f8a78; }

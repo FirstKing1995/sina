@@ -29,7 +29,7 @@
   }
 
   // ---------- telas ----------
-  const telas = ['titulo', 'criacao', 'morte', 'descanso', 'pausa', 'fim'];
+  const telas = ['titulo', 'criacao', 'morte', 'descanso', 'pausa', 'fim', 'abertura'];
   const mostra = (id) => { for (const t of telas) $(t).hidden = t !== id; $('hud').hidden = !(id === null || id === 'conversa'); $('toque').hidden = !(toque && id === null); };
   function titulo() {
     modo = 'titulo'; mostra('titulo');
@@ -77,12 +77,29 @@
   $('cria-voltar').onclick = titulo;
   $('cria-ir').onclick = () => {
     ficha.nome = ($('cria-nome').value || 'Sem-Sina').trim().slice(0, 18);
-    J.apagar(); comecar(J.novoSave(Object.assign({}, ficha)));
+    J.apagar(); visto.fill(0); guardaVisto();
+    const novo = J.novoSave(Object.assign({}, ficha));
+    abertura(() => comecar(novo));
   };
+
+  // abertura: três frases antes de acordar na cova
+  const ABERTURA = ['Vinte anos atrás, a Cauda rachou o céu de Aruanã.', 'Desde então os mortos não ficam embaixo da terra, e ninguém nasce sem uma sina.', 'Ninguém, a não ser você.'];
+  function abertura(depois) {
+    modo = 'abertura'; mostra('abertura');
+    const el = $('ab-texto'); let i = 0, acabou = false, tm = null;
+    const fim = () => { if (acabou) return; acabou = true; clearTimeout(tm); removeEventListener('keydown', fim); $('abertura').removeEventListener('pointerdown', fim); depois(); };
+    const proxima = () => {
+      if (i >= ABERTURA.length) { tm = setTimeout(fim, 900); return; }
+      el.classList.remove('ver');
+      tm = setTimeout(() => { el.textContent = ABERTURA[i++]; el.classList.add('ver'); tm = setTimeout(proxima, 3200); }, 700);
+    };
+    proxima();
+    setTimeout(() => { addEventListener('keydown', fim); $('abertura').addEventListener('pointerdown', fim); }, 400);
+  }
 
   async function comecar(save) {
     $('titulo-menu').innerHTML = '<div id="carrega">Vestindo o herói...</div>';
-    if (modo === 'criacao') mostra('titulo');
+    if (modo === 'criacao' || modo === 'abertura') { mostra('titulo'); modo = 'carregando'; }
     J.save = save;
     await vestir(save.ficha);
     J.criarHeroi(); J.povoar(); J.fx = []; J.textos = []; J.rastro = [];
@@ -231,9 +248,44 @@
     $('p-ficha').innerHTML = '<div class="ficha"><span>' + s.ficha.nome + ', ' + Hr.RACAS[s.ficha.raca].nome + ' ' + Hr.ESPECIALIDADES[s.ficha.esp].nome.toLowerCase() + '</span><em></em>' +
       '<span>Vida</span><em>' + Math.ceil(h.hp) + ' / ' + f.vida + '</em><span>Vigor</span><em>' + f.vigor + '</em><span>Sina</span><em>' + Math.floor(h.sina) + ' / ' + f.sina + '</em>' +
       '<span>Arma</span><em>' + f.arma.nome + (f.arma.forja ? ' +' + f.arma.forja : '') + ' (' + Math.round(f.dano) + ')</em><span>Brasas</span><em>' + s.brasas + '</em><span>Cacos da Sina</span><em>' + (s.chefes.lobisomem ? 1 : 0) + ' / 3</em></div>' +
+      '<h3>Mapa</h3><canvas id="p-mapa" class="mapa"></canvas>' +
       '<h3>Armas</h3><div id="p-armas"></div>' +
       '<ul class="mag-lista">' + f.magias.map((id, i) => { const M = Hr.MAGIAS[id]; return '<li><b>' + (toque ? '' : (i ? 'F' : 'R') + ' · ') + M.nome + '</b> <span style="color:#a8a292">(' + M.custo + ' de Sina)</span><small>' + M.desc + '</small></li>'; }).join('') + '</ul>';
-    listaArmas();
+    listaArmas(); mapa(); volumes();
+    const ct = document.createElement('div');
+    ct.innerHTML = '<h3>Controles</h3><p class="nota">' + (toque ? 'Manche anda (para cima/baixo muda a direção do golpe e desce de galhos). Segure Forte para carregar.' :
+      'A/D andar · Espaço pular · J ou clique golpe (W para cima, S no ar para baixo) · segure K ou botão direito: golpe forte · Shift esquiva · R e F magias · Q beber · E usar · S + Espaço desce do galho · W/S parado olha.<br>Controle: A pula · X golpe · B esquiva · Y usar · RB e LB magias · RT forte · LT beber · Start pausa.') + '</p>';
+    $('p-ficha').appendChild(ct);
+  }
+  // mapa do que já foi andado: a fase inteira, escurecida onde você nunca passou
+  const visto = new Uint8Array(F.W);
+  try { const v = JSON.parse(localStorage.getItem('sina2d_visto') || '[]'); v.forEach((i) => { visto[i] = 1; }); } catch (e) { /* nada */ }
+  function marcaVisto() { const x = Math.floor(J.heroi.x / F.T); for (let i = Math.max(0, x - 18); i < Math.min(F.W, x + 18); i++) visto[i] = 1; }
+  function guardaVisto() { try { const l = []; for (let i = 0; i < F.W; i++) if (visto[i]) l.push(i); localStorage.setItem('sina2d_visto', JSON.stringify(l)); } catch (e) { /* nada */ } }
+  function mapa() {
+    const c = $('p-mapa'); if (!c) return;
+    const y0 = 14, alt = F.H - y0 - 4; c.width = F.W; c.height = alt;
+    const g = c.getContext('2d'), im = g.createImageData(F.W, alt), d = im.data;
+    for (let y = 0; y < alt; y++) for (let x = 0; x < F.W; x++) {
+      const tp = F.tile(x, y + y0), k = (y * F.W + x) * 4, v = visto[x];
+      const cor = tp === 1 ? [92, 80, 62] : tp === 2 ? [140, 110, 70] : tp === 3 ? [170, 60, 50] : [14, 18, 22];
+      d[k] = cor[0] * (v ? 1 : 0.25); d[k + 1] = cor[1] * (v ? 1 : 0.25); d[k + 2] = cor[2] * (v ? 1 : 0.25); d[k + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+    for (const fg of F.FOGUEIRAS) if (J.save.acesas[fg.id]) { g.fillStyle = '#ffa040'; g.fillRect(fg.x / F.T - 1, fg.y / F.T - y0 - 3, 3, 3); }
+    if (J.save.perdidas) { g.fillStyle = '#ffe08a'; g.fillRect(J.save.perdidas.x / F.T - 1, J.save.perdidas.y / F.T - y0 - 3, 2, 2); }
+    if (!J.save.chefes.lobisomem && visto[480]) { g.fillStyle = '#c0a0ff'; g.fillRect(490, F.ARENA.pisoY - y0 - 4, 3, 3); }
+    g.fillStyle = '#fff'; g.fillRect(J.heroi.x / F.T - 1, J.heroi.y / F.T - y0 - 3, 3, 3);
+  }
+  function volumes() {
+    if ($('p-vol')) return;
+    const d = document.createElement('div'); d.id = 'p-vol'; d.innerHTML = '<h3>Som</h3>';
+    for (const [k, nome] of [['efeitos', 'Efeitos'], ['ambiente', 'Ambiente'], ['musica', 'Música']]) {
+      const l = document.createElement('label'); l.className = 'vol'; l.innerHTML = '<span>' + nome + '</span>';
+      const r = document.createElement('input'); r.type = 'range'; r.min = 0; r.max = 1; r.step = 0.05; r.value = Som.vol[k];
+      r.oninput = () => Som.mudaVolume(k, Number(r.value)); l.appendChild(r); d.appendChild(l);
+    }
+    $('p-ficha').appendChild(d);
   }
   function listaArmas() {
     const el = $('p-armas'); if (!el) return; el.innerHTML = ''; const s = J.save;
@@ -355,7 +407,7 @@
       else if (modo === 'fim' && a) levantar();
     }
   }
-  let padUsado = false;
+  let padUsado = false, visT = 5;
 
   // ---------- laço ----------
   let antes = performance.now();
@@ -369,6 +421,7 @@
       if (J.heroi) hud(dt);
       if (modo === 'jogo') {
         const h = J.heroi;
+        marcaVisto(); visT -= dt; if (visT <= 0) { visT = 5; guardaVisto(); }
         const r = F.regiao(h.x);
         if (r !== regiaoAtual && h.estado !== 'acorda') { if (regiaoAtual) J.mostraArea(r); else if (window.Som) Som.ambiente(r.amb); regiaoAtual = r; }
         const p = J.perto(), u = $('usar');

@@ -2,6 +2,13 @@
 (function (raiz) {
   'use strict';
   const S = raiz.Som = {};
+  S.vol = { efeitos: 1, ambiente: 1, musica: 1 };
+  try { Object.assign(S.vol, JSON.parse(localStorage.getItem('sina2d_vol')) || {}); } catch (e) { /* sem preferência guardada */ }
+  S.mudaVolume = function (qual, v) {
+    S.vol[qual] = v; try { localStorage.setItem('sina2d_vol', JSON.stringify(S.vol)); } catch (e) { /* nada */ }
+    if (saida) saida.gain.value = 0.75 * S.vol.efeitos;
+    S.ambiente(alvoAmb); S.musica(alvoMus);
+  };
   const BANCO = {
     golpe: ['golpe1', 'golpe2', 'golpe3'], forte: ['forte1'], acerto: ['acerto1', 'acerto2', 'acerto3'], dor: ['heroi_dor1'],
     inimigoDor: ['dor1', 'dor2'], morte: ['morte1', 'morte2', 'morte3'], rugido: ['rugido1', 'rugido2'], uivo: ['uivo1'], mordida: ['mordida1', 'mordida2'],
@@ -14,7 +21,7 @@
     ligado = true;
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
-      saida = ctx.createGain(); saida.gain.value = 0.75; saida.connect(ctx.destination);
+      saida = ctx.createGain(); saida.gain.value = 0.75 * S.vol.efeitos; saida.connect(ctx.destination);
       const nomes = new Set(); for (const k in BANCO) BANCO[k].forEach((n) => nomes.add(n));
       for (const n of nomes) fetch('som/sfx/' + n + '.mp3').then((r) => r.arrayBuffer()).then((a) => ctx.decodeAudioData(a)).then((b) => { bufs[n] = b; }).catch(() => {});
     } catch (e) { ctx = null; }
@@ -50,6 +57,7 @@
     }, 50);
   }
   function laco(caminho, vol) {
+    vol *= /musica/.test(caminho) ? S.vol.musica : S.vol.ambiente;
     let el = lacos[caminho];
     if (!el) { el = lacos[caminho] = new Audio(caminho); el.loop = true; el.volume = 0; }
     if (vol > 0 && el.paused) el.play().catch(() => {});
@@ -60,7 +68,7 @@
     alvoAmb = nome; if (!ligado) return;
     for (const n of ['noite', 'masmorra', 'brisa', 'chuva', 'rio', 'cinzas', 'cripta']) laco('som/amb/' + n + '.mp3', n === nome ? (n === 'masmorra' ? 0.6 : n === 'cinzas' || n === 'cripta' ? 0.5 : 0.38) : 0);
   };
-  S.fogueira = function (k) { if (ligado) { const el = lacos['som/amb/fogo.mp3']; if (!el) laco('som/amb/fogo.mp3', k); else { if (k > 0 && el.paused) el.play().catch(() => {}); el.volume = Math.min(1, k); if (!k) el.pause(); } } };
+  S.fogueira = function (k) { if (ligado) { const el = lacos['som/amb/fogo.mp3']; if (!el) laco('som/amb/fogo.mp3', k); else { if (k > 0 && el.paused) el.play().catch(() => {}); el.volume = Math.min(1, k * S.vol.ambiente); if (!k) el.pause(); } } };
   S.musica = function (nome) {
     alvoMus = nome; if (!ligado) return;
     for (const n of ['batalha', 'november-snow']) laco('som/musica/' + n + '.mp3', n === nome ? 0.5 : 0);

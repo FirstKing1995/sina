@@ -14,7 +14,7 @@
   F.REGIOES = [
     { id: 'ermo', nome: 'Ermo das Covas', x0: 0, x1: 96, ceu: ['#0d1220', '#2a2a3c', '#5a4a52'], longe: '#1a1d2a', meio: '#11141c', nevoa: '#6a6a80', chao: ['#3a3430', '#26211f', '#171414'], grama: ['#4a5a3a', '#34422c'], luz: 0.55, amb: 'noite' },
     { id: 'campos', nome: 'Campos da Aurora', x0: 96, x1: 262, ceu: ['#16203a', '#3a3c5a', '#a0706a'], longe: '#262c44', meio: '#171d2a', nevoa: '#8a8098', chao: ['#4a3a2a', '#2e2419', '#1a1510'], grama: ['#5f7a3a', '#3e5a2a'], luz: 0.75, amb: 'brisa' },
-    { id: 'mata', nome: 'Mata Funda', x0: 262, x1: 440, ceu: ['#08130f', '#12261c', '#2c4430'], longe: '#0f2018', meio: '#0a1610', nevoa: '#4a6a58', chao: ['#2e2a1e', '#1e1b13', '#12100b'], grama: ['#3a6a2e', '#24481e'], luz: 0.45, amb: 'noite' },
+    { id: 'mata', nome: 'Mata Funda', x0: 262, x1: 440, ceu: ['#08130f', '#12261c', '#2c4430'], longe: '#0f2018', meio: '#0a1610', nevoa: '#4a6a58', chao: ['#2e2a1e', '#1e1b13', '#12100b'], grama: ['#3a6a2e', '#24481e'], luz: 0.56, amb: 'noite' },
     { id: 'clareira', nome: 'Clareira do Uivo', x0: 440, x1: W, ceu: ['#06070e', '#1a1628', '#4a2a3a'], longe: '#140f1e', meio: '#0c0a14', nevoa: '#5a4060', chao: ['#2a2426', '#1a1618', '#0f0c0e'], grama: ['#3a4a3a', '#26322a'], luz: 0.5, amb: 'noite', lua: true },
   ];
   F.regiao = (px) => { const x = px / T; return F.REGIOES.find((r) => x >= r.x0 && x < r.x1) || F.REGIOES[F.REGIOES.length - 1]; };

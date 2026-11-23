@@ -9,7 +9,12 @@ Publicado em https://firstking1995.github.io/sina/.
 
 ## SINA 2D: o teste inicial
 
-Uma fase contínua: **Ermo das Covas → Campos da Aurora → Mata Funda → Clareira do Uivo**, com o **Lobisomem** como chefe. São 3 fogueiras, 4 baús e cerca de 35 criaturas.
+Uma fase contínua: **Ermo das Covas → Campos da Aurora → Mata Funda → Clareira do Uivo**, com o **Lobisomem** como chefe e o **Zé Facão** como chefe do meio do caminho, nos Campos. São 3 fogueiras, 4 baús e cerca de 35 criaturas.
+
+- **Alvorada** (perto da segunda fogueira): Lauro vende armas, pedra de forja e um caco de cabaça; Bento afia a arma na mão (+1 a +3, cada nível dá 15% de dano).
+- **Armas:** espada, lança (estocada longa), faca, cajado, machado (pede Força 3, quebra guarda) e o Facão de Zé. Troca na Pausa.
+- **Pausa:** ficha, mapa do que já foi andado, armas, volume de efeitos, ambiente e música, e a lista de controles.
+- **Controle (gamepad):** A pula · X golpe · B esquiva · Y usar · RB e LB magias · RT golpe forte · LT beber · Start pausa.
 
 ### Controles
 
@@ -46,7 +51,7 @@ Uma fase contínua: **Ermo das Covas → Campos da Aurora → Mata Funda → Cla
 
 ### Acabamento dos personagens
 
-Os personagens usam as mesmas folhas de perfil da versão de cima (`assets/herois/*/heroi_e.png`, `golpe_e.png`, `assets/spr/*_e.png` e `*_ge.png`), com acabamento feito por código em `js/sprites.js`: contorno escuro, luz de aro vinda da lua, clarão ao ser atingido, aviso vermelho antes do golpe, sombra, estica e amassa no pulo e no pouso, rastro na esquiva e arco de luz no golpe.
+Uma faixa de brasa, na cor da especialidade, nasce no pescoço do herói e balança com física de pano. A onça do acervo, que era cinza, é repintada por código. Os personagens usam as mesmas folhas de perfil da versão de cima (`assets/herois/*/heroi_e.png`, `golpe_e.png`, `assets/spr/*_e.png` e `*_ge.png`), com acabamento feito por código em `js/sprites.js`: contorno escuro, luz de aro vinda da lua, clarão ao ser atingido, aviso vermelho antes do golpe, sombra, estica e amassa no pulo e no pouso, rastro na esquiva e arco de luz no golpe.
 
 ### Código (2D)
 

@@ -377,7 +377,7 @@
       if (!cruza(cx, caixa(e))) continue;
       h.acertou.add(e);
       const forte = h.estado === 'forte';
-      feriInimigo(e, h.ficha.dano * mult, h.dir, { forte: forte || h.combo === 3, quebra: forte ? 2 + Math.round(h.forcaCarga * 2) : 1, empurra: forte ? 2 : 1 });
+      feriInimigo(e, h.ficha.dano * mult, h.dir, { forte: forte || h.combo === 3, quebra: (forte ? 2 + Math.round(h.forcaCarga * 2) : 1) + (h.ficha.arma.id === 'machado' ? 1 : 0), empurra: forte ? 2 : 1 });
       if (h.dirGolpe === 'baixo') { h.vy = -400; h.arDash = true; h.estado = 'livre'; J.anel(h.x, h.y + 6, 16, '#fff1c8', 0.25, 2); }
     }
     // golpe para baixo também quica em espinho
