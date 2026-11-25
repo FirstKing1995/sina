@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=10' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=11' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -31,7 +31,7 @@
   D.carregar = async function (aviso) {
     const l = [];
     for (const r of B.roupas) l.push(['h_' + r, 'assets/barro/' + r + '.png']);
-    for (const m in A2.monstros) l.push(['m_' + m, 'assets/floresta/m_' + m + '.webp']);
+    for (const m in A2.monstros) { l.push(['m_' + m, 'assets/floresta/m_' + m + '.webp']); for (const x of ['anda', 'pose']) if (A2.monstros[m][x]) l.push(['m_' + m + '_' + x, 'assets/floresta/m_' + m + '_' + x + '.webp']); }
     for (const r in C.REGIOES) { l.push(['f_' + r, 'assets/floresta/f_' + r + '.webp']); l.push(['p_' + r, 'assets/floresta/p_' + r + '.webp']); }
     l.push(['h_mulher', 'assets/barro/mulher.png'], ['h_filho', 'assets/barro/filho.png'], ['casa', 'assets/floresta/casa.webp'], ['marcos', 'assets/floresta/marcos.webp'], ['itens', 'assets/floresta/itens.webp'], ['armas', 'assets/floresta/armas.webp']);
     let n = 0;
@@ -357,7 +357,7 @@
 
   // ---------- inimigos ----------
   function desenhaInimigo(e) {
-    const tp = e.T, im = img['m_' + tp.spr], mt = A2.monstros[tp.spr]; if (!im) return;
+    const tp = e.T; let im = img['m_' + tp.spr], mt = A2.monstros[tp.spr], chv = tp.spr; if (!im) return;
     if (e.x < cam.x - 120 || e.x > cam.x + D.VW + 120) return;
     let q = 0, sx = 1, sy = 1, al = 1, oy = 0;
     const prep = e.prepDur || tp.prep;
@@ -375,7 +375,7 @@
     else if (Math.abs(e.vx) > 5) { q = [1, 2, 3, 2][Math.floor(e.andou / (tp.passo || 8)) % 4]; if (tp.spr.startsWith('goblin_') || tp.spr.startsWith('zumbi_')) { q = q === 3 && !tp.spr.startsWith('zumbi_') ? 1 : q; oy = -Math.abs(Math.sin(e.andou / (tp.passo || 8) * 1.57)) * 1.6; } }
     else sy = 1 + Math.sin(tempo * 2.4 + e.ox) * 0.018;
     if (tp.chefe && e.vivo) {
-      if (e.qf != null) q = e.qf; if (e.estado === 'cambaleia') { q = 6; oy = Math.sin(tempo * 20) * 0.6; }
+      if (typeof e.qf === 'number') q = e.qf; else if (e.qf && mt.pose && img['m_' + tp.spr + '_pose']) { q = +e.qf.slice(1); im = img['m_' + tp.spr + '_pose']; chv = tp.spr + '_pose'; mt = mt.pose; } if (e.estado === 'cambaleia') { q = 6; im = img['m_' + tp.spr]; mt = A2.monstros[tp.spr]; chv = tp.spr; oy = Math.sin(tempo * 20) * 0.6; }
       if (e.aviso > 0) { sx = 1 + e.aviso * 0.05; sy = 1 - e.aviso * 0.06; }
       if (e.some != null) al = e.some;
       if (e.olhos > 0) { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = '#ff4a30'; g.globalAlpha = e.olhos; for (const d of [0, 9]) { g.fillRect(e.x + e.dir * (34 + d) - 2, e.y - 42, 4, 3); } g.restore(); brilhos.push([e.x + e.dir * 38, e.y - 42, 50, '255,70,40', e.olhos * 0.8]); }
@@ -383,23 +383,26 @@
       if (e.cx != null) { g.save(); g.fillStyle = '#b8b0a8'; for (let x = 10; x < e.cx; x += 7) { const yy = e.cy + Math.sin(x * 0.08 + tempo * 20) * 2; g.fillStyle = '#15120f'; g.fillRect(Math.round(e.x + e.dir * x) - 3, Math.round(yy) - 2, 6, 4); g.fillStyle = '#a8a098'; g.fillRect(Math.round(e.x + e.dir * x) - 2, Math.round(yy) - 1, 4, 2); } g.fillStyle = '#d8d0c0'; g.fillRect(e.x + e.dir * e.cx - 4, e.cy - 5, 8, 10); g.restore(); }
       if (al <= 0.02) return;
     }
+    // quem tem ciclo de andar de verdade usa ele
+    const an = A2.monstros[tp.spr].anda;
+    if (an && e.vivo && q >= 1 && q <= 3 && Math.abs(e.vx) > 5 && ['vaga', 'persegue', 'volta', 'foge', 'recua'].includes(e.estado) && img['m_' + tp.spr + '_anda']) { im = img['m_' + tp.spr + '_anda']; chv = tp.spr + '_anda'; mt = an; q = Math.floor(e.andou / an.passo) % an.n; oy = 0; }
     const es = e.esc || 1;
     if (tp.escondida && e.estado === 'vaga' && e.vivo) al = tp.escondida;
     if (e.estado !== 'morto' && al > 0.3) sombra(e.x, e.y, e.w * 0.6);
     const pinta = (src, a) => { g.globalAlpha = a; g.drawImage(src, q * mt.w, 0, mt.w, mt.h, -Math.round(mt.w / 2), -mt.h + 1, mt.w, mt.h); };
     g.save(); g.translate(Math.round(e.x), Math.round(e.y + 1 + oy)); g.scale(e.dir * sx * es, sy * es);
-    if (e.vivo) pinta(fio(im, corFio(regiao()), tp.spr), al * (0.5 + noiteK * 0.35));
+    if (e.vivo) pinta(fio(im, corFio(regiao()), chv), al * (0.5 + noiteK * 0.35));
     pinta(im, al);
-    if (tp.tinta) pinta(silhueta(im, tp.tinta, tp.spr), al);
-    if (e.estado === 'prep' || e.aviso > 0) pinta(silhueta(im, '#ff2a1a', tp.spr), (0.08 + 0.3 * Math.min(1, tp.chefe ? e.aviso : e.t / prep)) * (0.6 + 0.4 * Math.sin(tempo * 30)) * al);
-    if (e.veneno > 0) pinta(silhueta(im, '#8ac030', tp.spr), 0.22);
-    if (e.furia > 0) pinta(silhueta(im, '#ff4a2a', tp.spr), 0.12 + 0.08 * Math.sin(tempo * 12));
-    if (e.estado === 'cura') pinta(silhueta(im, '#7aff8a', tp.spr), 0.25);
-    if (e.flash > 0) pinta(silhueta(im, '#ffffff', tp.spr), (e.flash / 0.13) * 0.85);
+    if (tp.tinta) pinta(silhueta(im, tp.tinta, chv), al);
+    if (e.estado === 'prep' || e.aviso > 0) pinta(silhueta(im, '#ff2a1a', chv), (0.08 + 0.3 * Math.min(1, tp.chefe ? e.aviso : e.t / prep)) * (0.6 + 0.4 * Math.sin(tempo * 30)) * al);
+    if (e.veneno > 0) pinta(silhueta(im, '#8ac030', chv), 0.22);
+    if (e.furia > 0) pinta(silhueta(im, '#ff4a2a', chv), 0.12 + 0.08 * Math.sin(tempo * 12));
+    if (e.estado === 'cura') pinta(silhueta(im, '#7aff8a', chv), 0.25);
+    if (e.flash > 0) pinta(silhueta(im, '#ffffff', chv), (e.flash / 0.13) * 0.85);
     g.restore(); g.globalAlpha = 1;
     if (e.vivo && al > 0.5) brilhos.push([e.x, e.y - e.h * 0.55, 30 + e.h * 0.5, corFio(regiao()), (e.estado === 'vaga' ? 0.12 : 0.24) + noiteK * 0.2]);
     if (tp.chefe && e.fase > 1 && e.vivo && Math.random() < e.fase * 0.12) J.poe({ tipo: 'alma', x: e.x + (Math.random() - 0.5) * e.w, y: e.y - Math.random() * e.h, vy: -26, vida: 0.8, max: 0.8, cor: J.DONOS[e.tipo].cor, tam: 1.8 });
-    if (tp.chefe && e.estado === 'acao' && e.qf === 5 && e.aviso === 0 && e.tipo !== 'alfa' && e.tipo !== 'rainha') { const k = e.rast = Math.min(1, (e.rast || 0) + 0.09); garra({ t: k * 0.3, x: e.x, y: e.y, dir: e.dir, w: e.w }, { salta: 0, alcance: 70, h: e.h, esp: tp.esp }); } else e.rast = 0;
+    if (tp.chefe && e.estado === 'acao' && (e.qf === 5 || e.qf === 'p4' || e.qf === 'p6') && e.aviso === 0 && e.golpe !== 'salto' && e.golpe !== 'teto' && e.tipo !== 'alfa' && e.tipo !== 'rainha') { const k = e.rast = Math.min(1, (e.rast || 0) + 0.09); garra({ t: k * 0.3, x: e.x, y: e.y, dir: e.dir, w: e.w }, { salta: 0, alcance: 70, h: e.h, esp: tp.esp }); } else e.rast = 0;
     if (e.estado === 'golpe' && !tp.atira && e.t < 0.3) garra(e, tp);
     if (e.estado === 'bloqueia') { g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = '#ffe9b0'; g.globalAlpha = 0.5 + 0.2 * Math.sin(tempo * 14); g.beginPath(); g.arc(e.x + e.dir * 8, e.y - e.h * 0.5, 22, e.dir > 0 ? -1 : Math.PI - 1, e.dir > 0 ? 1 : Math.PI + 1); g.stroke(); g.restore(); }
     if (tp.spr === 'goblin_xama' && e.vivo) brilhos.push([e.x + e.dir * 16, e.y - 44, 34, '120,255,140', 0.45]);
