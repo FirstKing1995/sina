@@ -5,12 +5,12 @@
   const D = window.Desenho = {};
   const F = window.Fase, J = window.Jogo, C = window.Dados, T = F.T, B = window.BARRO, A2 = window.ARTE2;
   const tela = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
-  let cv, ctx, buf, g, luz, gl;
+  let cv, ctx, buf, g, luz, gl; const bl = tela(2, 2), gb = bl.getContext('2d'), bl2 = tela(2, 2), gb2 = bl2.getContext('2d');
   D.VW = 568; D.VH = 320;
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=13' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=15' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -21,9 +21,11 @@
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     cv.width = Math.max(2, Math.round(innerWidth * dpr)); cv.height = Math.max(2, Math.round(innerHeight * dpr));
     const asp = innerWidth / Math.max(1, innerHeight);
-    let VH = 320, VW = Math.round(VH * asp);
+    // cada pixel do mundo vira o mesmo número de pixels da tela; no celular a câmera chega mais perto
+    const alvo = Math.min(innerWidth, innerHeight) < 520 ? 286 : 324, esc = Math.round(cv.height / alvo);
+    let VH = esc >= 2 ? Math.ceil(cv.height / esc) : alvo, VW = esc >= 2 ? Math.ceil(cv.width / esc) : Math.round(alvo * asp);
     if (VW < 360) { VW = 360; VH = Math.min(640, Math.round(VW / asp)); }
-    if (VW > 760) { VW = 760; VH = Math.round(VW / asp); }
+    if (VW > 780) { VW = 780; VH = Math.round(VW / asp); }
     D.VW = VW; D.VH = VH;
     buf.width = VW; buf.height = VH; luz.width = VW; luz.height = VH;
     g.imageSmoothingEnabled = false;
@@ -33,7 +35,7 @@
     for (const r of B.roupas) l.push(['h_' + r, 'assets/barro/' + r + '.png']);
     for (const m in A2.monstros) { l.push(['m_' + m, 'assets/floresta/m_' + m + '.webp']); for (const x of ['anda', 'pose']) if (A2.monstros[m][x]) l.push(['m_' + m + '_' + x, 'assets/floresta/m_' + m + '_' + x + '.webp']); }
     for (const r in C.REGIOES) { l.push(['f_' + r, 'assets/floresta/f_' + r + '.webp']); l.push(['p_' + r, 'assets/floresta/p_' + r + '.webp']); }
-    l.push(['h_mulher', 'assets/barro/mulher.png'], ['h_filho', 'assets/barro/filho.png'], ['h_vila', 'assets/barro/vila.png'], ['casa', 'assets/floresta/casa.webp'], ['cidade', 'assets/floresta/cidade.webp'], ['marcos', 'assets/floresta/marcos.webp'], ['itens', 'assets/floresta/itens.webp'], ['armas', 'assets/floresta/armas.webp']);
+    l.push(['h_mulher', 'assets/barro/mulher.png'], ['h_filho', 'assets/barro/filho.png'], ['h_vila', 'assets/barro/vila.png'], ['casa', 'assets/floresta/casa.webp'], ['cidade', 'assets/floresta/cidade.webp'], ['marcos', 'assets/floresta/marcos.webp'], ['itens', 'assets/floresta/itens.webp'], ['detalhes', 'assets/floresta/detalhes.webp'], ['bichinhos', 'assets/floresta/bichinhos.webp'], ['armas', 'assets/floresta/armas.webp']);
     let n = 0;
     await Promise.all(l.map(async ([k, s]) => { img[k] = await carregaImg(s); n++; if (aviso) aviso(n / l.length); }));
   };
@@ -46,7 +48,9 @@
     o = o || {}; const e = o.e || 1, w = p[2] * e, h = p[3] * e;
     if (x + w < cam.x - 10 || x - w > cam.x + D.VW + 10) return;
     if (o.a != null) g.globalAlpha = o.a;
-    if (o.v) { g.save(); g.translate(Math.round(x), 0); g.scale(-1, 1); g.drawImage(at, p[0], p[1], p[2], p[3], Math.round(-w / 2), Math.round(y - h), Math.round(w), Math.round(h)); g.restore(); }
+    const inc = D.vivo ? D.vivo.inclina(n, x, y) : 0;
+    if (inc) { g.save(); g.translate(Math.round(x), Math.round(y)); g.transform(1, 0, -inc, 1, 0, 0); if (o.v) g.scale(-1, 1); g.drawImage(at, p[0], p[1], p[2], p[3], Math.round(-w / 2), Math.round(-h), Math.round(w), Math.round(h)); g.restore(); }
+    else if (o.v) { g.save(); g.translate(Math.round(x), 0); g.scale(-1, 1); g.drawImage(at, p[0], p[1], p[2], p[3], Math.round(-w / 2), Math.round(y - h), Math.round(w), Math.round(h)); g.restore(); }
     else g.drawImage(at, p[0], p[1], p[2], p[3], Math.round(x - w / 2), Math.round(y - h), Math.round(w), Math.round(h));
     g.globalAlpha = 1;
   }
@@ -93,7 +97,7 @@
         if (i & 1) { g.save(); g.translate(x + w, 0); g.scale(-1, 1); g.drawImage(im, 0, y, w, h); g.restore(); } else g.drawImage(im, x, y, w, h);
       }
     }
-    raios(R);
+    raios(R); if (D.vivo) D.vivo.fundo(g, D.dt || 0);
     camadaArvores(0.34, 0.6, 150, 0.5, 11);
     nevoa(R, 0.34);
     camadaArvores(0.58, 0.34, 210, 0.85, 29);
@@ -153,6 +157,13 @@
         if (!solido(tx + 1, ty)) { q.fillStyle = 'rgba(0,0,0,0.6)'; q.fillRect(x + T - 2, y, 2, T); q.fillStyle = 'rgba(' + R.nevoa + ',0.08)'; q.fillRect(x + T - 3, y, 1, T); }
       }
     }
+    // sombra funda perto das paredes e no pé dos barrancos
+    for (let lx = -1; lx <= PED; lx++) { const tx = x0 + lx; if (tx < 1 || tx >= F.W - 1) continue; const tp = F.atual.topo[tx]; for (const d of [-1, 1]) { const viz = F.atual.topo[tx + d]; if (tp - viz >= 2 && tp < F.H) { const px = lx * T + (d > 0 ? T : 0), gr = q.createLinearGradient(px, 0, px - d * 22, 0); gr.addColorStop(0, 'rgba(0,0,0,0.5)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); q.fillStyle = gr; q.fillRect(d > 0 ? px - 22 : px, tp * T, 22, 30); } if (viz - tp >= 2) { const px = lx * T + (d > 0 ? T : 0), gr = q.createLinearGradient(px, 0, px - d * 14, 0); gr.addColorStop(0, 'rgba(0,0,0,0.42)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); q.fillStyle = gr; q.fillRect(d > 0 ? px - 14 : px, tp * T + 6, 14, Math.min(22, viz - tp) * T); q.fillStyle = 'rgba(' + R.nevoa + ',0.13)'; q.fillRect(d > 0 ? px - 1 : px, tp * T + 8, 1, Math.min(22, viz - tp) * T - 8); } } }
+    c.luzes = []; if (D.vivo) { q.save(); D.vivo.enterra(q, x0, PED, solido, c.luzes); q.restore(); }
+    // degrau de um bloco vira ladeira: a terra enche o canto e o capim acompanha
+    const ladeiras = [];
+    for (let lx = -1; lx <= PED; lx++) { const tx = x0 + lx; if (tx < 1 || tx >= F.W - 1) continue; const tp = F.atual.topo[tx]; if (tp >= F.H || F.tile(tx, tp - 1) !== 0) continue; for (const d of [-1, 1]) if (tp - F.atual.topo[tx + d] === 1 && F.tile(tx + d, tp - 1) === 1) ladeiras.push([lx, tp, d]); }
+    const L = 13; for (const [lx, tp, d] of ladeiras) for (let i = 0; i < L; i++) { const px = d > 0 ? lx * T + T - 1 - i : lx * T + i, k = i / L, yy = Math.round((tp - 1) * T + T * (k * k * (3 - 2 * k))), sx = p[0] + (((x0 + lx) * T + i) % LARG); q.drawImage(at, sx, p[1] + 48, 1, Math.max(1, tp * T - yy + 2), px, yy, 1, Math.max(1, tp * T - yy + 2)); q.fillStyle = 'rgba(' + R.terra.map((v) => Math.round(v * 0.35)).join(',') + ',0.12)'; q.fillRect(px, yy, 1, tp * T - yy + 2); }
     // capim por cima de toda superfície
     for (let lx = -1; lx <= PED; lx++) {
       const tx = x0 + lx; if (tx < 0 || tx >= F.W) continue;
@@ -165,6 +176,7 @@
         }
       }
     }
+    for (const [lx, tp, d] of ladeiras) for (let i = 0; i < L; i++) { const px = d > 0 ? lx * T + T - 1 - i : lx * T + i, k = i / L, yy = Math.round((tp - 1) * T + T * (k * k * (3 - 2 * k))); q.drawImage(at, p[0] + (((x0 + lx) * T + px) % LARG + LARG) % LARG, p[1], 1, 40, px, yy - SUP + 1, 1, 40); }
     // galhos para pisar
     const po = A2.props.ponte;
     for (let ty = 0; ty < F.H; ty++) for (let lx = -8; lx < PED; lx++) {
@@ -274,6 +286,7 @@
     const [anim, n] = pose(h); h.anim = anim; h.quadro = n;
     let sx = 1, sy = 1;
     if (h.estado === 'dorme' && anim === 'dormir' && n >= 4) sy = 1 + Math.sin(tempo * 1.7) * 0.025;
+    if (h.estado === 'livre' && h.noChao && Math.abs(h.vx) < 10 && !(h.amassa > 0)) sy = 1 + Math.sin(tempo * 2.1) * 0.012;
     if (h.estado === 'livre') { if (h.amassa > 0) { sx = 1 + h.amassa * 0.1; sy = 1 - h.amassa * 0.12; } else if (!h.noChao && h.vy < -300) { sx = 0.96; sy = 1.05; } }
     const treme = h.estado === 'carga' ? (Math.random() - 0.5) * (h.cheia ? 2 : 1) : 0;
     if (h.estado !== 'morto') sombra(h.x, h.y, 14);
@@ -289,8 +302,8 @@
     quadroHeroi(g, J.save.roupa, anim, n, h.x + treme, h.y + 1 + (h.degrau > 0 ? h.degrau * 60 : 0), { dir: h.dir, sx, sy, arma, giro, branco: h.estado === 'dor' && h.t < 0.1 ? 0.8 : h.cheia ? 0.15 + 0.15 * Math.sin(tempo * 30) : 0 });
     g.globalAlpha = 1;
     if (h.veneno > 0) { g.globalAlpha = 0.25 + 0.15 * Math.sin(tempo * 8); quadroHeroi(g, J.save.roupa, anim, n, h.x, h.y + 1, { dir: h.dir, sil: '#8ac030' }); g.globalAlpha = 1; }
-    if (h.estado === 'golpe' || h.estado === 'forte') arco(h);
-    if (h.estado === 'mira') { const k2 = Math.min(1, h.t / 0.8); g.fillStyle = h.cheia ? '#ffe2a0' : '#c9bfa2'; g.fillRect(h.x - 12, h.y - 74, 24 * k2, 2); flecha(h.x + h.dir * 14, h.y - 41, h.dir > 0 ? (J.ent.cima ? -0.55 : J.ent.baixo ? 0.35 : 0) : Math.PI + (J.ent.cima ? 0.55 : J.ent.baixo ? -0.35 : 0)); }
+    if (h.estado === 'golpe' || h.estado === 'forte') { arco(h); if (D.vivo && k > 0.25 && k < 0.7) D.vivo.corta(h); }
+    if (h.estado === 'mira') { const k2 = Math.min(1, h.t / 0.8); g.fillStyle = h.cheia ? '#ffe2a0' : '#c9bfa2'; g.fillRect(h.x - 12, h.y - 74, 24 * k2, 2); const am = J.anguloMira(h, k2); flecha(h.x + h.dir * 14, h.y - 41, h.dir > 0 ? am : Math.PI - am); const v = 300 + 260 * k2, gv = 260 * (1.3 - k2); g.fillStyle = h.cheia ? '#ffe2a0' : '#e8e0c8'; for (let i = 2; i < 16; i++) { const tt = i * 0.035, px = h.x + h.dir * 20 + h.dir * Math.cos(am) * v * tt, py = h.y - 41 + Math.sin(am) * v * tt + gv * tt * tt / 2; g.globalAlpha = 0.6 * (1 - i / 16); g.fillRect(Math.round(px), Math.round(py), 2, 2); } g.globalAlpha = 1; }
     if (J.save.magias.length && h.estado === 'magia') brilhos.push([h.x + h.dir * 14, h.y - 40, 60, '255,170,80', 0.7]);
   }
   function linhaPesca(h) {
@@ -349,6 +362,7 @@
     if (Math.random() < 0.5) J.poe({ tipo: 'brasa', x: px, y: py, vx: (Math.random() - 0.5) * 60, vy: -30 * Math.random(), vida: 0.3, max: 0.3, cor: corB, tam: 1.6 });
   }
   function flecha(x, y, ang) { const p = A2.armas && A2.armas.flecha; if (!p) return; g.save(); g.translate(x, y); g.rotate(ang); g.drawImage(img.armas, p[0], p[1], p[2], p[3], -13, -2, p[2], p[3]); g.restore(); }
+  function contato(x, y, r) { g.fillStyle = 'rgba(2,5,5,0.34)'; g.beginPath(); g.ellipse(x, y, r, 3.4, 0, 0, 7); g.fill(); }
   function sombra(x, y, r) {
     let yy = y; for (let i = 0; i < 12 && !J.solido(x, yy + 1) && F.tile(Math.floor(x / T), Math.floor((yy + 1) / T)) !== 2; i++) yy += 8;
     const k = Math.max(0.15, 1 - (yy - y) / 110);
@@ -407,9 +421,10 @@
     if (e.estado === 'bloqueia') { g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = '#ffe9b0'; g.globalAlpha = 0.5 + 0.2 * Math.sin(tempo * 14); g.beginPath(); g.arc(e.x + e.dir * 8, e.y - e.h * 0.5, 22, e.dir > 0 ? -1 : Math.PI - 1, e.dir > 0 ? 1 : Math.PI + 1); g.stroke(); g.restore(); }
     if (tp.spr === 'goblin_xama' && e.vivo) brilhos.push([e.x + e.dir * 16, e.y - 44, 34, '120,255,140', 0.45]);
     const topo = e.y - tp.h * es - 14;
+    if (e.estado === 'prep' && e.vivo && !tp.chefe) { const kp = Math.min(1, e.t / prep), rx = e.x + e.dir * e.w * 0.28, ry = e.y - tp.h * es * 0.82; g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = '#ff5a30'; g.globalAlpha = kp; const r = 2 + kp * 7; g.fillRect(Math.round(rx - r), Math.round(ry), Math.round(r * 2), 1); g.fillRect(Math.round(rx), Math.round(ry - r * 0.7), 1, Math.round(r * 1.4)); g.restore(); brilhos.push([rx, ry, 26 * kp, '255,90,50', 0.6 * kp]); }
     if (e.pisca > 0) { g.fillStyle = 'rgba(255,60,40,' + Math.min(1, e.pisca * 2) + ')'; g.fillRect(e.x - 1, topo - 6, 2, 6); g.fillRect(e.x - 1, topo + 2, 2, 2); }
     if (e.estado === 'cambaleia') for (let i = 0; i < 3; i++) { const a = tempo * 6 + i * 2.1; g.fillStyle = '#ffe9a0'; g.fillRect(e.x + Math.cos(a) * 10, topo + 4 + Math.sin(a) * 3, 2, 2); }
-    if (!tp.chefe && e.vivo && e.hp < e.hpMax) { const w = Math.max(22, e.w), x = Math.round(e.x - w / 2), y = Math.round(topo); g.fillStyle = '#0a0808d0'; g.fillRect(x - 1, y - 1, w + 2, 4); g.fillStyle = '#a8332b'; g.fillRect(x, y, w * Math.max(0, e.hp / e.hpMax), 2); }
+    if (!tp.chefe && e.vivo && e.hp < e.hpMax) { const w = Math.max(26, Math.min(44, e.w + 6)), x = Math.round(e.x - w / 2), y = Math.round(topo), k = Math.max(0, e.hp / e.hpMax); e.hpV = e.hpV == null ? k : e.hpV > k ? Math.max(k, e.hpV - (D.dt || 0) * 0.5) : k; g.fillStyle = '#000000b0'; g.fillRect(x - 2, y - 2, w + 4, 7); g.fillStyle = '#3a2c20'; g.fillRect(x - 1, y - 1, w + 2, 5); g.fillStyle = '#0c0707'; g.fillRect(x, y, w, 3); g.fillStyle = '#ffd890'; g.fillRect(x, y, Math.round(w * e.hpV), 3); g.fillStyle = '#c8301e'; g.fillRect(x, y, Math.round(w * k), 3); g.fillStyle = '#ff7a5a'; g.fillRect(x, y, Math.round(w * k), 1); }
   }
   function garra(e, tp) {
     const k = e.t / 0.3, cx = e.x + e.dir * e.w * 0.6, cy = e.y - tp.h * 0.6;
@@ -469,6 +484,8 @@
     if (f.tipo === 'bola') { g.save(); g.globalCompositeOperation = 'lighter'; const r = f.tam * (1.15 - k * 0.5), gr = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, r); gr.addColorStop(0, 'rgba(255,250,220,' + k + ')'); gr.addColorStop(0.4, f.cor); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = k; g.fillStyle = gr; g.beginPath(); g.arc(f.x, f.y, r, 0, 7); g.fill(); g.restore(); brilhos.push([f.x, f.y, f.tam * 3, '255,160,70', k]); return; }
     if (f.tipo === 'estrela') { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = f.cor; g.globalAlpha = k; const r = f.tam; g.translate(f.x, f.y); g.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + 0.3, q = i & 1 ? r * 0.28 : r; g.lineTo(Math.cos(a) * q, Math.sin(a) * q); } g.fill(); g.restore(); return; }
     if (f.tipo === 'corte') { g.save(); g.globalCompositeOperation = 'lighter'; g.translate(f.x, f.y); g.rotate((f.ang || -0.6) * f.dir); g.globalAlpha = k; g.fillStyle = f.cor; const l = f.tam * (1.3 - k * 0.5); g.beginPath(); g.moveTo(-l / 2, 0); g.lineTo(0, -2); g.lineTo(l / 2, 0); g.lineTo(0, 2); g.fill(); g.restore(); return; }
+    if (f.tipo === 'folha') { const gi = Math.sin(f.vida * 9 + f.x * 0.2); g.globalAlpha = Math.min(1, k * 2.4); g.fillStyle = f.cor; g.fillRect(Math.round(f.x + gi * 2), Math.round(f.y), gi > 0 ? 3 : 2, gi > 0.6 || gi < -0.6 ? 1 : 2); g.globalAlpha = 1; return; }
+    if (f.tipo === 'pena') { g.globalAlpha = Math.min(1, k * 2); g.fillStyle = f.cor; g.fillRect(Math.round(f.x + Math.sin(f.vida * 6) * 5), Math.round(f.y), 2, 1); g.globalAlpha = 1; return; }
     const lighter = f.tipo === 'brasa' || f.tipo === 'alma' || f.tipo === 'faisca';
     if (lighter) { g.save(); g.globalCompositeOperation = 'lighter'; }
     g.globalAlpha = f.tipo === 'gota' ? (f.preso ? k : 1) : f.tipo === 'poeira' ? k * 0.5 : k;
@@ -728,11 +745,11 @@
   const brilhos = [];
   D.centrar = function () { const h = J.heroi; cam.x = alvoX(h); cam.y = alvoY(h); };
   const limX = (x) => Math.max(2 * T, Math.min(F.W * T - D.VW - 8, x)), limY = (y) => Math.max(-40, Math.min(y, F.H * T - D.VH));
-  const alvoX = (h) => limX(h.x - D.VW / 2 + cam.olha);
+  const alvoX = (h) => limX(h.x - D.VW / 2 + cam.olha + D.VW * (D.lado || 0));
   const alvoY = (h) => limY(h.y - D.VH * 0.68);
   D.quadro = function (dt) {
     const h = J.heroi; if (!h || !F.atual) return;
-    tempo += dt; D.tempo = tempo; brilhos.length = 0;
+    D.dt = dt; tempo += dt; D.tempo = tempo; brilhos.length = 0;
     const R = regiao(); noiteK = J.claridade ? 1 - J.claridade() : 0;
     // câmera: olha à frente e só sobe ou desce de verdade quando você pisa
     const olha = h.dir * 34 + Math.max(-40, Math.min(40, h.vx * 0.22)); cam.olha += (olha - cam.olha) * Math.min(1, dt * 1.8);
@@ -741,7 +758,7 @@
     const vy = h.noChao ? 4.5 : Math.abs(dif) > 70 ? 6 : 1.4; cam.y += dif * Math.min(1, dt * vy);
     if (F.fechada && F.atual.arena) { const A = F.atual.arena, lar = A.x1 - A.x0; if (lar > D.VW) cam.x = Math.max(A.x0 - 10, Math.min(A.x1 + 10 - D.VW, cam.x)); }
     if (D.foco) { cam.x += (limX(D.foco.x - D.VW / 2) - cam.x) * Math.min(1, dt * 3); }
-    const tr = J.tremor, ox = Math.round(cam.x + (tr ? (Math.random() - 0.5) * tr : 0)), oy = Math.round(cam.y + (tr ? (Math.random() - 0.5) * tr : 0));
+    const tr = J.pref && !J.pref.tremor ? 0 : J.tremor, ox = Math.round(cam.x + (tr ? (Math.sin(tempo * 61) * 0.6 + Math.sin(tempo * 97) * 0.4) * tr * 0.62 : 0)), oy = Math.round(cam.y + (tr ? (Math.sin(tempo * 73 + 1) * 0.6 + Math.sin(tempo * 113) * 0.4) * tr * 0.55 : 0));
     g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     fundo();
     g.translate(-ox, -oy);
@@ -749,10 +766,15 @@
     for (const d of A.decor) if (d.c === 0) prop(d.n, d.x, d.y, d);
     fundoGruta(); desenhaLugares();
     { const yv = Math.round(F.chao(cam.x + D.VW / 2) - 150); g.globalAlpha = 0.5; g.drawImage(guarda('faixa' + R.nevoa, 2, 180, (q, w, hh) => { const gr = q.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, 'rgba(' + R.nevoa + ',0)'); gr.addColorStop(0.7, 'rgba(' + R.nevoa + ',0.34)'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',0.2)'); q.fillStyle = gr; q.fillRect(0, 0, w, hh); }), ox, yv, D.VW, 200); g.globalAlpha = 1; }
+    for (let tx = Math.max(1, Math.floor(ox / T) - 1); tx <= Math.min(A.W - 2, Math.floor((ox + D.VW) / T) + 1); tx++) {
+      const tp = A.topo[tx]; let e = 99, d = 99; for (let k = 1; k <= 16; k++) { e = Math.min(e, A.topo[Math.max(0, tx - k)]); d = Math.min(d, A.topo[Math.min(A.W - 1, tx + k)]); } const borda = Math.max(e, d); if (tp - borda < 3) continue;
+      const y0 = borda * T - 4, alt = (tp - borda) * T + 26; g.drawImage(guarda('buraco' + R.terra, 2, 64, (q, w, hh) => { const gr = q.createLinearGradient(0, 0, 0, hh), k = R.terra.map((v) => Math.round(v * 0.22)).join(','); gr.addColorStop(0, 'rgba(' + k + ',0)'); gr.addColorStop(0.35, 'rgba(' + k + ',0.62)'); gr.addColorStop(1, 'rgba(' + k + ',0.97)'); q.fillStyle = gr; q.fillRect(0, 0, w, hh); }), tx * T, y0, T, alt);
+    }
     for (const p of A.portas) desenhaPorta(p);
     for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) if (i >= 0 && i * PED < F.W) g.drawImage(pedaco(i), 0, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8), i * PED * T, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8));
-    for (const d of A.decor) if (d.c === 1) { prop(d.n, d.x, d.y, d); if (d.n === 'cogumelos' && Math.abs(d.x - h.x) < D.VW) brilhos.push([d.x, d.y - 18, 54, '90,220,230', 0.5 + 0.15 * Math.sin(tempo * 2 + d.x)]); }
-    desenhaLar(false); desenhaCerco(); desenhaBaus();
+    for (const d of A.decor) if (d.c === 1) { if (Math.abs(d.x - ox - D.VW / 2) < D.VW * 0.6 && A2.props[d.n]) contato(d.x, d.y - 1, A2.props[d.n][2] * d.e * 0.42); prop(d.n, d.x, d.y, d); if (d.n === 'cogumelos' && Math.abs(d.x - h.x) < D.VW) brilhos.push([d.x, d.y - 18, 54, '90,220,230', 0.5 + 0.15 * Math.sin(tempo * 2 + d.x)]); }
+    if (D.vivo) { D.vivo.atras(g, brilhos); for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) { const pd = pedacos.get(i); if (pd && pd.luzes) for (const l of pd.luzes) brilhos.push([l[0], l[1], l[2] + Math.sin(tempo * 1.8 + l[0]) * 4, l[3], l[4]]); } }
+    desenhaLar(false); desenhaCerco(); desenhaBaus(); if (D.vivo) D.vivo.bichos(g, dt);
     for (const c of A.circulos) desenhaCirculo(c);
     for (const c of A.coleta) desenhaColeta(c);
     for (const f of A.fogos) { if (Math.abs(f.x - ox - D.VW / 2) > D.VW) continue; prop('fogo', f.x, f.y + 4); if (J.save.fogos[f.id] && (A.id !== 'lar' || !J.save.lar || J.save.lar.lenha > 0)) chama(f.x, f.y, h.estado === 'dorme' ? 0.95 : 1.1); else if (J.save.fogos[f.id]) brilhos.push([f.x, f.y - 8, 40, '255,120,60', 0.5]); }
@@ -766,10 +788,10 @@
     desenhaPovo(); desenhaGente(); desenhaHum(); desenhaHeroi(h); desenhaLar(true);
     for (const b of J.balas) desenhaBala(b);
     for (const f of J.fx) if (f.tipo !== 'circulo') desenhaFx(f);
-    for (const d of A.decor) if (d.c === 2) prop(d.n, d.x, d.y, d);
+    if (D.vivo) D.vivo.frente(g); for (const d of A.decor) if (d.c === 2) prop(d.n, d.x, d.y, d);
     ambiente(dt, ox, oy); desenhaAr();
     g.setTransform(1, 0, 0, 1, 0, 0);
-    frente(); desenhaClima(dt);
+    frente(); if (D.vivo) D.vivo.moldura(g); desenhaClima(dt);
     // névoa baixa correndo na frente
     g.save(); for (let i = 0; i < 3; i++) { const x = ((tempo * (6 + i * 3) - cam.x * (0.9 + i * 0.15) + i * 260) % (D.VW + 320) + D.VW + 320) % (D.VW + 320) - 160, y = D.VH * (0.78 + i * 0.07); g.globalAlpha = 0.11; g.drawImage(mancha(R.nevoa), x - 150, y - 52, 300, 104); } g.restore();
 
@@ -788,24 +810,39 @@
     gl.globalCompositeOperation = 'source-over';
     for (const q of escuros) { if (!aberto(q)) continue; for (let i = 0; i < 5; i++) { gl.fillStyle = 'rgba(6,8,12,' + [0.3, 0.3, 0.3, 0.28, 0.24][i] + ')'; gl.fillRect(q.x0 - ox + i * 14 - 10, q.y0 - oy - 10, q.x1 - q.x0 - i * 28 + 20, q.y1 - q.y0 + 22); } }
     gl.globalCompositeOperation = 'lighter';
-    brilhos.push([h.x, h.y - 32, 104, '255,206,150', 0.5]);
+    brilhos.push([h.x, h.y - 32, 104 + noiteK * 46, '255,206,150', 0.5 + noiteK * 0.12], [h.x, h.y - 34, 46, '255,160,90', 0.25 + 0.06 * Math.sin(tempo * 2.2)]);
     if (J.save.tochaAcesa) { const tr2 = Math.sin(tempo * 13) * 4 + Math.sin(tempo * 7.3) * 4; brilhos.push([h.x - h.dir * 6, h.y - 52, 190 + tr2, '255,176,96', 0.9], [h.x, h.y - 40, 300, '255,150,80', 0.28]); }
     for (const b of brilhos) { const x = b[0] - ox, y = b[1] - oy; if (x < -b[2] || x > D.VW + b[2]) continue; gl.globalAlpha = Math.max(0, Math.min(1, b[4])); gl.drawImage(mancha(b[3]), x - b[2], y - b[2], b[2] * 2, b[2] * 2); }
     gl.globalAlpha = 1;
     g.globalCompositeOperation = 'multiply'; g.drawImage(luz, 0, 0); g.globalCompositeOperation = 'source-over';
+    // brilho das luzes: o que é claro vaza um pouco em volta
+    if (!J.pref || J.pref.brilho) {
+      const bw = Math.ceil(D.VW / 4), bh = Math.ceil(D.VH / 4); if (bl.width !== bw || bl.height !== bh) { bl.width = bw; bl.height = bh; bl2.width = Math.ceil(bw / 2); bl2.height = Math.ceil(bh / 2); }
+      gb.imageSmoothingEnabled = gb2.imageSmoothingEnabled = true; gb.globalCompositeOperation = 'source-over'; gb.globalAlpha = 1; gb.drawImage(buf, 0, 0, bw, bh); gb.globalCompositeOperation = 'multiply'; gb.drawImage(buf, 0, 0, bw, bh); gb.drawImage(buf, 0, 0, bw, bh); gb.drawImage(buf, 0, 0, bw, bh);
+      gb2.globalCompositeOperation = 'source-over'; gb2.drawImage(bl, 0, 0, bl2.width, bl2.height);
+      g.save(); g.imageSmoothingEnabled = true; g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.34 + noiteK * 0.3; g.drawImage(bl2, 0, 0, D.VW, D.VH); g.globalAlpha = 0.16 + noiteK * 0.16; g.drawImage(bl, 0, 0, D.VW, D.VH); g.restore(); g.imageSmoothingEnabled = false;
+    }
+    { const cq = dusk > 0.15 && cl0 > 0 && cl0 < 1 ? ['255,150,80', 0.1 * dusk] : noiteK > 0.5 ? ['60,90,170', 0.08 * noiteK] : ['255,230,180', 0.035]; g.save(); g.globalCompositeOperation = 'soft-light'; g.globalAlpha = cq[1] * 3; g.fillStyle = 'rgb(' + cq[0] + ')'; g.fillRect(0, 0, D.VW, D.VH); g.restore(); }
     // escurece as bordas
     g.drawImage(guarda('borda' + D.VW, D.VW, D.VH, (q, w, h) => { const vg = q.createRadialGradient(w / 2, h * 0.52, h * 0.4, w / 2, h * 0.52, w * 0.66); vg.addColorStop(0, 'rgba(2,5,7,0)'); vg.addColorStop(1, 'rgba(2,5,7,0.62)'); q.fillStyle = vg; q.fillRect(0, 0, w, h); }), 0, 0);
     if (J.clarao > 0) { g.globalAlpha = Math.min(0.5, J.clarao * 0.5); g.fillStyle = J.heroi.estado === 'dor' ? '#8a1a10' : '#fff2d8'; g.fillRect(0, 0, D.VW, D.VH); g.globalAlpha = 1; }
     const perigo = h.estado !== 'morto' && h.hp < h.ficha.vida * 0.28; if (perigo) { const pv = g.createRadialGradient(D.VW / 2, D.VH / 2, D.VH * 0.35, D.VW / 2, D.VH / 2, D.VW * 0.6); pv.addColorStop(0, 'rgba(120,10,10,0)'); pv.addColorStop(1, 'rgba(120,10,10,' + (0.28 + 0.12 * Math.sin(tempo * 5)) + ')'); g.fillStyle = pv; g.fillRect(0, 0, D.VW, D.VH); }
 
-    D.zoom = D.zoom || 1; const alvoZ = h.estado === 'dorme' && !h.andaAte && !h.acordando ? 1.55 : 1; D.zoom += (alvoZ - D.zoom) * Math.min(1, dt * 0.9); if (Math.abs(D.zoom - 1) < 0.004) D.zoom = 1;
+    D.zoom = D.zoom || 1; const alvoZ = h.estado === 'dorme' && !h.andaAte && !h.acordando ? 1.55 : 1; if (J.soco > 0) { J.soco = Math.max(0, J.soco - dt * 0.5); } D.zoom += (alvoZ - D.zoom) * Math.min(1, dt * 0.9); if (Math.abs(D.zoom - 1) < 0.004) D.zoom = 1;
     ctx.imageSmoothingEnabled = false;
-    if (D.zoom > 1) { const zw = D.VW / D.zoom, zh = D.VH / D.zoom, fx0 = h.fogo ? (h.x + h.fogo.x) / 2 : h.x, zx = Math.max(0, Math.min(D.VW - zw, fx0 - ox - zw / 2)), zy = Math.max(0, Math.min(D.VH - zh, h.y - oy - 26 - zh * 0.58)); ctx.drawImage(buf, zx, zy, zw, zh, 0, 0, cv.width, cv.height); }
+    const zz = D.zoom + (J.soco || 0);
+    if (zz > 1.001) { const zw = D.VW / zz, zh = D.VH / zz, fx0 = h.fogo ? (h.x + h.fogo.x) / 2 : h.x, zx = Math.max(0, Math.min(D.VW - zw, fx0 - ox - zw / 2)), zy = Math.max(0, Math.min(D.VH - zh, h.y - oy - 26 - zh * 0.58)); ctx.drawImage(buf, zx, zy, zw, zh, 0, 0, cv.width, cv.height); }
     else ctx.drawImage(buf, 0, 0, cv.width, cv.height);
     // números nítidos, por cima
     const ex = cv.width / D.VW, ey = cv.height / D.VH;
     ctx.textAlign = 'center';
-    for (const t of J.textos) { const a = Math.min(1, t.vida / 0.35), s = (t.grande ? 13 : 10) * (1 + Math.max(0, t.vida - t.max + 0.12) * 4); ctx.globalAlpha = a; ctx.font = '700 ' + Math.round(s * ex) + 'px Cinzel, serif'; ctx.lineWidth = 3 * ex * 0.6; ctx.strokeStyle = 'rgba(6,5,4,0.85)'; const x = (t.x - ox) * ex, y = (t.y - oy) * ey; ctx.strokeText(t.t, x, y); ctx.fillStyle = t.cor; ctx.fillText(t.t, x, y); }
-    ctx.globalAlpha = 1;
+    const semNum = J.pref && !J.pref.numeros;
+    for (const t of J.textos) { if (semNum && /^\d+$/.test(t.t)) continue; const a = Math.min(1, t.vida / 0.35), s = (t.grande ? 13 : 10) * (1 + Math.max(0, t.vida - t.max + 0.12) * 4); ctx.globalAlpha = a; ctx.font = '700 ' + Math.round(s * ex) + 'px Cinzel, serif'; ctx.lineWidth = 3 * ex * 0.6; ctx.strokeStyle = 'rgba(6,5,4,0.85)'; const x = (t.x - ox) * ex, y = (t.y - oy) * ey; ctx.strokeText(t.t, x, y); ctx.fillStyle = t.cor; ctx.fillText(t.t, x, y); }
+    // quem vem de fora da tela: uma ponta vermelha na beira
+    if (h.estado !== 'morto' && h.estado !== 'dorme') for (const e of J.inimigos) {
+      if (!e.vivo || !['prep', 'persegue', 'golpe'].includes(e.estado)) continue; const dx = e.x - ox; if ((dx > -6 && dx < D.VW + 6) || dx < -260 || dx > D.VW + 260 || Math.abs(e.y - h.y) > 170) continue;
+      const l = dx < 0 ? 1 : -1, x = dx < 0 ? 12 * ex : cv.width - 12 * ex, y = Math.max(60 * ey, Math.min(cv.height * 0.62, (e.y - e.h / 2 - oy) * ey)), k = e.estado === 'prep' ? 1 : 0.55; ctx.globalAlpha = k * (0.6 + 0.4 * Math.sin(tempo * (e.estado === 'prep' ? 22 : 7))); ctx.fillStyle = '#ff5a3a'; ctx.beginPath(); ctx.moveTo(x - l * 5 * ex, y); ctx.lineTo(x + l * 3 * ex, y - 7 * ey); ctx.lineTo(x + l * 1 * ex, y); ctx.lineTo(x + l * 3 * ex, y + 7 * ey); ctx.fill();
+    }
+    ctx.globalAlpha = 1; if (D.vivo && dt > 0) D.vivo.sons(dt);
   };
 })();

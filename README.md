@@ -61,3 +61,11 @@ Um deus molda o primeiro homem do barro e vai embora. O jogador dá o nome. Ele 
 
 `js/dados.js` conteúdo (espécies, armas, receitas, títulos, textos) · `js/fase.js` áreas montadas com semente fixa · `js/motor.js` regras · `js/bando.js` inimigos · `js/lar.js` dia, sono, emboscadas, humana, casa e filhos · `js/desenho.js` pintura em camadas num quadro de 320 px de altura · `js/main.js` telas e controles · `js/som.js`.
 Arte: herói do PixelLab, roupas, monstros, fundos e enfeites pintados no Gemini e no ChatGPT (ver `ASSETS-TERCEIROS.md`).
+
+## Interface e cenário vivo (25/11/2026)
+
+- `js/menu.js`: o menu (trilho de abas, lista e detalhe), ícones do kit (`UI.ico`) e as preferências do jogador (`UI.pref`, guardadas em `sina_pref`).
+- `js/toque.js`: controles de toque (manche solto, leque em volta do golpe, mira arrastando o golpe, editor de posição guardado em `sina_toque`), cartões de arma, trilho do caminho e o próximo passo.
+- `js/vivo.js`: vento, capim que abre e é cortado, cipós e raízes, coisas enterradas, bichinhos, bandos ao longe, olhos na mata e os sons da natureza (`Som.bicho`).
+- `css/jogo.css`: refeito; molduras em `assets/ui` (geradas por `tools/lateral-ui.py`).
+- Para ver os controles de toque no computador: abrir com `?toque=1`.

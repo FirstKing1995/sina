@@ -1,17 +1,17 @@
 /* SINA · telas, controles e o laço do jogo. */
 (function () {
   'use strict';
-  const J = window.Jogo, F = window.Fase, C = window.Dados, D = window.Desenho;
+  const J = window.Jogo, F = window.Fase, C = window.Dados, D = window.Desenho, UI = window.UI;
   const $ = (id) => document.getElementById(id);
-  const toque = matchMedia('(pointer: coarse)').matches;
+  const toque = matchMedia('(pointer: coarse)').matches || /[?&]toque/.test(location.search);
   const som = (n, v, t) => window.Som && Som.tocar(n, v, t);
   let modo = 'carga'; // carga | titulo | nasce | jogo | menu | fogo | morte
   const TELAS = ['titulo', 'nasce', 'menu', 'fogo', 'morte', 'batiza'];
-  function mostra(id) { for (const t of TELAS) $(t).hidden = t !== id; $('hud').hidden = !['jogo', 'menu', 'fogo', 'morte', 'batiza'].includes(modo) || modo === 'morte'; $('toque').hidden = !(toque && modo === 'jogo'); solta(); }
+  function mostra(id) { for (const t of TELAS) $(t).hidden = t !== id; $('hud').hidden = !['jogo', 'menu', 'fogo', 'morte', 'batiza'].includes(modo) || modo === 'morte'; $('toque').hidden = !(toque && modo === 'jogo'); document.body.dataset.modo = modo; solta(); }
   function solta() { for (const k in J.ent) J.ent[k] = 0; }
   function telaCheia() { if (!toque || document.fullscreenElement) return; try { const p = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if (p && p.then) p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {}); } catch (e) { /* sem tela cheia */ } }
-  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
-  const botao = (txt, f, cls) => { const b = el('button', cls, txt); b.onclick = () => { if (window.Som) Som.ligar(); som('abrir', 0.4, 1.3); f(); }; return b; };
+  const el = UI.el;
+  const botao = (txt, f, cls) => { const b = el('button', cls, txt); b.onclick = () => { if (window.Som) Som.ligar(); som('abrir', 0.4, 1.3); UI.vibra(8); f(); }; return b; };
 
   // ---------- título ----------
   function titulo() {
@@ -97,9 +97,16 @@
   function conquista(tit, txt, cor) { fila.push([tit, txt, cor]); if (fila.length === 1) mostraConquista(); }
   function mostraConquista() { if (!fila.length) return; const [a, b, c] = fila[0], e = $('conquista'); e.innerHTML = ''; e.append(el('b', '', a), el('span', '', b)); e.style.borderColor = c || '#c9a45a'; e.classList.add('ver'); setTimeout(() => { e.classList.remove('ver'); setTimeout(() => { fila.shift(); mostraConquista(); }, 500); }, 4600); }
   function dica(id, dur) { const s = J.save; if (s.dicas[id]) return; s.dicas[id] = 1; sussurra(C.DICAS[id][toque ? 1 : 0], dur || 6); }
-  J.aviso = function (tipo, x) {
+  // o que entrou na mochila: uma pilha à esquerda que soma repetidos
+  const pego = {};
+  function pegou(m, q) {
+    const cx = $('pegou'); let o = pego[m];
+    if (!o) { const d = el('div'); d.append(UI.item(m === 'curativo' ? 'trapo' : m, 34), el('b', '', ''), el('span', '', C.MAT[m])); cx.append(d); o = pego[m] = { d, n: 0 }; while (cx.children.length > 5) { const v = cx.firstElementChild; for (const k in pego) if (pego[k].d === v) { clearTimeout(pego[k].t); delete pego[k]; } v.remove(); } }
+    o.n += q || 1; o.d.children[1].textContent = '+' + o.n; clearTimeout(o.t); o.t = setTimeout(() => { o.d.classList.add('sai'); delete pego[m]; setTimeout(() => o.d.remove(), 420); }, 2200);
+  }
+  J.aviso = function (tipo, x, y) {
     const s = J.save;
-    if (tipo === 'ganhou') { if (!s.dicas.criar && (s.inv.galho || 0) >= 3) dica('criar'); atualizaMochila(); }
+    if (tipo === 'ganhou') { pegou(x, y); if (!s.dicas.criar && (s.inv.galho || 0) >= 3) dica('criar'); atualizaMochila(); }
     else if (tipo === 'criou') { const n = x.tipo === 'arma' ? C.ARMAS[x.id].nome : x.tipo === 'roupa' ? C.ROUPAS[x.id].nome : x.tipo === 'amuleto' ? C.AMULETOS[x.id].nome : x.nome; if (x.tipo) conquista(x.tipo === 'arma' ? 'Nova arma' : x.tipo === 'roupa' ? 'Nova roupa' : x.tipo === 'amuleto' ? 'Novo amuleto' : 'Feito', n); }
     else if (tipo === 'roupa') vesteRetrato();
     else if (tipo === 'titulo') conquista(x[1], x[2], '#e9c47a');
@@ -283,96 +290,9 @@
   function batiza() { const n = $('bt-nome').value.trim().slice(0, 16); if (!n) { $('bt-nome').focus(); return; } $('bt-nome').blur(); J.nasceFilho(n); voltar(); conquista(n + ' nasceu', 'Em cinco dias já poderá continuar você. Até lá, proteja o lar.', '#e8b0a0'); }
 
   // ---------- menu: criar, mochila, perícias, títulos, opções ----------
-  let aba = 'criar';
-  const ABAS = [['lar', 'Lar'], ['criar', 'Criar'], ['mochila', 'Mochila'], ['mapa', 'Mapa'], ['pericias', 'Perícias'], ['titulos', 'Títulos'], ['caderno', 'Caderno'], ['opcoes', 'Opções']];
-  function abreMenu(qual) { if (qual) aba = qual; modo = 'menu'; mostra('menu'); som('livro', 0.5); pintaMenu(); }
-  const ic = (m, t) => { const c = D.icone(m, t || 34); c.className = 'ic'; return c; };
-  function pintaMenu() {
-    const ab = $('m-abas'); ab.innerHTML = '';
-    for (const [id, n] of ABAS) { if (id === 'lar' && !J.save.lar) continue; const b = el('button', id === aba ? 'ativa' : '', n); b.onclick = () => { aba = id; pintaMenu(); }; ab.append(b); }
-    const c = $('m-corpo'); c.innerHTML = ''; const s = J.save, h = J.heroi;
-    if (aba === 'lar' && !s.lar) aba = 'criar';
-    if (aba === 'mapa') { pintaMapa(c); return; }
-    if (aba === 'caderno') {
-      const todos = Object.keys(C.BICHOS), vis = todos.filter((t) => s.abates[t] > 0); c.append(el('p', 'nota', vis.length + ' de ' + todos.length + ' bichos anotados. Com 4 mortes você entende os hábitos; com 10, a fraqueza e 8% a mais de dano.'));
-      for (const e in C.ESPECIES) {
-        c.append(el('h3', '', C.ESPECIES[e].nome));
-        for (const t of todos) if (C.TIPOS[t].esp === e) { const n = s.abates[t] || 0, B = C.BICHOS[t], l = el('div', 'linha' + (n >= 10 ? ' atual' : '')), d = el('div', 'l-txt'), q = el('div'); d.append(retratoBicho(t, n > 0)); if (!n) q.append(el('b', '', '???'), el('small', '', 'Ainda não caiu nenhum.')); else { q.append(el('b', '', C.TIPOS[t].nome + ' · ' + n), el('small', '', B[0])); const ch = C.TIPOS[t].chefe; if (n >= 4 || ch) q.append(el('small', '', B[1])); if (n >= 10 || ch) q.append(el('small', 'jeito', B[2])); else q.append(el('small', '', 'Faltam ' + ((n < 4 ? 4 : 10) - n) + ' para saber mais.')); } d.append(q); l.append(d); c.append(l); }
-      }
-      return;
-    }
-    if (aba === 'lar') {
-      const L = s.lar, aqui = s.area === 'lar';
-      c.append(el('p', 'nota', (L.casa.n ? C.CASAS[L.casa.n].nome + ', ' + Math.ceil(L.casa.hp) + ' de ' + C.CASAS[L.casa.n].hp : 'Ainda não há casa. Só chão.') + ' · fogo: ' + (L.lenha > 0 ? Math.round(L.lenha) + ' h de lenha' : 'apagado') + ' · dia ' + s.dia));
-      c.append(el('p', 'nota', aqui ? 'Toda noite, às 21 h, alguém vem. Cerca segura, estaca fere, fogo aceso afasta uma onda.' : 'Para construir e consertar, volte à Clareira do Rio.'));
-      if (L.curtume && L.curtume.n && s.roupa !== 'barro') { const n = s.reforco[s.roupa] || 0, b = botao(n >= 3 ? C.ROUPAS[s.roupa].nome + ': reforçada ao máximo' : 'Reforçar ' + C.ROUPAS[s.roupa].nome.toLowerCase() + ' (' + n + '/3): 4 couros e 4 fibras, +3% de defesa', () => { if (J.reforca()) pintaMenu(); }); b.disabled = !aqui || n >= 3 || (s.inv.couro || 0) < 4 || (s.inv.fibra || 0) < 4; c.append(b); }
-      for (const id of ['casa', 'cercaE', 'cercaD', 'estacasE', 'estacasD', 'varal', 'horta', 'curtume', 'bau', 'berco', ...C.OBRAS_VILA]) {
-        if (id === 'poco') { c.append(el('h3', '', C.ESTAGIOS[J.estagio()])); const ft = J.faltaEstagio(); if (ft) c.append(el('p', 'nota', ft)); if (L.celeiro && L.celeiro.n) c.append(el('p', 'nota', 'Celeiro: ' + J.comidaPovo() + ' porções · famílias: ' + J.familias().length)); }
-        const o = J.custoObra(id), tenho = id === 'casa' ? L.casa.n : L[id] && L[id].n, cheio = J.cheioObra(id), hp = id === 'casa' ? L.casa.hp : L[id] ? L[id].hp : 0;
-        const l = el('div', 'linha' + (J.podeObra(id) ? ' pode' : '')), t = el('div', 'l-txt'), d = el('div');
-        const nome = o ? (id === 'casa' && tenho ? 'Melhorar: ' : '') + o.nome + (id !== 'casa' && tenho ? ' · nível ' + o.n : '') : (id === 'casa' ? C.CASAS[L.casa.n].nome : C.OBRAS[id].nome);
-        d.append(el('b', '', nome), el('small', '', o ? (o.trava ? 'Precisa de ' + o.trava.toLowerCase() : o.desc) : 'Pronto'));
-        if (o) { const cu = el('div', 'custos'); for (const m in o.custo) { const k = el('span', (s.inv[m] || 0) >= o.custo[m] ? 'tem' : 'falta', (s.inv[m] || 0) + '/' + o.custo[m]); k.prepend(ic(m, 20)); k.title = C.MAT[m]; cu.append(k); } d.append(cu); }
-        t.append(d); l.append(t);
-        if (tenho && cheio > 1 && hp < cheio) { const b = botao('Consertar (2 galhos)', () => { if (J.conserta(id)) pintaMenu(); }); b.disabled = !aqui || (s.inv.galho || 0) < 2 || !!J.raid; l.append(b); }
-        if (o) { const b = botao('Levantar', () => { if (J.constroi(id)) pintaMenu(); }); b.disabled = !J.podeObra(id); l.append(b); }
-        c.append(l);
-      }
-      const H = s.hum; c.append(el('h3', '', 'Família'));
-      c.append(el('p', 'nota', H ? H.nome + ': ' + J.lacoNome(H.laco).toLowerCase() + (H.onde === 'levada' ? ', levada para ' + nomeArea(H.cativeiro) : H.onde === 'segue' ? ', com você' : ', no lar') + (H.gravida ? ', espera um filho' : '') : 'Ninguém ainda. No vale, alguém gritou.'));
-      if (s.mae) c.append(el('p', 'nota', s.mae.nome + ', sua mãe, cuida do lar.'));
-      for (const p of s.prole) { const id = s.dia - p.dia; c.append(el('p', 'nota', p.nome + ': ' + (id < 2 ? 'bebê de colo' : id < 5 ? 'criança, faltam ' + (5 - id) + ' dias para poder continuar você' : 'crescido, pode continuar você'))); }
-      { const ms = J.moradores(); c.append(el('h3', '', 'Vila')); if (!ms.length) c.append(el('p', 'nota', 'Há gente presa nos quatro caminhos, nos acampamentos do fundo.')); for (const m of ms) c.append(el('p', 'nota', s.vila[m].nome + ', ' + C.VILA[m].oficio.toLowerCase() + ', desde o dia ' + s.vila[m].dia)); for (const f of J.familias()) c.append(el('p', 'nota', f.nome + ', desde o dia ' + f.dia + (f.fome ? ' · com fome há ' + f.fome + (f.fome > 1 ? ' dias' : ' dia') : ''))); if (ms.length >= 2) { const i = el('input', 'nomevila'); i.maxLength = 22; i.placeholder = 'Nome da vila'; i.value = s.nomeVila || ''; i.onchange = () => { s.nomeVila = i.value.trim(); J.salvar(); }; c.append(i); } }
-      c.append(el('p', 'nota', 'Filhos: laço de Companhia (60), cabana trançada, berço e uma noite dormida no lar.'));
-    } else if (aba === 'criar') {
-      c.append(el('p', 'nota', 'Ofício ' + J.nivel('oficio') + '. Quanto mais você faz, melhor o que consegue fazer.'));
-      for (const r of C.RECEITAS) {
-        const nome = r.tipo === 'arma' ? C.ARMAS[r.id].nome : r.tipo === 'roupa' ? C.ROUPAS[r.id].nome : r.tipo === 'amuleto' ? C.AMULETOS[r.id].nome : r.nome, desc = r.desc || (r.tipo === 'amuleto' ? C.AMULETOS[r.id].desc : '') || (r.tipo === 'arma' ? C.ARMAS[r.id].desc : r.tipo === 'roupa' ? C.ROUPAS[r.id].desc : '');
-        const trava = J.nivel('oficio') < (r.oficio || 0);
-        const l = el('div', 'linha' + (J.pode(r) && !J.jaTem(r) ? ' pode' : '')), t = el('div', 'l-txt');
-        t.append(ic(r.tipo === 'amuleto' ? 'a_' + r.id : r.tipo === 'roupa' && ['pele', 'osso', 'prata'].includes(r.id) ? 'r_' + r.id : r.id === 'isca' ? 'pedra' : r.id === 'curativo' ? 'trapo' : r.id === 'folhas' ? 'folha' : r.id === 'couro' ? 'couro' : r.id));
-        const d = el('div'); d.append(el('b', '', nome + (r.tipo === 'arma' ? ' · dano ' + C.ARMAS[r.id].dano : r.tipo === 'roupa' ? ' · defesa ' + Math.round(C.ROUPAS[r.id].def * 100) + '%' : '')), el('small', '', trava ? 'Precisa de Ofício ' + r.oficio : desc));
-        const cu = el('div', 'custos'); for (const m in r.custo) { const k = el('span', (s.inv[m] || 0) >= r.custo[m] ? 'tem' : 'falta', (s.inv[m] || 0) + '/' + r.custo[m]); k.prepend(ic(m, 20)); k.title = C.MAT[m]; cu.append(k); }
-        d.append(cu); t.append(d);
-        const b = botao(J.jaTem(r) ? 'Já tem' : 'Fazer', () => { if (J.criar(r)) pintaMenu(); }); b.disabled = !J.pode(r) || J.jaTem(r);
-        l.append(t, b); c.append(l);
-      }
-    } else if (aba === 'mochila') {
-      c.append(el('h3', '', 'Armas'));
-      for (const a of C.ORDEM_ARMAS) if (s.armas.includes(a)) {
-        const A = C.ARMAS[a], l = el('div', 'linha' + (s.arma === a ? ' atual' : '')), t = el('div', 'l-txt');
-        if (a !== 'punho') t.append(ic(a)); const d = el('div'); d.append(el('b', '', A.nome + (s.afiado[a] ? ' +' + s.afiado[a] : '')), el('small', '', 'Dano ' + Math.round(A.dano * (1 + J.nivel(A.per) * C.BONUS) * (1 + (s.afiado[a] || 0) * 0.04)) + ' · ' + A.desc), el('small', 'jeito', C.ESTILOS[A.per].nota)); t.append(d);
-        l.append(t); if (s.arma !== a) l.append(botao('Empunhar', () => { J.empunhar(a); pintaMenu(); })); c.append(l);
-      }
-      c.append(el('h3', '', 'Roupas'));
-      for (const r of s.roupas) { const R = C.ROUPAS[r], l = el('div', 'linha' + (s.roupa === r ? ' atual' : '')), d = el('div', 'l-txt'), q0 = el('div'); q0.append(el('b', '', R.nome), el('small', '', R.desc)); d.append(q0); l.append(d); if (s.roupa !== r) l.append(botao('Vestir', () => { J.vestir(r); pintaMenu(); })); c.append(l); }
-      if (s.amuletos.length) { c.append(el('h3', '', 'Amuletos (' + s.amu.length + ' de 2)')); for (const a of s.amuletos) { const A = C.AMULETOS[a], usa = s.amu.includes(a), l = el('div', 'linha' + (usa ? ' atual' : '')), t = el('div', 'l-txt'), d = el('div'); t.append(ic('a_' + a)); d.append(el('b', '', A.nome), el('small', '', A.desc)); t.append(d); l.append(t, botao(usa ? 'Tirar' : 'Pendurar', () => { J.poeAmuleto(a); pintaMenu(); })); c.append(l); } }
-      if (s.tocha > 0 || s.inv.tocha > 0) { c.append(el('h3', '', 'Tocha')); c.append(botao(s.tochaAcesa ? 'Apagar a tocha (restam ' + Math.ceil(s.tocha / 60) + ' min)' : s.tocha > 0 ? 'Acender a tocha (restam ' + Math.ceil(s.tocha / 60) + ' min)' : 'Acender uma tocha', () => { J.tocha(); pintaMenu(); })); }
-      if (s.magias.length > 1) { c.append(el('h3', '', 'Magia do segundo botão')); for (const m of s.magias.slice(1)) { const l = el('div', 'linha' + (s.magia2 === m ? ' atual' : '')), d = el('div', 'l-txt'), q = el('div'); q.append(el('b', '', C.MAGIAS[m].nome), el('small', '', C.MAGIAS[m].desc)); d.append(q); l.append(d); if (s.magia2 !== m) l.append(botao('Usar esta', () => { s.magia2 = m; J.salvar(); pintaMenu(); montaMagias(); })); c.append(l); } }
-      c.append(el('h3', '', 'Materiais'));
-      const g = el('div', 'grade'); let n = 0;
-      for (const m in C.MAT) if (s.inv[m] > 0) { n++; const q = el(C.COMER[m] ? 'button' : 'div', 'mat'); q.append(ic(m === 'curativo' ? 'trapo' : m), el('em', '', s.inv[m]), el('small', '', C.MAT[m])); if (C.COMER[m]) q.onclick = () => { J.comer(m); pintaMenu(); }; g.append(q); }
-      c.append(n ? g : el('p', 'nota', 'Vazia. A floresta tem o que você precisa.'));
-      if (n) c.append(el('p', 'nota', 'Clique em comida ou erva para usar.'));
-    } else if (aba === 'pericias') {
-      const f = h.ficha, q = el('div', 'ficha');
-      for (const [a, b] of [['Vida', Math.ceil(h.hp) + ' / ' + f.vida], ['Fôlego', f.vigor], ['Dano', Math.round(f.dano)], ['Defesa', Math.round(f.def * 100) + '%'], ['Crítico', Math.round(f.critico * 100) + '%'], ['Velocidade', Math.round(f.vel * 100) + '%']]) q.append(el('span', '', a), el('em', '', b));
-      c.append(q, el('p', 'nota', 'Tudo cresce com a repetição. Ninguém dá pontos a você.'));
-      for (const k in C.PERICIAS) { const p = s.per[k] || { n: 0, x: 0 }, l = el('div', 'per'), b = el('div', 'per-b'), i = el('i'); i.style.width = Math.min(100, (p.x / C.xpNivel(p.n)) * 100) + '%'; b.append(i); const tt = el('div', 'per-t'); tt.append(el('b', '', C.PERICIAS[k][0]), el('small', '', C.PERICIAS[k][1]), el('em', '', p.n)); l.append(tt, b); c.append(l); }
-    } else if (aba === 'titulos') {
-      for (const e in C.ESPECIES) {
-        const n = s.mortes[e] || 0; c.append(el('h3', '', C.ESPECIES[e].nome + ': ' + n));
-        for (const t of C.TITULOS[e]) { const l = el('div', 'linha' + (n >= t[0] ? ' atual' : '')), d = el('div', 'l-txt'), q = el('div'); q.append(el('b', '', t[1]), el('small', '', t[2])); d.append(q); l.append(d, el('em', 'quanto', n >= t[0] ? 'seu' : n + '/' + t[0])); c.append(l); }
-      }
-    } else {
-      for (const [k, n] of [['efeitos', 'Efeitos'], ['ambiente', 'Ambiente'], ['musica', 'Música']]) { const l = el('label', 'vol'), r = el('input'); r.type = 'range'; r.min = 0; r.max = 1; r.step = 0.05; r.value = Som.vol[k]; r.oninput = () => Som.mudaVolume(k, +r.value); l.append(el('span', '', n), r); c.append(l); }
-      c.append(el('h3', '', 'Controles'));
-      const t = toque ? ['Arraste o lado esquerdo: andar, mirar para cima e para baixo', 'Segure Forte: golpe carregado', 'Com o arco, segure Golpe para puxar mais'] : ['A/D andar · Espaço pular · J ou clique: golpe (W ou S muda a direção)', 'K ou botão direito: golpe forte, segure · Shift ou L: esquiva', 'R e F magias · Q comer · E usar · T trocar arma · V tocha · M mapa · I ou Esc menu', 'Com o arco, segure o golpe para puxar mais', 'Controle: A pula, X golpe, B esquiva, Y usar, RB/LB magias, RT forte, LT comer, Select arma'];
-      for (const q of t) c.append(el('p', 'nota', q));
-      c.append(botao('Guardar e sair para o título', () => { J.salvar(); titulo(); }));
-    }
-  }
-
+  const ic = UI.item;
+  let menu = null;
+  function abreMenu(qual) { if (qual) menu.aba = qual; modo = 'menu'; mostra('menu'); som('livro', 0.5); menu.pinta(); }
   function retratoBicho(t, visto) { const c2 = document.createElement('canvas'); c2.width = 54; c2.height = 46; c2.className = 'ic bicho'; const q = c2.getContext('2d'), tp = C.TIPOS[t], im = D.img['m_' + tp.spr], mt = window.ARTE2.monstros[tp.spr]; q.imageSmoothingEnabled = false; if (im) { const e = Math.min(54 / mt.w, 46 / mt.h, 1); q.drawImage(im, 0, 0, mt.w, mt.h, (54 - mt.w * e) / 2, 46 - mt.h * e, mt.w * e, mt.h * e); if (!visto) { q.globalCompositeOperation = 'source-in'; q.fillStyle = '#1c2624'; q.fillRect(0, 0, 54, 46); } } return c2; }
   // ---------- mapa: o perfil de cada área, só do que você já andou ----------
   const CORES = { fogo: '#ffb050', apagado: '#6a6a60', porta: '#9fd8ff', bau: '#ffe2a0', marco: '#c8b890', emb: '#d0483a', circulo: '#7ff0ff', voce: '#ffffff', covil: '#d0483a' };
@@ -407,29 +327,33 @@
 
   // ---------- HUD ----------
   let hudT = 0;
-  function atualizaMochila() { const s = J.save; let p = false; for (const r of C.RECEITAS) if (r.tipo && r.tipo !== 'item' && J.pode(r) && !J.jaTem(r)) p = true; $('h-mochila').classList.toggle('novo', p); const b = document.querySelector('#botoes [data-a=menu]'); if (b) b.classList.toggle('novo', p); void s; }
+  function atualizaMochila() { const s = J.save; $('h-dir').firstElementChild.classList.toggle('novo', C.RECEITAS.some((r) => r.tipo && r.tipo !== 'item' && J.pode(r) && !J.jaTem(r))); void s; }
   function vesteRetrato() { const c = $('retrato-c'), q = c.getContext('2d'); q.imageSmoothingEnabled = false; q.clearRect(0, 0, 34, 34); const im = D.img['h_' + J.save.roupa]; if (im) q.drawImage(im, 26, 12, 44, 44, -2, 0, 44, 44); montaMagias(); atualizaMochila(); }
-  function montaMagias() { const m = $('h-magias'); m.innerHTML = ''; const s = J.save; [s.magias[0], s.magia2].forEach((id, i) => { if (!id) return; const d = el('div', 'mg'); d.style.color = C.MAGIAS[id].cor; d.append(el('u', '', C.MAGIAS[id].nome[0]), el('b', '', toque ? '' : i ? 'F' : 'R'), el('s')); d.dataset.id = id; m.append(d); }); for (const [a, v] of [['magia1', s.magias[0]], ['magia2', s.magia2]]) { const b = document.querySelector('#botoes [data-a=' + a + ']'); if (b) { b.hidden = !v; if (v) b.textContent = C.MAGIAS[v].nome.split(' ')[0]; } } $('b-sina').hidden = !s.magias.length; }
+  function montaMagias() { const m = $('h-magias'); m.innerHTML = ''; const s = J.save; [s.magias[0], s.magia2].forEach((id, i) => { if (!id) return; const d = el('div', 'mg'); d.style.setProperty('--cor', C.MAGIAS[id].cor); d.append(UI.ico(id), el('b', '', i ? 'F' : 'R'), el('s')); d.dataset.id = id; m.append(d); }); UI.zeraToque(); $('b-sina').hidden = !s.magias.length; }
+  const icUsar = (p) => (p.tipo === 'coleta' && p.o.m !== 'madeira' ? UI.item(p.o.m, 34) : UI.ico({ coleta: 'machado', fogo: 'fogueira', porta: 'sair', bau: 'bau', casa: 'casa', circulo: 'olho', pesca: 'gota', preso: 'cadeado', solta: 'cadeado', levanta: 'vida', fala: 'vida', morador: 'familia', crianca: 'familia', poco: 'gota', celeiro: 'fome', mercador: 'troca', varal: 'comer', horta: 'cesto' }[p.tipo] || 'mao'));
   let vistas = '';
   function hud(dt) {
     hudT -= dt; if (hudT > 0) return; hudT = 0.06;
     const h = J.heroi, f = h.ficha, s = J.save, pc = (v, m) => Math.max(0, Math.min(100, (v / m) * 100)) + '%';
-    const bv = $('b-vida'); bv.children[0].style.width = bv.children[1].style.width = pc(h.hp, f.vida); bv.style.width = Math.min(340, 150 + f.vida) + 'px';
+    const bv = $('b-vida'); bv.children[0].style.width = bv.children[1].style.width = pc(h.hp, f.vida); bv.children[2].textContent = Math.ceil(h.hp) + ' / ' + f.vida; bv.classList.toggle('mal', h.hp < f.vida * 0.28); $('h-esq').classList.toggle('mal', h.hp < f.vida * 0.28);
     $('b-vigor').children[0].style.width = pc(h.vigor, f.vigor); $('b-fome').children[0].style.width = pc(s.fome, 100); $('b-fome').classList.toggle('pouco', s.fome < 20); $('b-sina').children[0].style.width = pc(h.sina, f.sina);
     const chave = s.arma + (s.inv.flecha || 0) + s.magias.length + s.magia2 + (s.titulo || '') + (s.inv.fruta || 0) + (s.inv.erva || 0) + (s.inv.carne || 0) + 's' + (s.inv.seca || 0) + 'p' + (s.inv.peixe || 0) + (s.inv.curativo || 0) + (s.afiado[s.arma] || 0);
     if (chave !== vistas) {
       vistas = chave;
-      const a = $('h-arma'); a.innerHTML = ''; if (s.arma !== 'punho') a.append(ic(s.arma, 34)); a.append(el('span', '', C.ARMAS[s.arma].nome + (s.afiado[s.arma] ? ' +' + s.afiado[s.arma] : '') + (C.ARMAS[s.arma].tiro ? ' · ' + (s.inv.flecha || 0) : '')));
-      const q = $('h-comida'); q.innerHTML = ''; for (const m of ['fruta', 'peixe', 'carne', 'seca', 'erva', 'curativo']) if (s.inv[m] > 0) { const k = el('span'); k.append(ic(m === 'curativo' ? 'trapo' : m, 22), document.createTextNode(s.inv[m])); q.append(k); }
+      const q = $('h-comida'); q.innerHTML = ''; if (!toque) for (const m of ['fruta', 'peixe', 'carne', 'seca', 'erva', 'curativo']) if (s.inv[m] > 0) { const k = el('span'); k.append(ic(m === 'curativo' ? 'trapo' : m, 22), document.createTextNode(s.inv[m])); q.append(k); }
       $('h-titulo').textContent = s.nome + (s.titulo ? ', ' + s.titulo : ''); montaMagias();
     }
-    const tc = $('h-tocha'); tc.hidden = !(s.tocha > 0); if (s.tocha > 0) { tc.classList.toggle('acesa', !!s.tochaAcesa); tc.style.setProperty('--k', s.tocha / 300); } const bt = document.querySelector('#botoes [data-a=tocha]'); if (bt) { bt.hidden = !(s.tocha > 0 || s.inv.tocha > 0); bt.classList.toggle('ativa', !!s.tochaAcesa); }
-    const tdia = 'Dia ' + s.dia + ' · ' + J.nomeHora() + (J.clima.tipo !== 'limpo' && J.clima.forca > 0.3 ? ' · ' + J.NOMECLIMA[J.clima.tipo] : '') + (J.raid ? ' · onda ' + Math.max(1, J.raid.n + 1) + ' de ' + J.raid.total : ''); if ($('h-dia').textContent !== tdia) { $('h-dia').textContent = tdia; $('h-dia').classList.toggle('noite', J.ehNoite()); }
+    const tc = $('h-tocha'); tc.hidden = !(s.tocha > 0); if (s.tocha > 0) { tc.classList.toggle('acesa', !!s.tochaAcesa); tc.style.setProperty('--k', s.tocha / 300); }
+    UI.passoArmas(); UI.passoTrilho(0.06); UI.passoMeta(0.06); if (toque) UI.passoToque();
+    const ve = h.veneno > 0 ? 'veneno' : s.fome < 15 ? 'fome' : ''; if ($('h-estado').className !== ve) $('h-estado').className = ve;
+    const tdia = 'Dia ' + s.dia + ' · ' + J.nomeHora() + (J.clima.tipo !== 'limpo' && J.clima.forca > 0.3 ? ' · ' + J.NOMECLIMA[J.clima.tipo] : '') + (J.raid ? ' · onda ' + Math.max(1, J.raid.n + 1) + ' de ' + J.raid.total : ''); if ($('h-dia').lastChild.textContent !== tdia) { $('h-dia').lastChild.textContent = tdia; $('h-dia').classList.toggle('noite', J.ehNoite()); UI.troca($('ic-dia'), J.ehNoite() ? 'lua' : 'sol'); }
     const H = s.hum, hv = H && J.hum && !J.hum.perdida; $('h-hum').hidden = !hv; if (hv) { $('h-hum').firstElementChild.textContent = H.nome + (J.hum.caida ? ' caiu!' : ''); $('b-hum').children[0].style.width = pc(J.hum.hp, J.hum.hpMax); $('b-hfome').children[0].style.width = pc(H.fome, 100); $('b-laco').children[0].style.width = pc(H.laco, 100); }
     for (const d of $('h-magias').children) { const M = C.MAGIAS[d.dataset.id]; d.classList.toggle('falta', h.sina < M.custo); d.lastChild.style.transform = 'scaleY(' + Math.min(1, (h.espera[d.dataset.id] || 0) / M.espera) + ')'; }
-    const c = J.chefeAtivo; $('chefe').hidden = !c; if (c) { $('chefe-nome').textContent = c.T.nome; const b = $('b-chefe'); b.children[0].style.width = b.children[1].style.width = pc(c.hp, c.hpMax); }
-    const p = modo === 'jogo' && h.estado === 'livre' ? J.perto() : null, u = $('usar');
-    if (p) { u.hidden = false; const t = rotulo(p); if (u.dataset.t !== t) { u.dataset.t = t; u.innerHTML = ''; u.append(el('b', '', toque ? 'Usar' : 'E'), document.createTextNode(t)); } } else u.hidden = true;
+    const c = J.chefeAtivo; $('chefe').hidden = !c; $('h-meta').classList.toggle('some', !!c); if (c) { $('chefe-nome').textContent = c.T.nome; const b = $('b-chefe'); b.children[0].style.width = b.children[1].style.width = pc(c.hp, c.hpMax); }
+    let p = modo === 'jogo' && h.estado === 'livre' && !acorda ? J.perto() : null; const u = $('usar');
+    // colher ao passar: só o que é de mão, e só em paz
+    if (p && p.tipo === 'coleta' && p.o.m !== 'madeira' && UI.pref.coleta && Math.abs(p.o.x - h.x) < 20 && h.noChao && !J.emb && !J.raid && !J.inimigos.some((e) => e.vivo && e.estado !== 'vaga' && Math.abs(e.x - h.x) < 260)) { J.recolhe(p.o); p = null; }
+    if (p) { u.hidden = false; const t = rotulo(p); if (u.dataset.t !== t) { u.dataset.t = t; u.innerHTML = ''; const i = icUsar(p); u.append(i); if (!toque) u.append(el('b', '', 'E')); u.append(el('span', '', t)); u.classList.remove('surge'); void u.offsetWidth; u.classList.add('surge'); } } else u.hidden = true;
   }
 
   // ---------- teclado e mouse ----------
@@ -441,6 +365,8 @@
     if (window.Som) Som.ligar();
     if (modo === 'nasce') { if (!ev.repeat && ['Space', 'Enter', 'KeyE'].includes(ev.code)) { ev.preventDefault(); proximaLinha(); } return; }
     if (ev.code === 'Escape' || ev.code === 'KeyI' || ev.code === 'Tab') { ev.preventDefault(); if (modo === 'jogo') { if (!acorda && !sono) abreMenu(ev.code === 'Escape' ? 'opcoes' : null); } else if (modo === 'menu' || modo === 'fogo') voltar(); return; }
+    if (modo === 'menu' && !ev.repeat && (ev.code === 'KeyQ' || ev.code === 'KeyE')) { const l = menu.abas.map((x) => x[0]).filter((x) => x !== 'lar' || J.save.lar), k = l.indexOf(menu.aba); UI.aba(l[(k + (ev.code === 'KeyE' ? 1 : l.length - 1)) % l.length]); return; }
+    if (modo === 'menu' && ev.code === 'KeyM') { voltar(); return; }
     if (modo !== 'jogo') return;
     if (TECLAS[ev.code]) J.ent[TECLAS[ev.code]] = 1;
     if (!ev.repeat) {
@@ -459,45 +385,19 @@
   addEventListener('mouseup', (ev) => { if (toque) return; if (ev.button === 0) J.ent.golpe = 0; if (ev.button === 2) J.ent.forte = 0; });
   addEventListener('contextmenu', (ev) => { if (ev.target.tagName !== 'INPUT') ev.preventDefault(); });
   addEventListener('blur', solta);
-  addEventListener('visibilitychange', () => { if (document.hidden && J.save && J.heroi) J.salvar(); });
+  addEventListener('visibilitychange', () => { if (document.hidden && J.save && J.heroi) { J.salvar(); if (modo === 'jogo' && !acorda && !sono && J.heroi.estado !== 'morto') abreMenu('opcoes'); } });
   $('n-ir').onclick = daNome; $('bt-ir').onclick = batiza;
   $('nasce').addEventListener('pointerdown', (ev) => { if (window.Som) Som.ligar(); if (!ev.target.closest('#n-pede')) proximaLinha(); });
-  $('m-fechar').onclick = voltar; $('fg-sair').onclick = voltar; $('h-mochila').onclick = () => { if (modo === 'jogo') abreMenu(); };
-  $('usar').addEventListener('pointerdown', usar);
+  $('m-fechar').onclick = voltar; $('m-fechar').append(UI.ico('sair')); $('fg-sair').onclick = voltar;
+  for (const b of document.querySelectorAll('#h-dir button')) { const q = b.dataset.h; b.append(UI.ico({ mochila: 'mochila', mapa: 'mapa', opcoes: 'pausa' }[q])); b.title = { mochila: 'Mochila (I)', mapa: 'Mapa (M)', opcoes: 'Pausa (Esc)' }[q]; b.addEventListener('pointerdown', (ev) => { ev.preventDefault(); ev.stopPropagation(); if (modo === 'jogo' && !acorda && !sono) { UI.vibra(8); abreMenu(q === 'mochila' ? null : q); } }); }
+  for (const [id, n] of [['ic-fome', 'fome'], ['ic-dia', 'sol'], ['ic-guardou', 'fogueira'], ['ic-girar', 'troca']]) UI.troca($(id), n);
+  for (const i of document.querySelectorAll('#botoes [data-i]')) i.append(UI.ico(i.dataset.i));
+  $('usar').addEventListener('pointerdown', (ev) => { ev.preventDefault(); ev.stopPropagation(); UI.vibra(10); usar(); });
 
   // ---------- toque ----------
-  if (toque) {
-    document.body.classList.add('toque');
-    const zona = $('zona-manche'), man = $('manche'), bola = man.querySelector('i');
-    let id = null, ox = 0, oy = 0;
-    zona.addEventListener('pointerdown', (ev) => { ev.preventDefault(); if (id !== null) return; Som.ligar(); id = ev.pointerId; ox = ev.clientX; oy = ev.clientY; man.style.left = ox - 58 + 'px'; man.style.top = oy - 58 + 'px'; man.style.bottom = 'auto'; man.classList.add('vivo'); try { zona.setPointerCapture(id); } catch (e) { /* ponteiro sintético */ } });
-    zona.addEventListener('pointermove', (ev) => {
-      if (ev.pointerId !== id) return;
-      let dx = ev.clientX - ox, dy = ev.clientY - oy; const d0 = Math.hypot(dx, dy);
-      if (d0 > 56) { ox += (dx / d0) * (d0 - 56); oy += (dy / d0) * (d0 - 56); dx = ev.clientX - ox; dy = ev.clientY - oy; man.style.left = ox - 58 + 'px'; man.style.top = oy - 58 + 'px'; }
-      const d = Math.min(40, Math.hypot(dx, dy)), a = Math.atan2(dy, dx);
-      bola.style.transform = 'translate(' + Math.cos(a) * d + 'px,' + Math.sin(a) * d + 'px)';
-      J.ent.esq = dx < -13 ? 1 : 0; J.ent.dir = dx > 13 ? 1 : 0; J.ent.cima = dy < -28 && Math.abs(dy) > Math.abs(dx) * 0.7 ? 1 : 0; J.ent.baixo = dy > 28 && Math.abs(dy) > Math.abs(dx) * 0.7 ? 1 : 0;
-    });
-    const fim = (ev) => { if (ev.pointerId !== id) return; id = null; J.ent.esq = J.ent.dir = J.ent.cima = J.ent.baixo = 0; bola.style.transform = ''; man.classList.remove('vivo'); man.style.top = man.style.left = man.style.bottom = ''; };
-    zona.addEventListener('pointerup', fim); zona.addEventListener('pointercancel', fim); zona.addEventListener('lostpointercapture', fim);
-    for (const b of document.querySelectorAll('#botoes button')) {
-      const a = b.dataset.a;
-      b.addEventListener('pointerdown', (ev) => {
-        ev.preventDefault(); Som.ligar(); b.classList.add('ativa');
-        if (a === 'menu') { if (modo === 'jogo' && !acorda) abreMenu(); return; }
-        if (a === 'arma') { J.proximaArma(); return; }
-        if (a === 'tocha') { J.tocha(); return; }
-        if (a === 'usa') { usar(); return; }
-        if (a === 'pula') J.ent.pula = 1;
-        if (a === 'golpe') J.ent.golpe = 1;
-        if (a === 'forte') { J.ent.forte = 1; return; }
-        J.aperta(a);
-      });
-      const f2 = () => { b.classList.remove('ativa'); if (a === 'pula' || a === 'forte' || a === 'golpe') J.ent[a] = 0; };
-      b.addEventListener('pointerup', f2); b.addEventListener('pointercancel', f2); b.addEventListener('pointerleave', f2);
-    }
-  }
+  let dedos = null;
+  if (toque) dedos = UI.criarToque({ usar, abreMenu, som, pode: () => modo === 'jogo' && !acorda, voltaMenu: () => abreMenu('opcoes') });
+  menu = UI.criarMenu({ som, sussurra, voltar, titulo, montaMagias, nomeArea, pintaMapa, retratoBicho, toque, editaToque: () => { modo = 'jogo'; mostra(null); modo = 'edita'; dedos.edita(); } });
 
   // ---------- controle (gamepad) ----------
   const antesPad = {}; let padUsado = false;
@@ -516,6 +416,7 @@
       for (const [i, a] of [[0, 'pula'], [2, 'golpe'], [1, 'rola'], [5, 'magia1'], [4, 'magia2'], [6, 'come']]) if (novo[i]) J.aperta(a);
       if (novo[3]) usar(); if (novo[8]) J.proximaArma(); if (novo[9] && !acorda) abreMenu();
     } else if ((modo === 'menu' || modo === 'fogo') && (novo[1] || novo[9])) voltar();
+    else if (modo === 'menu' && (novo[4] || novo[5])) { const l = menu.abas.map((x) => x[0]).filter((x) => x !== 'lar' || J.save.lar), k = l.indexOf(menu.aba); UI.aba(l[(k + (novo[5] ? 1 : l.length - 1)) % l.length]); }
     if (sono && (novo[0] || novo[1])) pulaSono = true;
     else if (modo === 'nasce' && novo[0]) proximaLinha();
     else if ((modo === 'titulo' || modo === 'morte') && novo[0]) { const b = document.querySelector('#' + modo + ' button.ir'); if (b) b.click(); }
@@ -529,6 +430,16 @@
     if (nas.part.length < 130) { const lado = Math.random(); nas.part.push(lado < 0.5 ? { b: 1, x: cx + (Math.random() - 0.5) * W * 0.35, y: H * 0.86, t: 0, d: 1.6 + Math.random() * 2 } : { b: 0, x: cx + (Math.random() - 0.5) * W * 0.5, y: -10, vy: 26 + Math.random() * 40, t: 0, d: 8 }); }
     for (const p of nas.part) { p.t += dt; if (p.b) { const k = p.t / p.d, e = k * k; const x = p.x + (cx - p.x) * e + Math.sin(k * 9) * 12 * (1 - k), y = p.y + (cy - p.y) * e; q.globalAlpha = Math.sin(Math.min(1, k) * Math.PI) * 0.9; q.fillStyle = k > 0.7 ? '#ff9a50' : '#8a4a2a'; q.fillRect(x, y, 4, 4); } else { p.y += p.vy * dt; q.globalAlpha = 0.5 * Math.sin(Math.min(1, p.t / 2) * Math.PI / 2) * Math.max(0, 1 - p.y / H); q.fillStyle = '#ffe6a0'; q.fillRect(p.x + Math.sin(p.t * 1.4) * 8, p.y, 3, 3); } }
     nas.part = nas.part.filter((p) => p.t < p.d && p.y < H); q.globalAlpha = 1;
+  }
+
+  // ---------- título: brasas que sobem e pó na luz ----------
+  let tp = [];
+  function passoTitulo(dt) {
+    const c = $('titulo-part'), q = c.getContext('2d'); if (c.width !== innerWidth || c.height !== innerHeight) { c.width = innerWidth; c.height = innerHeight; tp = []; }
+    const W = c.width, H = c.height; q.clearRect(0, 0, W, H); q.globalCompositeOperation = 'lighter';
+    while (tp.length < Math.min(90, W / 11)) { const b = Math.random() < 0.55; tp.push({ b, x: b ? W * (0.36 + Math.random() * 0.3) : Math.random() * W, y: b ? H * (0.75 + Math.random() * 0.3) : Math.random() * H, v: b ? 18 + Math.random() * 46 : 4 + Math.random() * 8, f: Math.random() * 7, t: 0, d: 3 + Math.random() * 5, r: b ? 1 + Math.random() * 2 : 1 + Math.random() }); }
+    for (const p of tp) { p.t += dt; p.f += dt; p.y -= p.v * dt * (p.b ? 1 : 0.4); p.x += Math.sin(p.f * 1.3) * (p.b ? 16 : 8) * dt; const a = Math.sin(Math.min(1, p.t / p.d) * Math.PI) * (p.b ? 0.9 : 0.4); q.globalAlpha = a; q.fillStyle = p.b ? '#ff9a40' : '#cfe8c8'; q.fillRect(p.x, p.y, p.r, p.r); if (p.b) { q.globalAlpha = a * 0.22; q.fillRect(p.x - p.r * 1.5, p.y - p.r * 1.5, p.r * 4, p.r * 4); } }
+    tp = tp.filter((p) => p.t < p.d); q.globalAlpha = 1;
   }
 
   // ---------- que música toca agora ----------
@@ -559,10 +470,10 @@
   let antes = performance.now();
   function quadro(dt) {
     controle();
-    if (modo === 'nasce') passoNasce(dt);
-    if (J.heroi && ['jogo', 'menu', 'fogo', 'morte', 'batiza'].includes(modo)) {
+    if (modo === 'nasce') passoNasce(dt); else if (modo === 'titulo' || modo === 'carga') passoTitulo(dt);
+    if (J.heroi && ['jogo', 'menu', 'fogo', 'morte', 'batiza', 'edita'].includes(modo)) {
       if (modo === 'jogo' || modo === 'morte') { if (modo === 'jogo') { passoAcorda(dt); passoDormir(dt); if (batizar && !sono && J.heroi.estado === 'livre') abreBatiza(); } if (!viajando) J.passo(dt); }
-      D.quadro(dt); musicaDaHora(dt);
+      D.lado = modo === 'fogo' ? 0.24 : 0; D.quadro(dt); musicaDaHora(dt);
       if (modo !== 'morte') hud(dt);
       if (modo === 'jogo' && !acorda) {
         const h = J.heroi, A = F.atual;
@@ -575,10 +486,12 @@
     sussT -= dt; if (sussT <= 0) $('sussurro').classList.remove('ver');
     areaT -= dt; if (areaT <= 0) $('area').classList.remove('ver');
   }
-  function laco(agora) { const dt = Math.min(1 / 30, (agora - antes) / 1000); antes = agora; quadro(dt); requestAnimationFrame(laco); }
+  // aparelho que não dá conta: desliga o brilho sozinho (dá para religar nas opções)
+  let lentos = 0, medidos = 0, baixou = false;
+  function laco(agora) { const real = (agora - antes) / 1000, dt = Math.min(1 / 30, real); antes = agora; if (!baixou && modo === 'jogo' && real < 0.25) { medidos++; if (real > 0.027) lentos++; if (medidos >= 240) { if (lentos > 150 && UI.pref.brilho) { baixou = true; UI.pref.brilho = 0; UI.pref.bichos = 0; UI.aplica(); } medidos = lentos = 0; } } quadro(dt); requestAnimationFrame(laco); }
 
   D.iniciar(cv);
   $('carrega').textContent = 'Moldando o barro...';
-  D.carregar((k) => { $('carrega').textContent = 'Moldando o barro... ' + Math.round(k * 100) + '%'; }).then(() => { try { sessionStorage.removeItem('sina_tenta'); } catch (e) { /* nada */ } titulo(); requestAnimationFrame(laco); });
+  D.carregar((k) => { $('carrega').style.setProperty('--k', Math.round(k * 100)); }).then(() => { try { sessionStorage.removeItem('sina_tenta'); } catch (e) { /* nada */ } titulo(); requestAnimationFrame(laco); });
   window.SINA = { acordaComo, titulo, dormir, abreFala, J, F, D, C, quadro, abreMenu, voltar, continuar, nascer, daNome, get modo() { return modo; } };
 })();

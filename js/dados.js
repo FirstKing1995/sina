@@ -201,14 +201,14 @@
     fome: 'O corpo de barro secou de fome.', espinhos: 'A floresta cravou você nela.', raio: 'O céu também caça.', queda: 'O barro quebrou na queda.',
   };
   C.DICAS = {
-    andar: ['A e D andam. Espaço pula: segure para ir mais alto.', 'Arraste o lado esquerdo da tela para andar. Pular fica à direita.'],
-    colher: ['E colhe o que brilha: galhos, pedras, folhas, fibras.', 'Toque em Usar para colher o que brilha.'],
-    criar: ['Já dá para fazer um porrete: abra a mochila com I.', 'Já dá para fazer um porrete: toque em Mochila.'],
-    golpe: ['J ou clique golpeia. Três seguidos fazem o combo. Shift esquiva.', 'Golpe repete o combo. Esquiva rola por dentro do ataque.'],
-    baixo: ['No ar, S com golpe acerta para baixo e quica.', 'No ar, manche para baixo com Golpe quica no alvo.'],
-    forte: ['Segure K para o golpe carregado. Cada arma solta de um jeito: veja na mochila.', 'Segure Forte para o golpe carregado. Cada arma solta de um jeito: veja na mochila.'],
-    comer: ['Q come a melhor coisa da mochila. A fome não espera.', 'Comer usa a melhor coisa da mochila. A fome não espera.'],
-    magia: ['R solta a Brasa do Barro. Acertar golpes enche a Sina.', 'Magia solta a Brasa. Acertar golpes enche a Sina.'],
+    andar: ['A e D andam. Espaço pula: segure para ir mais alto.', 'Arraste o lado esquerdo da tela para andar. A bota pula.'],
+    colher: ['E colhe o que brilha: galhos, pedras, folhas, fibras.', 'Passe por cima do que brilha para colher.'],
+    criar: ['Já dá para fazer um porrete: abra a mochila com I.', 'Já dá para fazer um porrete: toque na mochila, no alto.'],
+    golpe: ['J ou clique golpeia. Três seguidos fazem o combo. Shift esquiva.', 'Segure o botão grande para o combo. A espiral rola por dentro do ataque.'],
+    baixo: ['No ar, S com golpe acerta para baixo e quica.', 'No ar, arraste o botão de golpe para baixo: quica no alvo.'],
+    forte: ['Segure K para o golpe carregado. Cada arma solta de um jeito: veja na mochila.', 'Segure o machado em brasa para o golpe carregado. Cada arma solta de um jeito: veja na mochila.'],
+    comer: ['Q come a melhor coisa da mochila. A fome não espera.', 'A coxa de carne come a melhor coisa da mochila. A fome não espera.'],
+    magia: ['R solta a Brasa do Barro. Acertar golpes enche a Sina.', 'O botão de fogo solta a Brasa. Acertar golpes enche a Sina.'],
     fogo: ['Descansar no fogo cura e guarda o caminho. Mas os bichos voltam.', 'Descansar no fogo cura. Mas os bichos voltam.'],
     caminhos: ['Quatro caminhos. Cada um tem seu dono, e você pode voltar.', 'Quatro caminhos. Cada um tem seu dono, e você pode voltar.'],
   };

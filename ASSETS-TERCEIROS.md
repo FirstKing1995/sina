@@ -59,3 +59,4 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 | `som/` | os mesmos do jogo anterior, listados acima |
 
 - 25/11/2026: moradores e povo (`assets/barro/vila.png`), construções da vila (`assets/floresta/cidade.webp`) e andar dos goblins (`m_goblin_*_anda.webp`): Gemini, recorte por `tools/lateral-cidade.py` e `tools/lateral-pernas.py`. Lobo vermelho: recoloração da corrida do PixelLab.
+- 25/11/2026: kit da interface (`assets/ui`), ícones, bichinhos e detalhes do cenário (`bichinhos.webp`, `detalhes.webp`): Gemini, recorte por `tools/lateral-ui.py`.

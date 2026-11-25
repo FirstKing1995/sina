@@ -10,7 +10,7 @@
   const sopro = (n) => window.Som && Som.sopro && Som.sopro(n);
   const rnd = (a, b) => a + Math.random() * (b - a);
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-  const avisa = (t, x) => J.aviso && J.aviso(t, x);
+  const avisa = (t, x, y) => J.aviso && J.aviso(t, x, y);
 
   const G = 1620, QUEDA = 620, PULO = 560, CORRE = 158;
   J.ent = { esq: 0, dir: 0, cima: 0, baixo: 0, pula: 0, forte: 0, golpe: 0 };
@@ -82,7 +82,7 @@
 
   // ---------- efeitos ----------
   J.fx = []; J.textos = []; J.rastro = []; J.magias = []; J.balas = []; J.restos = []; J.mortos = [];
-  J.tremor = 0; J.pausa = 0; J.clarao = 0; J.lento = 0;
+  J.tremor = 0; J.soco = 0; J.miraDedo = null; J.pausa = 0; J.clarao = 0; J.lento = 0;
   const fx = (o) => { J.fx.push(Object.assign({ vida: 0.5, max: 0.5, vx: 0, vy: 0, grav: 0, tam: 2, cor: '#fff' }, o)); };
   J.poe = fx;
   J.faiscas = function (x, y, n, cor, forca, tipo) {
@@ -189,7 +189,7 @@
     const tp = C.TIPOS[quem]; if (tp && tem(tp.esp, 2)) d *= 0.8;
     if (tp && tp.esp === 'cobra' && amu('escama')) d *= 0.75;
     d = Math.max(1, Math.round(d * rnd(0.92, 1.1)));
-    h.hp -= d; h.inv = 0.6; J.pausa = 0.08; treme(6); J.clarao = 0.3; J.ultimoDano = tp ? tp.esp : quem;
+    h.hp -= d; h.inv = 0.6; J.pausa = 0.08; treme(6); if (window.UI) UI.vibra(34); J.clarao = 0.3; J.ultimoDano = tp ? tp.esp : quem;
     texto(h.x, h.y - 62, d, '#ff6a5a', d > 20);
     const lado = Math.sign(h.x - (dex == null ? h.x - h.dir : dex)) || -h.dir;
     sangue(h.x, h.y - 32, lado, 12, '#b0502a');
@@ -242,7 +242,7 @@
     { const per = h.ficha.arma.per, ferro = ['adaga', 'espada', 'machado_ferro', 'lanca_prata'].includes(h.ficha.armaId); if (o.magia || o.deLonge || per === 'punho') som('acerto', 0.75, forte ? 0.8 : 1); else { som('acerto', 0.5, forte ? 0.8 : 1); som(per === 'porrete' ? 'madeira' : ferro ? 'lamina' : 'pedra', forte ? 0.55 : 0.4, per === 'porrete' ? 0.8 : per === 'machado' ? 0.75 : 1.05); } }
     if (crit) som('quebra', 0.35, 1.5); if (casca) { som('quebra', 0.4, 1.8); J.faiscas(ix, iy, 8, '#dfe8f0', 1.1); }
     if (!o.magia) { h.sina = Math.min(h.ficha.sina, h.sina + (o.forte ? 13 : 7) * (amu('apito') ? 1.5 : 1) * (J.cl && J.cl('cinza') > 0.4 ? 1.35 : 1)); J.treina(h.ficha.arma.per, 1.2 + Math.min(4, d * 0.04)); if (tem('cobra', 2)) e.veneno = 4; if (h.ficha.arma.veneno) e.veneno = Math.max(e.veneno, h.ficha.arma.veneno); } else if (!o.deHum) J.treina('magia', 2.2);
-    J.pausa = Math.max(J.pausa, forte ? 0.06 : 0.028); treme(forte ? 4 : 1.6);
+    J.pausa = Math.max(J.pausa, forte ? 0.06 : 0.028); treme(forte ? 4 : 1.6); if (forte && !o.deHum) { J.soco = Math.max(J.soco || 0, crit || o.carregado ? 0.035 : 0.018); if (window.UI) UI.vibra(crit ? 22 : 14); }
     if (e.hp <= 0) { morreInimigo(e, dir, forte); return true; }
     if (Math.random() < 0.7) voz(e, 'dor');
     e.firmeza -= (o.quebra || 1) * (o.forte ? 1 : 0.55);
@@ -300,13 +300,19 @@
   J.golpeCaixa = golpeCaixa;
   const gasta = (h, v) => { if (h.vento > 0) v *= 0.3; h.vigor -= v; h.semVigor = 0.85; };
   J.golpeId = 1; J.relogio = 0;
+  // mira assistida: sem direção apertada, o golpe vira para quem está colado
+  function viraParaAlvo(h) {
+    const m = J.miraDedo; if (m) { if (Math.abs(Math.cos(m.a)) > 0.35) h.dir = Math.cos(m.a) > 0 ? 1 : -1; return; }
+    if (J.ent.esq || J.ent.dir || !J.pref || !J.pref.assist) return; let q = null, md = h.ficha.arma.tiro ? 300 : 78 + h.ficha.arma.alcance; for (const e of J.inimigos) { if (!e.vivo || e.estado === 'caido' || Math.abs(e.y - h.y) > 90) continue; const d = Math.abs(e.x - h.x) * (Math.sign(e.x - h.x) === h.dir ? 0.7 : 1); if (d < md) { md = d; q = e; } } if (q && Math.abs(q.x - h.x) > 4) h.dir = Math.sign(q.x - h.x);
+  }
   function comecaGolpe(h) {
+    viraParaAlvo(h);
     const a = h.ficha.arma;
     if (h.vigor <= 0) { texto(h.x, h.y - 66, 'sem fôlego', '#9fc49a'); return; }
     if (a.tiro) { comecaMira(h); return; }
     J.golpeId++; h.estado = 'golpe'; h.t = 0; h.acertou = new Set(); h.fila = 0; h.investida = false; h.bateu = false;
     const seq = C.ESTILOS[a.per].seq; h.combo = h.combo >= seq.length ? 1 : h.combo + 1;
-    h.dirGolpe = J.ent.cima ? 'cima' : J.ent.baixo && !h.noChao ? 'baixo' : 'frente';
+    { const md = J.miraDedo, sm = md ? Math.sin(md.a) : 0; h.dirGolpe = J.ent.cima || sm < -0.75 ? 'cima' : (J.ent.baixo || sm > 0.75) && !h.noChao ? 'baixo' : 'frente'; }
     if (h.dirGolpe !== 'frente') h.combo = 1;
     const pg = h.pg = seq[h.combo - 1]; h.final = h.dirGolpe === 'frente' && !!pg.f; h.maxCombo = seq.length;
     h.dur = a.tempo * pg.t + 0.04;
@@ -319,10 +325,17 @@
     if ((J.save.inv.flecha || 0) <= 0) { texto(h.x, h.y - 66, 'sem flechas', '#e0b070'); return; }
     h.estado = 'mira'; h.t = 0; h.carga = 0; h.combo = 0; h.cheia = false;
   }
+  // para onde a flecha sai: o dedo manda; sem ele, as teclas; sem elas, a mira procura o alvo
+  J.anguloMira = function (h, k) {
+    const m = J.miraDedo; if (m) return clamp(Math.atan2(Math.sin(m.a), Math.abs(Math.cos(m.a))), -1.25, 0.9);
+    if (J.ent.cima) return -0.55; if (J.ent.baixo) return 0.35;
+    if (J.pref && J.pref.assist) { let q = null, md = 340; for (const e of J.inimigos) { const dx = (e.x - h.x) * h.dir; if (e.vivo && e.estado !== 'caido' && dx > 24 && dx < md && Math.abs(e.y - h.y) < 150) { md = dx; q = e; } } if (q) { const v = 300 + 260 * k, gv = 260 * (1.3 - k), dx = Math.abs(q.x - h.x) - 20, dy = q.y - q.h * 0.55 - (h.y - 41), tt = dx / v; return clamp(Math.atan2(dy - gv * tt * tt / 2, dx), -0.8, 0.6); } }
+    return -0.05;
+  };
   function soltaFlecha(h) {
     const k = clamp(h.t / 0.8, 0.25, 1), s = J.save;
     s.inv.flecha--; gasta(h, 8 + k * 6);
-    const ang = J.ent.cima ? -0.55 : J.ent.baixo ? 0.35 : -0.05, v = 300 + 260 * k;
+    const ang = J.anguloMira(h, k), v = 300 + 260 * k;
     J.balas.push({ dono: 'h', tipo: 'flecha', x: h.x + h.dir * 20, y: h.y - 41, vx: h.dir * v * Math.cos(ang), vy: v * Math.sin(ang), grav: 260 * (1.3 - k), r: 4, dano: h.ficha.dano * (0.5 + k), vida: 2, cor: '#e8d8b0', forte: k > 0.95, flecha: true });
     h.estado = 'soltou'; h.t = 0; som('golpe', 0.6, 1.6);
     if (k > 0.95) J.anel(h.x + h.dir * 24, h.y - 41, 12, '#fff1c8', 0.2, 2);
@@ -452,6 +465,7 @@
       J.ja.golpe = 0; h.combo = 0; comecaGolpe(h); h.investida = true; h.dirGolpe = 'frente'; h.dur = f.arma.tempo * 1.25; h.vx = h.dir * 300; h.combo = 1; h.final = false;
       J.rastro.push({ x: h.x, y: h.y, dir: h.dir, anim: 'golpe1', q: 2, vida: 0.25, max: 0.25, cor: '#ffe2a0' });
     }
+    if (J.pref && J.pref.repete && e.golpe && !f.arma.tiro && !(J.ja.golpe > 0)) { h.segura = (h.segura || 0) + dt; if (h.segura > 0.28 && ((h.estado === 'livre' && h.noChao) || (h.estado === 'golpe' && h.t > h.dur * 0.5)) && h.vigor > f.arma.custo * 1.2) J.ja.golpe = 0.1; } else if (!e.golpe) h.segura = 0;
     const podeGolpe = h.estado === 'livre' || h.estado === 'colhe' || (h.estado === 'golpe' && h.t > h.dur * 0.6);
     if (h.estado === 'golpe' && h.t > h.dur * 0.25 && J.ja.golpe > 0 && h.combo < (h.maxCombo || 3)) { h.fila = 1; J.ja.golpe = 0; }
     if (podeGolpe && (usa('golpe') || (h.estado === 'golpe' && h.fila))) {
@@ -606,8 +620,8 @@
   // ---------- coleta, comida, criação ----------
   J.ganha = function (m, q, x, y) {
     const s = J.save, h = J.heroi; s.inv[m] = (s.inv[m] || 0) + q;
-    texto(x == null ? h.x : x, (y == null ? h.y - 60 : y) - 10, '+' + q + ' ' + C.MAT[m], '#d8e0b0'); som('pegar', 0.5, 1.1);
-    avisa('ganhou', m);
+    som('pegar', 0.5, 1.1); for (let k = 0; k < 4; k++) fx({ tipo: 'alma', x: (x == null ? h.x : x) + rnd(-8, 8), y: (y == null ? h.y - 40 : y) - rnd(0, 12), alvo: true, vida: 0.45, max: 0.45, cor: '#ffe9b0', tam: 1.8 });
+    avisa('ganhou', m, q);
   };
   J.colhidos = {}; // id -> segundos até brotar de novo
   const TEM_MACHADO = () => J.save.armas.includes('machado') || J.save.armas.includes('machado_ferro');

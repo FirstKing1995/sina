@@ -74,6 +74,20 @@
     f.buffer = b; fl.type = 'bandpass'; fl.Q.value = 1.4; fl.frequency.setValueAtTime(P[1] * (tom || 1), t); fl.frequency.exponentialRampToValueAtTime(P[2] * (tom || 1), t + P[0]);
     g.gain.value = P[3] * (vol == null ? 1 : vol); f.connect(fl); fl.connect(g); liga(g, pan); f.start();
   };
+  // a natureza, feita na hora: passarinho, grilo, coruja, sapo, corvo, gota, sopro de vento e o coração
+  const nota = (f0, f1, d, vol, ini, tipo, sai) => { const t0 = ctx.currentTime + ini, o = ctx.createOscillator(), g = ctx.createGain(); o.type = tipo || 'sine'; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + d); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + d * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d); o.connect(g); g.connect(sai); o.start(t0); o.stop(t0 + d + 0.02); };
+  S.bicho = function (tipo, vol, pan) {
+    if (!ctx || ctx.state !== 'running') return; const amb = tipo === 'coracao' ? 1 : S.vol.ambiente; if (amb <= 0) return; const s = ctx.createGain(); s.gain.value = vol * amb; liga(s, pan); const R = Math.random;
+    if (tipo === 'pio') { const b = 2200 + R() * 1400, n = 2 + Math.floor(R() * 4); for (let i = 0; i < n; i++) nota(b * (1 + R() * 0.2), b * (0.8 + R() * 0.5), 0.07 + R() * 0.05, 0.05, i * (0.11 + R() * 0.03), 'sine', s); }
+    else if (tipo === 'pio2') { const b = 3000 + R() * 900; nota(b, b * 1.25, 0.12, 0.04, 0, 'sine', s); nota(b * 1.2, b * 0.8, 0.2, 0.045, 0.16, 'sine', s); if (R() < 0.5) nota(b, b * 1.2, 0.1, 0.035, 0.42, 'sine', s); }
+    else if (tipo === 'grilo') { const b = 4100 + R() * 500; for (let j = 0; j < 2 + R() * 2; j++) for (let i = 0; i < 4; i++) nota(b, b * 1.01, 0.028, 0.026, j * 0.36 + i * 0.042, 'triangle', s); }
+    else if (tipo === 'coruja') { nota(390, 360, 0.26, 0.07, 0, 'sine', s); nota(400, 330, 0.5, 0.08, 0.42, 'sine', s); }
+    else if (tipo === 'sapo') { const b = 150 + R() * 60; for (let i = 0; i < 2 + R() * 2; i++) { nota(b, b * 1.5, 0.12, 0.06, i * 0.24, 'sawtooth', s); nota(b * 6, b * 7, 0.1, 0.012, i * 0.24, 'square', s); } }
+    else if (tipo === 'corvo') { for (let i = 0; i < 1 + R() * 2; i++) { nota(620, 420, 0.24, 0.045, i * 0.36, 'sawtooth', s); nota(940, 640, 0.22, 0.022, i * 0.36, 'square', s); } }
+    else if (tipo === 'gota') { nota(700, 1500, 0.06, 0.1, 0, 'sine', s); nota(700, 1400, 0.06, 0.035, 0.18, 'sine', s); nota(700, 1300, 0.06, 0.015, 0.36, 'sine', s); }
+    else if (tipo === 'coracao') { nota(62, 38, 0.16, 0.5, 0, 'sine', s); nota(54, 34, 0.18, 0.4, 0.2, 'sine', s); }
+    else if (tipo === 'sopro') { const d = 2.2, n = Math.floor(ctx.sampleRate * d), b = ctx.createBuffer(1, n, ctx.sampleRate), x = b.getChannelData(0); for (let i = 0; i < n; i++) x[i] = (R() * 2 - 1) * Math.sin((i / n) * Math.PI); const f = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain(); f.buffer = b; fl.type = 'bandpass'; fl.Q.value = 2.4; fl.frequency.setValueAtTime(260, ctx.currentTime); fl.frequency.linearRampToValueAtTime(520 + R() * 260, ctx.currentTime + d * 0.5); fl.frequency.linearRampToValueAtTime(240, ctx.currentTime + d); g.gain.value = 0.11; f.connect(fl); fl.connect(g); g.connect(s); f.start(); }
+  };
   // laços em elementos de áudio, com troca suave
   const lacos = {};
   function fade(el, alvo) {
