@@ -139,6 +139,8 @@ IC = {
     "tocha": icone(["....l.....", "...lLl....", "..lLLl....", "..lLLLl...", "..rLLlr...", "..eell....", "..fgfg....", "...mm.....", "...mc.....", "...mc.....", "....mc....", "....mc....", "....em....", "....em....", ".....e...."], sem=True),
     "madeira": icone(["..eeeeeeeeeeee..", ".emcccmccmcccme.", "emcmmcmmcmmcmoOe", "emmcmmmcmmmmmOfO", "emcmmcmmmcmmmoOe", ".emmmemmmemmmme.", "..eeeeeeeeeeee.."], sem=True),
     "prata": icone(["...ppp...", "..ppppP..", ".pppPPPP.", "pppPPPPqq", "ppPPPPqqq", ".pPPPqqq.", "..PPqqq..", "...qqq...", "....q...."], sem=True),
+    "peixe": icone(["......PPP.......", "...PPPpppPP...P.", "..PppppppppP.PP.", ".PpkpppppPPPPPq.", ".PppppppPPPPqPq.", "..qPPPPPPPqq.qq.", "...qqPPqqq...q..", ".....qq........."], sem=True),
+    "vara": icone(["..............m.", ".............mk.", "............m.p.", "...........m..p.", "..........c...p.", ".........c....p.", "........m.....p.", ".......m......p.", "......c.......p.", ".....c.......rr.", "....m........rr.", "...m............", "..fg............", ".fg............."], sem=True),
     "seca": icone(["..m......", "..mT.....", ".rTTr....", ".rttTr...", ".rtTTr...", ".TrtTr...", ".TrTTr...", "..TrTT...", "..TTT....", "...T....."], sem=True),
 }
 for n in ("adaga_presa", "lanca_prata"):

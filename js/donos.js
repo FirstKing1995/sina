@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const J = window.Jogo, F = window.Fase, C = window.Dados, T = F.T, K = J.k;
-  const { mover, caixa, cruza, fx, poeira, treme, som, rnd, clamp, nasce, texto } = K;
+  const { mover, caixa, cruza, fx, poeira, treme, som, voz, rnd, clamp, nasce, texto } = K;
   const arena = () => F.atual.arena || { x0: 60, x1: F.W * T - 60 };
   const piso = (x) => F.chao(x);
   const noArena = (x, m) => { const A = arena(); return clamp(x, A.x0 + (m || 50), A.x1 - (m || 50)); };
@@ -165,7 +165,7 @@
       corrente: { peso: (c) => (c.dist > 150 ? 2.6 : 0), cd: 5, f(e, dt) {
         const p = 0.5; e.dir = e.t < p ? lado(e) : e.dir; mola(e, 0, dt);
         if (e.t < p) { e.qf = 4; e.aviso = e.t / p; return false; }
-        e.aviso = 0; e.qf = 5; const k = e.t - p; e.cx = Math.min(330, k * 900); e.cy = e.y - 38;
+        e.aviso = 0; e.qf = 5; if (e.t - dt < p) som('corrente', 0.7, 0.9); const k = e.t - p; e.cx = Math.min(330, k * 900); e.cy = e.y - 38;
         if (!e.pegou && k < 0.42) { const px = e.x + e.dir * e.cx, h = J.heroi; if (cruza({ x0: Math.min(e.x, px), x1: Math.max(e.x, px), y0: e.cy - 8, y1: e.cy + 8 }, caixa(h)) && Math.abs(px - h.x) < 40 && J.feriHeroi(e.T.dano * 0.35, e.x, e.tipo, {})) { e.pegou = 1; som('quebra', 0.6, 1.5); } }
         if (e.pegou && k < 0.9) { const h = J.heroi, d = e.x + e.dir * 46 - h.x; h.vx = clamp(d * 7, -560, 560); h.estado = 'dor'; h.t = 0; e.cx = Math.abs(h.x - e.x); if (Math.abs(d) < 20) { e.cx = null; e.pegou = 0; return encadeia(e, 'sequencia'); } }
         if (k > (e.pegou ? 0.9 : 0.55)) { e.cx = null; e.pegou = 0; return true; } return false;
@@ -232,13 +232,13 @@
   J.DONOS = DONOS;
 
   // ---------- escolher e encadear ----------
-  function comeca(e, id) { const D = DONOS[e.tipo]; e.golpe = id; e.estado = 'acao'; e.t = 0; e.p = null; e.acertou = new Set(); e.sorte = Math.floor(Math.random() * 3); e.bateu = false; e.levou = 0; e.cds = e.cds || {}; e.cds[id] = J.relogio + D.golpes[id].cd; e.ultimo = id;
+  function comeca(e, id) { const D = DONOS[e.tipo]; e.golpe = id; e.estado = 'acao'; e.t = 0; e.p = null; e.acertou = new Set(); e.sorte = Math.floor(Math.random() * 3); e.bateu = false; e.levou = 0; if (Math.random() < 0.5) voz(e, 'ataque'); e.cds = e.cds || {}; e.cds[id] = J.relogio + D.golpes[id].cd; e.ultimo = id;
     // você esquiva cedo demais? ele segura o golpe
     e.atraso = e.cedo > 1 && Math.random() < 0.3 + e.cedo * 0.12 ? rnd(1.35, 1.65) : Math.random() < 0.12 * e.fase ? rnd(0.8, 0.9) : 1; }
   function encadeia(e, id) { limpa(e); comeca(e, id); e.t = 0.12; return false; }
   function limpa(e) { const g = DONOS[e.tipo].golpes[e.golpe]; if (g && g.fim) g.fim(e); e.golpe = null; e.aviso = 0; e.qf = null; e.atraso = 1; }
   function acaba(e) { limpa(e); e.estado = 'persegue'; e.t = 0; e.espera = (DONOS[e.tipo].ritmo[e.fase - 1] + (e.descansa || 0)) * rnd(0.7, 1.25); e.descansa = 0; }
-  function aberto() { const h = J.heroi; return ['come', 'colhe', 'magia', 'mira', 'carga'].includes(h.estado) || h.vigor < 8 || (h.estado === 'golpe' && h.combo === 3 && h.t > h.dur * 0.55) || (h.estado === 'forte' && h.t > h.dur * 0.6); }
+  function aberto() { const h = J.heroi; return ['come', 'colhe', 'magia', 'mira', 'carga'].includes(h.estado) || h.vigor < 8 || (h.estado === 'golpe' && h.final && h.t > h.dur * 0.55) || (h.estado === 'forte' && h.t > h.dur * 0.6); }
   function escolhe(e) {
     const D = DONOS[e.tipo], h = J.heroi, dx = h.x - e.x;
     const c = { dist: Math.abs(dx), fase: e.fase, ar: h.y < e.y - 46, atras: Math.sign(dx) !== e.dir, aberto: aberto() };
@@ -275,7 +275,7 @@
       case 'vaga': { e.vx = 0; if (h.estado !== 'morto' && dist < tp.visao && h.x > A.x0 + 60 && h.x < A.x1) { e.estado = 'virada'; e.t = 0.2; e.abre = true; J.acordaChefe(e); } break; }
       case 'virada': {
         e.vx = 0; e.dir = l; e.esq = 0.1; e.qf = e.t < 0.35 ? 4 : 6;
-        if (passou(e, dt, 0.5)) { som(tp.esp === 'lobo' ? 'uivo' : 'rugido', 1, 0.85); treme(9); for (const r of [70, 130, 190]) J.anel(e.x, e.y - e.h * 0.6, r, D.cor, 0.5 + r / 400, 3); J.faiscas(e.x, e.y - e.h * 0.5, 30, D.cor, 1.5, 'brasa'); if (dist < 120 && !e.abre) { h.vx = l * 330; h.vy = -150; } if (!e.abre && capangas() < 2) chama(e, e.fase === 3 ? D.virada.slice(0, 1) : D.virada); }
+        if (passou(e, dt, 0.5)) { voz(e, 'alerta'); if (tp.esp === 'lobo') som('uivo', 0.8, 0.8); treme(9); for (const r of [70, 130, 190]) J.anel(e.x, e.y - e.h * 0.6, r, D.cor, 0.5 + r / 400, 3); J.faiscas(e.x, e.y - e.h * 0.5, 30, D.cor, 1.5, 'brasa'); if (dist < 120 && !e.abre) { h.vx = l * 330; h.vy = -150; } if (!e.abre && capangas() < 2) chama(e, e.fase === 3 ? D.virada.slice(0, 1) : D.virada); }
         if (e.t > 1.15) { e.abre = false; e.qf = null; acaba(e); e.espera = 0.3; }
         break;
       }

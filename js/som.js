@@ -13,7 +13,26 @@
     golpe: ['golpe1', 'golpe2', 'golpe3'], forte: ['forte1'], acerto: ['acerto1', 'acerto2', 'acerto3'], dor: ['heroi_dor1'],
     inimigoDor: ['dor1', 'dor2'], morte: ['morte1', 'morte2', 'morte3'], rugido: ['rugido1', 'rugido2'], uivo: ['uivo1'], mordida: ['mordida1', 'mordida2'],
     moeda: ['moeda1', 'moeda2'], beber: ['beber1', 'beber2'], fogo: ['fogo1', 'fogo2'], abrir: ['abrir1'], porta: ['porta1'], raro: ['raro1'], magia: ['magia1', 'magia2'], quebra: ['quebra1'], livro: ['livro1'], pegar: ['pegar1'], minerar: ['minerar1', 'minerar2'],
+    gob: ['gob1', 'gob2', 'gob3', 'gob4', 'gob5'], mor: ['mor1', 'mor2', 'mor3', 'mor4', 'mor5'], ogro: ['ogro1', 'ogro2', 'ogro3', 'ogro4'], gig: ['gig1', 'gig3', 'gig5'], lobisomem: ['lobisomem'],
+    corte: ['corte1', 'corte2', 'corte3'], lamina: ['lamina1', 'lamina2', 'lamina3'], madeira: ['madeira1', 'madeira2', 'madeira3'], pedra: ['pedra1', 'pedra2', 'pedra3'], metal: ['metal1', 'metal2', 'metal3'], corrente: ['corrente1', 'corrente2', 'corrente3'],
+    passop: ['passop1', 'passop2', 'passop3'], lama: ['lama1', 'lama2', 'lama3'], bolha: ['bolha1', 'bolha2', 'bolha3'], saca: ['saca1'], pano: ['pano1'], malha: ['malha1'], tranca: ['tranca1'], urro: ['urro1', 'urro2'], morreu: ['morreu1'], fere: ['fere1', 'fere2'],
   };
+  // a voz de cada espécie: [som, volume, tom] para avisar, atacar, apanhar e morrer
+  const VOZ = {
+    lobo: { alerta: ['rugido', 0.4, 1.45], ataque: ['mordida', 0.35, 1.2], dor: ['fere', 0.4, 1.5], morte: ['morreu', 0.5, 1.5] },
+    lobo_rubro: { alerta: ['urro', 0.5, 0.95], ataque: ['rugido', 0.5, 0.8], dor: ['fere', 0.5, 1], morte: ['morreu', 0.7, 0.95] },
+    cobra: { alerta: ['~chiado', 0.4, 1], ataque: ['~chiado', 0.5, 1.4], dor: ['~chiado', 0.35, 1.8], morte: ['lama', 0.5, 0.9] },
+    zumbi: { alerta: ['mor', 0.45, 0.8], ataque: ['mor', 0.35, 0.95], dor: ['mor', 0.3, 1.15], morte: ['mor', 0.5, 0.62] },
+    zumbi_mulher: { alerta: ['mor', 0.6, 1.55], ataque: ['mor', 0.4, 1.7], dor: ['mor', 0.35, 1.9], morte: ['mor', 0.5, 1.2] },
+    zumbi_inchado: { alerta: ['ogro', 0.45, 0.7], ataque: ['ogro', 0.5, 0.62], dor: ['lama', 0.5, 0.7], morte: ['lama', 0.8, 0.5] },
+    goblin: { alerta: ['gob', 0.4, 1.5], ataque: ['gob', 0.3, 1.8], dor: ['gob', 0.35, 1.95], morte: ['gob', 0.5, 1.25] },
+    goblin_porrete: { alerta: ['ogro', 0.5, 1], ataque: ['ogro', 0.5, 0.85], dor: ['ogro', 0.4, 1.25], morte: ['ogro', 0.6, 0.72] },
+    alfa: { alerta: ['lobisomem', 0.8, 0.8], ataque: ['urro', 0.5, 0.9], dor: ['fere', 0.4, 0.85], morte: ['lobisomem', 0.9, 0.6] },
+    rainha: { alerta: ['~chiado', 0.9, 0.55], ataque: ['~chiado', 0.7, 0.8], dor: ['~chiado', 0.5, 1.2], morte: ['urro', 0.8, 1.5] },
+    carcereiro: { alerta: ['mor', 0.8, 0.5], ataque: ['mor', 0.5, 0.6], dor: ['metal', 0.4, 0.7], morte: ['mor', 0.9, 0.42] },
+    chefe: { alerta: ['gig', 0.8, 0.95], ataque: ['gig', 0.5, 1.15], dor: ['ogro', 0.45, 0.9], morte: ['gig', 0.9, 0.7] },
+  };
+  S.voz = function (tipo, esp, qual, vol, pan) { const v = (VOZ[tipo] || VOZ[esp] || {})[qual]; if (!v) return; if (v[0][0] === '~') S.sopro(v[0].slice(1), v[1] * (vol == null ? 1 : vol), v[2], pan); else S.tocar(v[0], v[1] * (vol == null ? 1 : vol), v[2], pan); };
   let ctx = null, saida, ligado = false;
   const bufs = {};
   S.ligar = function () {
@@ -23,28 +42,37 @@
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       saida = ctx.createGain(); saida.gain.value = 0.75 * S.vol.efeitos; saida.connect(ctx.destination);
       const nomes = new Set(); for (const k in BANCO) BANCO[k].forEach((n) => nomes.add(n));
-      for (const n of nomes) fetch('som/sfx/' + n + '.mp3').then((r) => r.arrayBuffer()).then((a) => ctx.decodeAudioData(a)).then((b) => { bufs[n] = b; }).catch(() => {});
+      // quatro de cada vez, com nova tentativa: são muitos arquivos pequenos
+      const filaS = [...nomes].map((n) => [n, 0]);
+      const puxa = () => { const q = filaS.shift(); if (!q) return; fetch('som/sfx/' + q[0] + '.mp3').then((r) => { if (!r.ok) throw 0; return r.arrayBuffer(); }).then((a) => ctx.decodeAudioData(a)).then((b) => { bufs[q[0]] = b; }).catch(() => { if (q[1] < 2) filaS.push([q[0], q[1] + 1]); }).then(puxa); };
+      for (let i = 0; i < 4; i++) puxa();
     } catch (e) { ctx = null; }
     S.ambiente(alvoAmb); S.musica(alvoMus);
   };
-  S.tocar = function (nome, vol, tom) {
+  const liga = (g, pan) => { if (pan && ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = Math.max(-0.8, Math.min(0.8, pan)); g.connect(p); p.connect(saida); } else g.connect(saida); };
+  S.tocar = function (nome, vol, tom, pan) {
     if (!ctx) return;
     const l = BANCO[nome]; if (!l) return;
     const b = bufs[l[Math.floor(Math.random() * l.length)]]; if (!b) return;
     const f = ctx.createBufferSource(), g = ctx.createGain();
     f.buffer = b; f.playbackRate.value = (tom || 1) * (0.92 + Math.random() * 0.16); g.gain.value = vol == null ? 0.8 : vol;
-    f.connect(g); g.connect(saida); f.start();
+    f.connect(g); liga(g, pan); f.start();
   };
   // sons curtos feitos na hora, para o que não tem gravação: pulo, pouso, esquiva, carga
-  S.sopro = function (tipo) {
+  S.trovao = function (k) {
+    if (!ctx) return; const t = ctx.currentTime, d = 1.6 + k, n = Math.floor(ctx.sampleRate * d), b = ctx.createBuffer(1, n, ctx.sampleRate), x = b.getChannelData(0); let v = 0;
+    for (let i = 0; i < n; i++) { v = v * 0.985 + (Math.random() * 2 - 1) * 0.15; x[i] = v * Math.pow(1 - i / n, 1.6) * (i < 900 ? 3 * k : 1.6); }
+    const f = ctx.createBufferSource(), g = ctx.createGain(); f.buffer = b; g.gain.value = 0.5 * k; f.connect(g); g.connect(saida); f.start(t + (1 - k) * 0.7);
+  };
+  S.sopro = function (tipo, vol, tom, pan) {
     if (!ctx) return;
-    const t = ctx.currentTime, P = { pulo: [0.09, 900, 2400, 0.16], pouso: [0.08, 500, 180, 0.22], esquiva: [0.18, 1400, 500, 0.2], carga: [0.35, 300, 1300, 0.12], sina: [0.4, 600, 1800, 0.12] }[tipo];
+    const t = ctx.currentTime, P = { pulo: [0.09, 900, 2400, 0.16], pouso: [0.08, 500, 180, 0.22], esquiva: [0.18, 1400, 500, 0.2], carga: [0.35, 300, 1300, 0.12], sina: [0.4, 600, 1800, 0.12], chiado: [0.5, 5200, 3600, 0.16], mato: [0.07, 2600, 1500, 0.1], neve: [0.09, 1100, 700, 0.14], terra: [0.06, 420, 220, 0.18], corda: [0.12, 900, 260, 0.2] }[tipo];
     if (!P) return;
     const n = Math.floor(ctx.sampleRate * P[0]), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
     const f = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
-    f.buffer = b; fl.type = 'bandpass'; fl.Q.value = 1.4; fl.frequency.setValueAtTime(P[1], t); fl.frequency.exponentialRampToValueAtTime(P[2], t + P[0]);
-    g.gain.value = P[3]; f.connect(fl); fl.connect(g); g.connect(saida); f.start();
+    f.buffer = b; fl.type = 'bandpass'; fl.Q.value = 1.4; fl.frequency.setValueAtTime(P[1] * (tom || 1), t); fl.frequency.exponentialRampToValueAtTime(P[2] * (tom || 1), t + P[0]);
+    g.gain.value = P[3] * (vol == null ? 1 : vol); f.connect(fl); fl.connect(g); liga(g, pan); f.start();
   };
   // laços em elementos de áudio, com troca suave
   const lacos = {};
@@ -68,6 +96,8 @@
     alvoAmb = nome; if (!ligado) return;
     for (const n of ['noite', 'masmorra', 'brisa', 'chuva', 'rio', 'cinzas', 'cripta']) laco('som/amb/' + n + '.mp3', n === nome ? (n === 'masmorra' ? 0.6 : n === 'cinzas' || n === 'cripta' ? 0.5 : 0.38) : 0);
   };
+  // chuva por cima do ambiente da área
+  S.chuva = function (k) { if (!ligado || (!k && !lacos['som/amb/chuva.mp3'])) return; if (alvoAmb === 'chuva') return; laco('som/amb/chuva.mp3', k); };
   S.fogueira = function (k) { if (ligado) { const el = lacos['som/amb/fogo.mp3']; if (!el) laco('som/amb/fogo.mp3', k); else { if (k > 0 && el.paused) el.play().catch(() => {}); el.volume = Math.min(1, k * S.vol.ambiente); if (!k) el.pause(); } } };
   // ---------- músicas ----------
   // cada uma toca em dois aparelhos: perto do fim do laço o segundo entra no ponto certo e cruza com o primeiro, sem buraco

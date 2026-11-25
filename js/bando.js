@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   const J = window.Jogo, F = window.Fase, C = window.Dados, T = F.T, K = J.k;
-  const { mover, solido, tipoEm, caixa, cruza, fx, poeira, treme, som, rnd, clamp, tem, nasce, texto } = K;
+  const { mover, solido, tipoEm, caixa, cruza, fx, poeira, treme, som, voz, rnd, clamp, tem, nasce, texto } = K;
 
   // ---------- quanto cada um sabe ----------
   J.manhaDe = function (tipo, x) {
@@ -35,7 +35,7 @@
   };
   function veAlvo(e, a) {
     if (!a) return false;
-    const v = e.T.visao * (1 + noite() * 0.25) * (J.save.tochaAcesa && (e.T.esp === 'zumbi' || e.T.esp === 'goblin') ? 1.3 : 1) * (J.save.roupa === 'folhas' && e.estado === 'vaga' && !noite() ? 0.68 : 1) * (e.raid ? 6 : 1);
+    const v = e.T.visao * (1 - 0.42 * J.cl('neblina') - 0.15 * J.cl('chuva', 'tempestade')) * (1 + noite() * 0.25) * (J.save.tochaAcesa && (e.T.esp === 'zumbi' || e.T.esp === 'goblin') ? 1.3 : 1) * (J.save.roupa === 'folhas' && e.estado === 'vaga' && !noite() ? 0.68 : 1) * (e.raid ? 6 : 1);
     return Math.abs(a.x - e.x) < v && Math.abs(a.y - e.y) < (e.raid ? 400 : 130);
   }
   function chaoAFrente(e, d) {
@@ -59,7 +59,7 @@
     const h = a;
     if (['come', 'colhe', 'magia', 'mira', 'soltou'].includes(h.estado)) return true;
     if (h.vigor < 6) return true;
-    if (h.estado === 'golpe' && h.combo === 3 && h.t > h.dur * 0.6) return true;
+    if (h.estado === 'golpe' && h.final && h.t > h.dur * 0.6) return true;
     if (h.estado === 'forte' && h.t > h.dur * 0.6) return true;
     return h.estado === 'rola' && h.t > 0.32;
   }
@@ -150,7 +150,7 @@
           e.estado = 'persegue'; e.t = tp.escondida ? 1 : 0; e.pisca = 0.5; J.alerta(e);
           if (tp.chefe) J.acordaChefe(e);
           else if (tp.grito) { e.estado = 'uiva'; e.t = 0; }
-          else if (tp.esp === 'lobo' && Math.random() < 0.4) som('rugido', 0.35, 1.5);
+          else if (Math.random() < 0.65) voz(e, 'alerta');
         }
         break;
       }
@@ -224,7 +224,7 @@
       case 'uiva': { // uivo do lobo, grito da morta: chama quem estiver por perto
         e.vx = 0; e.dir = lado;
         if (e.t > 0.45 && e.t - dt <= 0.45) {
-          som(tp.esp === 'lobo' ? 'uivo' : 'rugido', 0.7, tp.esp === 'zumbi' ? 1.7 : 1.1); J.anel(e.x, e.y - e.h * 0.8, 60, '#d8c8ff', 0.5, 2); J.anel(e.x, e.y - e.h * 0.8, 110, '#a89ac8', 0.7, 1.5);
+          if (tp.esp === 'lobo') som('uivo', 0.7, 1.1); else voz(e, 'alerta'); J.anel(e.x, e.y - e.h * 0.8, 60, '#d8c8ff', 0.5, 2); J.anel(e.x, e.y - e.h * 0.8, 110, '#a89ac8', 0.7, 1.5);
           J.alerta(e, 420);
           for (const o of J.inimigos) if (o.vivo && o.T.esp === tp.esp && !o.T.chefe && Math.abs(o.x - e.x) < 300) o.furia = 5;
           if (tp.esp === 'lobo' && !e.chamado) { const x = clamp(h.x + (Math.random() < 0.5 ? -1 : 1) * 330, 60, F.W * T - 60); if (pousoEm({ y: F.chao(x), x }, x)) J.inimigos.push(nasce('lobo', x, F.chao(x), { estado: 'persegue', chamado: true, manha: m01, pisca: 0.6 })); }
@@ -239,6 +239,7 @@
         if (e.finta && e.t > prep * 0.6) { e.finta = false; e.estado = 'esquiva'; e.t = 0; e.vx = -lado * 150; e.durE = 0.24; e.contra = 0.95; break; }
         if (e.t > prep) {
           e.estado = 'golpe'; e.t = 0; e.acertou = new Set(); e.prepM = 1; e.tiros = 0;
+          if (Math.random() < 0.4) voz(e, 'ataque');
           if (tp.atira) atira(e, a);
           else if (tp.salta) { const av = a.vx ? clamp(a.vx, -160, 160) * 0.25 * m01 : 0, ddx = dist + av * lado; e.vx = e.dir * clamp(ddx * 2.35, 140, tp.salta * (0.9 + m01 * 0.2)); e.vy = tp.esp === 'cobra' ? -90 : -215; som('mordida', 0.5); }
           else { e.vx = e.dir * (tp.avanco || 110); som('golpe', 0.45, tp.bruto ? 0.6 : 0.8); }

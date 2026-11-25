@@ -20,11 +20,22 @@
     lanca: { nome: 'Lança de pedra', dano: 15, alcance: 62, altura: 22, tempo: 0.36, custo: 11, quebra: 1, per: 'lanca', estoca: true, desc: 'Mantém a fome dos outros longe.' },
     arco: { nome: 'Arco de galho', dano: 17, alcance: 30, altura: 30, tempo: 0.5, custo: 10, quebra: 0.8, per: 'arco', tiro: true, desc: 'Gasta flechas. Segure para mirar mais forte.' },
     osso_clava: { nome: 'Clava de osso', dano: 22, alcance: 46, altura: 50, tempo: 0.4, custo: 13, quebra: 2, per: 'porrete', desc: 'O osso de um bate no outro.' },
-    adaga: { nome: 'Adaga de ferro', dano: 18, alcance: 34, altura: 34, tempo: 0.2, custo: 6, quebra: 0.7, per: 'lamina', critico: 0.28, desc: 'Ferro achado, fio novo.' },
+    adaga: { nome: 'Adaga de ferro', dano: 16, alcance: 34, altura: 34, tempo: 0.2, custo: 6, quebra: 0.7, per: 'lamina', critico: 0.28, desc: 'Ferro achado, fio novo.' },
     espada: { nome: 'Espada rude', dano: 26, alcance: 50, altura: 52, tempo: 0.34, custo: 11, quebra: 1.4, per: 'espada', critico: 0.1, desc: 'A primeira espada do mundo.' },
-    adaga_presa: { nome: 'Adaga de presa', dano: 17, alcance: 34, altura: 34, tempo: 0.2, custo: 6, quebra: 0.7, per: 'lamina', critico: 0.2, veneno: 4, desc: 'A presa ainda pinga. Quem leva fica envenenado.' },
+    adaga_presa: { nome: 'Adaga de presa', dano: 14, alcance: 34, altura: 34, tempo: 0.2, custo: 6, quebra: 0.7, per: 'lamina', critico: 0.2, veneno: 4, desc: 'A presa ainda pinga. Quem leva fica envenenado.' },
     lanca_prata: { nome: 'Lança de prata', dano: 27, alcance: 66, altura: 24, tempo: 0.35, custo: 12, quebra: 1.3, per: 'lanca', estoca: true, critico: 0.08, desc: 'Atravessa casca e armadura.' , fura: true },
     machado_ferro: { nome: 'Machado de ferro', dano: 36, alcance: 48, altura: 54, tempo: 0.46, custo: 16, quebra: 3, per: 'machado', desc: 'Derruba árvore e chefe.' },
+  };
+  // ---------- jeito de cada arma ----------
+  // passo do combo: a movimento, d dano, t tempo, v avanço, q abalo, c custo, f golpe forte; pesado: o golpe carregado
+  C.ESTILOS = {
+    punho: { seq: [{ a: 'golpe1', d: 1, t: 1, v: 90 }, { a: 'golpe1', d: 1, t: 0.85, v: 110 }, { a: 'golpe2', d: 1.15, t: 1, v: 90 }, { a: 'golpe3', d: 1.6, t: 1.35, v: 180, q: 1.8, c: 1.4, f: 1 }], pesado: 'gancho', nota: 'Quatro golpes. Forte: gancho que joga para cima.' },
+    lamina: { seq: [{ a: 'golpe1', d: 0.95, t: 1, v: 120 }, { a: 'golpe2', d: 0.95, t: 0.9, v: 110 }, { a: 'golpe1', d: 1, t: 0.9, v: 120 }, { a: 'golpe2', d: 1.05, t: 0.9, v: 110 }, { a: 'golpe1', d: 1.6, t: 1.3, v: 300, q: 1.6, c: 1.3, f: 1 }], pesado: 'passa', nota: 'Cinco golpes rápidos. Forte: atravessa o inimigo cortando, sem levar dano.' },
+    espada: { seq: [{ a: 'golpe1', d: 1, t: 1, v: 120 }, { a: 'golpe2', d: 1.05, t: 1, v: 110 }, { a: 'golpe3', d: 1.45, t: 1.3, v: 200, q: 1.5, c: 1.4, f: 1 }], pesado: 'giro', nota: 'Forte: corte em volta. No instante em que começa a carregar, apara o golpe de quem vem.' },
+    porrete: { seq: [{ a: 'golpe1', d: 1, t: 1.05, v: 100, q: 1.2 }, { a: 'golpe3', d: 1.5, t: 1.35, v: 170, q: 2, c: 1.4, f: 1 }], pesado: 'onda', nota: 'Dois golpes que abalam. Forte: a pancada corre pelo chão.' },
+    machado: { seq: [{ a: 'golpe3', d: 1.15, t: 1.05, v: 120, q: 1.2 }, { a: 'golpe2', d: 1, t: 0.95, v: 100 }, { a: 'golpe3', d: 1.7, t: 1.35, v: 200, q: 2, c: 1.5, f: 1 }], pesado: 'salto', nota: 'Cai de cima, sobe e cai de novo. Forte: salta e racha o chão.' },
+    lanca: { seq: [{ a: 'golpe1', d: 1, t: 1, v: 100 }, { a: 'golpe1', d: 1, t: 0.9, v: 100 }, { a: 'golpe1', d: 1.5, t: 1.3, v: 240, q: 1.5, c: 1.3, f: 1 }], pesado: 'carga', nota: 'Estocadas de longe. Forte: corre com a ponta à frente e atravessa a fila.' },
+    arco: { seq: [{ a: 'golpe1', d: 1, t: 1, v: 0 }], pesado: 'leque', nota: 'Segure o golpe para puxar mais. Forte: três flechas em leque.' },
   };
   C.ORDEM_ARMAS = Object.keys(C.ARMAS);
   C.ROUPAS = {
@@ -60,6 +71,7 @@
     { id: 'escama', tipo: 'amuleto', custo: { prata: 3, pele: 4 } },
     { id: 'apito', tipo: 'amuleto', custo: { osso: 10, trapo: 3 } },
     { id: 'tocha', tipo: 'item', nome: 'Tocha', qtd: 1, custo: { galho: 2, fibra: 2, trapo: 1 }, desc: 'Cinco minutos de luz (tecla V). Lobos e cobras hesitam; mortos e goblins veem de longe.' },
+    { id: 'vara', tipo: 'item', nome: 'Vara de pescar', qtd: 1, custo: { galho: 3, fibra: 3 }, desc: 'Para o remanso do rio, na clareira. Puxe quando a linha afundar.' },
     { id: 'curativo', tipo: 'item', nome: 'Curativo', qtd: 1, custo: { erva: 2, trapo: 1 }, vai: 'curativo', desc: 'Cura mais e tira veneno.' },
     { id: 'isca', tipo: 'item', nome: 'Fio mais afiado', vai: 'afiar', custo: { pedra: 3, osso: 2 }, desc: 'A arma na mão ganha +4% de dano (até 5 vezes).' },
   ];
@@ -76,6 +88,7 @@
   };
   C.MAT.curativo = 'Curativo';
   C.COMER.curativo = { vida: 55, fome: 0, cura: true };
+  C.MAT.peixe = 'Peixe'; C.COMER.peixe = { fome: 26, vida: 10 }; C.MAT.vara = 'Vara de pescar';
 
   // ---------- perícias: crescem com o uso ----------
   C.PERICIAS = {
@@ -104,6 +117,32 @@
     espinhos: { nome: 'Espinhos da Mata', custo: 34, espera: 2, cor: '#a8d060', desc: 'Três espinhos que atravessam a fila toda.' },
     folego: { nome: 'Fôlego da Terra', custo: 48, espera: 16, cor: '#ffe39a', desc: 'A terra devolve um terço da sua vida.' },
     tremor: { nome: 'Tremor', custo: 38, espera: 4, cor: '#d8b070', desc: 'Soca o chão: duas ondas de pedra.' },
+  };
+
+  // ---------- caderno do caçador: [o que é, o que faz, como cair em cima] ----------
+  C.BICHOS = {
+    lobo: ['Cinza, magro, nunca só de verdade.', 'Salta para fora do golpe e volta. Ferido, uiva.', 'Espere o bote e role por dentro dele. Cansa depois de errar.'],
+    lobo_negro: ['O que fica atrás do bando, olhando.', 'Morde e some. Procura as suas costas.', 'Encoste numa parede: sem costas, ele perde o jeito.'],
+    lobo_rubro: ['Maior que você deitado. Cheira a ferro.', 'Dois botes seguidos. Não para quando apanha.', 'Golpe carregado quebra a postura; depois do segundo bote ele respira.'],
+    cobra: ['Da cor da folha podre.', 'Espera quieta até você chegar perto.', 'Golpe para baixo e quique. Ela não sabe olhar para cima.'],
+    cobra_cuspe: ['Cospe antes de morder.', 'Mira onde você vai estar.', 'Rebata o cuspe com um golpe: volta nela.'],
+    cobra_coral: ['Pequena, bonita e a pior de todas.', 'O veneno dura o triplo.', 'Uma pancada basta. Leve erva ou a Escama no peito.'],
+    cobra_prata: ['Escama dura como pedra.', 'De frente, quase nada entra.', 'Porrete, machado, magia ou prata atravessam a casca. Ou pelas costas.'],
+    zumbi: ['Alguém que já teve nome.', 'Agarra: você fica lento. Às vezes levanta de novo.', 'Termine com golpe forte, e ele não levanta.'],
+    zumbi_mulher: ['Corre. É isso que assusta.', 'O grito dela chama e enfurece os outros.', 'Derrube-a primeiro, antes do segundo grito.'],
+    zumbi_machado: ['Guarda o machado que o matou.', 'Lento, mas um golpe vale três.', 'Entre depois que a lâmina desce. Nunca troque pancada.'],
+    zumbi_lanca: ['Ainda caça, sem saber o quê.', 'Estocada de longe, às vezes fingida.', 'Entre na ponta: colado, a lança dela não serve.'],
+    zumbi_inchado: ['Não chegue perto quando cair.', 'O chão treme quando bate. Solta gás ao morrer.', 'Mate de longe, ou role para fora assim que ele cair.'],
+    goblin: ['Conta orelhas para dormir.', 'Finge o golpe e rouba a sua mochila.', 'Persiga o ladrão: ele devolve tudo quando cai.'],
+    goblin_pedra: ['Atira o que achar.', 'Recua quando você avança.', 'Golpeie a pedra no ar e ela volta.'],
+    goblin_arco: ['Capuz de trapo, mira boa.', 'Duas flechas seguidas. Foge saltando.', 'Corra em zigue-zague; ele mira onde você ia estar.'],
+    goblin_xama: ['Reza numa língua que machuca.', 'Cura os outros. O feitiço faz curva.', 'Sempre o primeiro a cair.'],
+    goblin_guerreiro: ['Roubou o elmo de alguém melhor.', 'O escudo apara tudo que vem de frente.', 'Golpe carregado quebra a guarda. Ou passe para as costas.'],
+    goblin_porrete: ['Três goblins num só.', 'A pancada corre pelo chão.', 'Pule a onda e bata no descanso.'],
+    alfa: ['O dono da Serra. Carrega as lanças de quem tentou.', 'Some e atravessa a arena. A terceira mordida atrasa.', 'Pule quando os olhos acenderem.'],
+    rainha: ['Pálida porque nunca precisou sair ao sol.', 'Mergulha e nasce embaixo de você.', 'Não pare de andar enquanto o chão tremer.'],
+    carcereiro: ['Trancou a cidade inteira e ficou com a chave.', 'O ritmo da espada nunca é o mesmo.', 'Não role no susto: espere a lâmina começar.'],
+    chefe: ['Gurgo come primeiro.', 'Corre de ombro. Derruba o teto.', 'Faça-o bater na parede e aproveite.'],
   };
 
   // ---------- inimigos ----------
@@ -159,7 +198,7 @@
   C.ACORDA = ['Frio. É a primeira coisa que você sabe.', 'A segunda: precisa continuar vivo.'];
   C.MORTES = {
     lobo: 'Os lobos não deixaram nem o barro.', cobra: 'O veneno endureceu o barro por dentro.', zumbi: 'Agora você também está embaixo da terra.', goblin: 'Alguém usa sua orelha num colar.',
-    fome: 'O corpo de barro secou de fome.', espinhos: 'A floresta cravou você nela.', queda: 'O barro quebrou na queda.',
+    fome: 'O corpo de barro secou de fome.', espinhos: 'A floresta cravou você nela.', raio: 'O céu também caça.', queda: 'O barro quebrou na queda.',
   };
   C.DICAS = {
     andar: ['A e D andam. Espaço pula: segure para ir mais alto.', 'Arraste o lado esquerdo da tela para andar. Pular fica à direita.'],
@@ -167,7 +206,7 @@
     criar: ['Já dá para fazer um porrete: abra a mochila com I.', 'Já dá para fazer um porrete: toque em Mochila.'],
     golpe: ['J ou clique golpeia. Três seguidos fazem o combo. Shift esquiva.', 'Golpe repete o combo. Esquiva rola por dentro do ataque.'],
     baixo: ['No ar, S com golpe acerta para baixo e quica.', 'No ar, manche para baixo com Golpe quica no alvo.'],
-    forte: ['Segure K para um golpe carregado: abala quem é firme.', 'Segure Forte para um golpe carregado.'],
+    forte: ['Segure K para o golpe carregado. Cada arma solta de um jeito: veja na mochila.', 'Segure Forte para o golpe carregado. Cada arma solta de um jeito: veja na mochila.'],
     comer: ['Q come a melhor coisa da mochila. A fome não espera.', 'Comer usa a melhor coisa da mochila. A fome não espera.'],
     magia: ['R solta a Brasa do Barro. Acertar golpes enche a Sina.', 'Magia solta a Brasa. Acertar golpes enche a Sina.'],
     fogo: ['Descansar no fogo cura e guarda o caminho. Mas os bichos voltam.', 'Descansar no fogo cura. Mas os bichos voltam.'],

@@ -288,7 +288,7 @@
     o.plano(100);
     o.a.terreno = { x0: x0 * T, x1: (x0 + 100) * T, piso: o.y * T };
     const px = (d) => (x0 + d) * T;
-    o.a.lugar = { casa: px(50), fogo: px(62), varal: px(34), horta: px(76), berco: px(43), bau: px(57), cercaE: px(16), cercaD: px(88), estacasE: px(10), estacasD: px(94), cepo: px(26), lenha: px(68) };
+    o.a.lugar = { lago: px(5), curtume: px(38), casa: px(50), fogo: px(62), varal: px(34), horta: px(76), berco: px(43), bau: px(57), cercaE: px(16), cercaD: px(88), estacasE: px(10), estacasD: px(94), cepo: px(26), lenha: px(68) };
     o.a.fogos.push({ id: 'lar_f0', nome: 'O fogo do lar', x: px(62), tx: x0 + 62, y: o.y * T });
     o.plano(6).pega('madeira').plano(5).pega('pedra').plano(4).pega('madeira').plano(4).pega('fibra').plano(4).pega('folha').plano(4);
     return o.fim();

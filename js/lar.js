@@ -22,6 +22,7 @@
     varal: { nome: 'Varal de carne', niveis: [{ hp: 1, custo: { galho: 8, fibra: 6 } }], desc: 'Seca até 4 carnes: uma a cada 5 horas. Carne seca sustenta mais.', casa: 1 },
     horta: { nome: 'Horta', niveis: [{ hp: 1, custo: { madeira: 4, folha: 8, fruta: 4 } }], desc: 'Dá frutas e erva a cada manhã.', casa: 2 },
     bau: { nome: 'Baú da família', niveis: [{ hp: 1, custo: { madeira: 8, ferro: 2 } }], desc: 'Se você cair, quem herdar fica com tudo o que estava na mochila.', casa: 2 },
+    curtume: { nome: 'Curtume', niveis: [{ hp: 1, custo: { madeira: 6, galho: 8, pedra: 6 } }], desc: 'Permite reforçar a roupa que você veste (até três vezes).', casa: 2 },
     berco: { nome: 'Berço', niveis: [{ hp: 1, custo: { galho: 10, couro: 4, fibra: 8 } }], desc: 'Para quem ainda vai chegar.', casa: 3 },
   };
   C.SONHOS = [
@@ -36,6 +37,12 @@
     junto: ['Seu peito brilha quando você dorme. Eu fico olhando.', 'Eu conto as noites agora. Antes, não contava.', 'Esta casa está torta. Eu gosto dela torta.'],
     amor: ['Se vier alguém depois de nós, vai precisar de um nome.', 'Quem moldou você não sabia que ia sobrar amor.', 'Volta vivo. É só isso que eu peço.'],
   };
+  C.FALAS_F = [
+    ['O fogo faz barulho de bicho.', 'Pai, o rio dorme?', 'Eu vi um vaga-lume do tamanho da minha mão.'],
+    ['Eu já sei contar até os lobos.', 'Deixa eu segurar a lança? Só segurar.', 'Mãe disse que você nasceu do chão. Dói?'],
+    ['Quando você sai, eu fico na porta até escurecer.', 'Se um dia você não voltar, eu sei o caminho.', 'Afiei uma pedra. Corta mesmo.'],
+  ];
+  C.TAREFAS = { juntar: ['Juntar lenha e mato', 'Traz duas coisas por dia.'], vigiar: ['Vigiar a trilha', 'Na noite de ataque, vem um inimigo a menos por onda e a cerca aguenta mais.'], treinar: ['Treinar com você', 'Cada dia de treino guarda mais do que você sabe, se ele herdar.'] };
   C.NOMES_F = ['Iara', 'Aira', 'Moema', 'Naiá', 'Jaci', 'Inaê', 'Potira', 'Ceci'];
   C.DICAS.grito = ['Um grito. Alguém está cercado logo à frente.', 'Um grito. Alguém está cercado logo à frente.'];
   C.DICAS.lar = ['Aqui dá para levantar uma casa. Abra a mochila (I) e veja a aba Lar.', 'Aqui dá para levantar uma casa. Abra a Mochila e veja a aba Lar.'];
@@ -65,8 +72,11 @@
   function amanhece() {
     const s = J.save, L = s.lar;
     if (L && L.horta) { L.horta.fruta = Math.min(8, (L.horta.fruta || 0) + 2); L.horta.erva = Math.min(4, (L.horta.erva || 0) + 1); }
-    for (const p of s.prole || []) { const id = s.dia - p.dia; if (id >= 3 && L) { L.trouxe = L.trouxe || {}; const m = um(['galho', 'fruta', 'fibra', 'pedra']); L.trouxe[m] = (L.trouxe[m] || 0) + 1; } if (id === 5) avisa('cresceu', p); }
+    const traz = (m, n) => { L.trouxe = L.trouxe || {}; L.trouxe[m] = (L.trouxe[m] || 0) + n; };
+    for (const p of s.prole || []) { const id = s.dia - p.dia; if (id >= 3 && L) { if ((p.tarefa || 'juntar') === 'juntar') for (let i = 0; i < 2; i++) traz(um(['galho', 'fruta', 'fibra', 'pedra', 'folha']), 1); if (p.tarefa === 'treinar') p.treino = (p.treino || 0) + 1; } if (id === 5) avisa('cresceu', p); }
     const H = s.hum;
+    // ela também trabalha quando fica
+    if (L && H && H.onde === 'lar' && H.laco >= 25 && H.fome > 15) { traz(um(['erva', 'fibra', 'fruta']), 2); if (H.laco >= 55) traz(Math.random() < 0.5 ? 'flecha' : 'curativo', Math.random() < 0.5 ? 2 : 1); }
     if (H && H.gravida && s.dia >= H.gravida && H.onde !== 'levada') { H.gravida = 0; avisa('nasceu'); }
   }
   // chegou a noite: se você está em casa, é ataque; se não está, a casa se defende sozinha
@@ -215,7 +225,7 @@
   };
   J.feriObra = function (o, dano) {
     if (!o || o.hp <= 0) return false;
-    o.hp -= Math.max(1, dano * 0.8); som('minerar', 0.4, 0.7);
+    o.hp -= Math.max(1, dano * ((J.save.prole || []).some((p) => p.tarefa === 'vigiar' && J.save.dia - p.dia >= 3) ? 0.6 : 0.8)); som('minerar', 0.4, 0.7);
     if (o.hp <= 0) { o.hp = 0; som('quebra', 0.9, 0.7); treme(5); if (o === J.save.lar.casa) { caiCasa(); if (J.save.lar.casa.n === 0) { J.casaAlvo = null; if (J.hum && J.hum.dentro) J.hum.dentro = false; } } else avisa('cercaCaiu'); }
     return true;
   };
@@ -261,7 +271,7 @@
         else if (d > 40 && d < 220 && H.cdPedra <= 0) { H.cdPedra = 2.6 - l * 0.011; H.dir = Math.sign(p.x - H.x); H.tGolpe = 0.4; const v = 330, t = d / v; J.balas.push({ dono: 'h', tipo: 'pedra', x: H.x + H.dir * 12, y: H.y - 40, vx: H.dir * v, vy: (p.y - p.h / 2 - (H.y - 40)) / t - 120 * t, grav: 240, r: 4, dano: 8 + l * 0.12, vida: 1.4, cor: '#b0aaa0', deHum: true }); som('golpe', 0.3, 1.7); }
       }
       if (D && !p) {
-        if (D.fome < 35 && H.cdFala <= 0) { H.cdFala = 12; const m = ['fruta', 'seca', 'carne'].find((k) => s.inv[k] > 0); if (m) { s.inv[m]--; D.fome = Math.min(100, D.fome + C.COMER[m].fome * 1.3); D.laco = Math.min(100, D.laco + 0.6); texto(H.x, H.y - 60, 'comeu ' + C.MAT[m].toLowerCase(), '#d8e0b0'); } else texto(H.x, H.y - 60, 'com fome', '#e0b070'); }
+        if (D.fome < 35 && H.cdFala <= 0) { H.cdFala = 12; const m = ['fruta', 'peixe', 'seca', 'carne'].find((k) => s.inv[k] > 0); if (m) { s.inv[m]--; D.fome = Math.min(100, D.fome + C.COMER[m].fome * 1.3); D.laco = Math.min(100, D.laco + 0.6); texto(H.x, H.y - 60, 'comeu ' + C.MAT[m].toLowerCase(), '#d8e0b0'); } else texto(H.x, H.y - 60, 'com fome', '#e0b070'); }
         if (H.cdColhe <= 0 && H.estado === 'segue' && l >= 20) { H.cdColhe = 9 - l * 0.05; const c = F.atual.coleta.find((q) => !(J.colhidos[q.id] > 0) && q.m !== 'madeira' && Math.abs(q.x - H.x) < 110 && Math.abs(q.y - H.y) < 50); if (c) { J.colhidos[c.id] = 150; H.tColhe = 0.6; H.dir = Math.sign(c.x - H.x) || H.dir; J.ganha(c.m, 1, H.x, H.y - 46); } }
         if (D.fome > 30 && H.hp < H.hpMax) H.hp = Math.min(H.hpMax, H.hp + dt * 0.9);
       }
@@ -296,7 +306,8 @@
   function ondaRaid() {
     const s = J.save, r = J.raid, k = clamp(0.2 + s.dia * 0.04 + Object.keys(s.chefes).length * 0.1, 0.2, 1);
     const esp = um(['lobo', 'lobo', 'goblin', 'goblin', 'zumbi', 'cobra']), q = 3 + Math.floor(r.n * 0.8) + Math.floor(s.dia / 8);
-    for (let i = 0; i < Math.min(8, q); i++) { const lado = i % 2 ? 1 : -1, x = lado > 0 ? (F.W - 7) * T - i * 10 : 8 * T + i * 10; J.inimigos.push(nasce(F.varia(esp, k, Math.random), x, F.chao(x), { estado: 'persegue', raid: true, chamado: true, t: -i * 0.25, dir: -lado })); }
+    const vigia = (s.prole || []).some((p) => p.tarefa === 'vigiar' && s.dia - p.dia >= 3) ? 1 : 0;
+    for (let i = 0; i < Math.max(2, Math.min(8, q) - vigia); i++) { const lado = i % 2 ? 1 : -1, x = lado > 0 ? (F.W - 7) * T - i * 10 : 8 * T + i * 10; J.inimigos.push(nasce(F.varia(esp, k, Math.random), x, F.chao(x), { estado: 'persegue', raid: true, chamado: true, t: -i * 0.25, dir: -lado })); }
     avisa('ondaRaid', [r.n + 1, r.total, esp]);
   }
   function passoRaid(dt) {
@@ -349,6 +360,8 @@
       if (L.varal && L.varal.n && p('varal') && ((L.varal.secas || 0) > 0 || ((s.inv.carne || 0) > 0 && (L.varal.carnes || 0) < 4))) return { tipo: 'varal' };
       if (L.horta && L.horta.n && p('horta') && ((L.horta.fruta || 0) > 0 || (L.horta.erva || 0) > 0)) return { tipo: 'horta' };
       if (p('casa', 34)) return { tipo: 'casa' };
+      if (Math.abs(lug.lago - h.x) < 70) return { tipo: 'pesca' };
+      const c = (J.gente || []).find((g) => g.p && !g.bebe && !g.dentro && Math.abs(g.x - h.x) < 22 && Math.abs(h.vx) < 20); if (c) return { tipo: 'crianca', o: c };
     }
     if (H && s.hum && !H.caida && !H.perdida && !J.emb && !J.raid && Math.abs(H.x - h.x) < 24 && Math.abs(H.y - h.y) < 40 && Math.abs(h.vx) < 20 && !J.inimigos.some((e) => e.vivo && e.estado !== 'vaga' && Math.abs(e.x - h.x) < 220)) return { tipo: 'fala', o: H };
     return null;
@@ -360,6 +373,18 @@
     else if (p.tipo === 'varal') { const v = L.varal; if ((v.secas || 0) > 0) { J.ganha('seca', v.secas); v.secas = 0; } const q = Math.min(s.inv.carne || 0, 4 - (v.carnes || 0)); if (q > 0) { s.inv.carne -= q; v.carnes = (v.carnes || 0) + q; som('pegar', 0.5); } J.salvar(); }
     else if (p.tipo === 'horta') { for (const m of ['fruta', 'erva']) if (L.horta[m] > 0) { J.ganha(m, L.horta[m]); L.horta[m] = 0; } J.salvar(); }
   };
+  // ---------- pescar: lance, espere afundar, puxe ----------
+  J.pesca = function () { const h = J.heroi; if (!(J.save.inv.vara > 0)) { texto(h.x, h.y - 66, 'precisa de uma vara', '#e0b070'); return; } h.estado = 'pesca'; h.t = 0; h.vx = 0; h.dir = Math.sign(F.atual.lugar.lago - h.x) || h.dir; h.morde = rnd(1.6, 4.6); h.fisgou = false; som('golpe', 0.3, 1.5); setTimeout(() => som('bolha', 0.5, 1), 350); };
+  J.puxa = function () {
+    const h = J.heroi, s = J.save; if (h.t < 0.4) return;
+    if (h.t > h.morde && h.t < h.morde + 0.75) { J.ganha('peixe', Math.random() < 0.2 ? 2 : 1, h.x, h.y - 50); som('bolha', 0.8, 0.8); J.faiscas(F.atual.lugar.lago, h.y - 2, 14, '#bfe4ee', 0.9); J.treina('coleta', 6); if (Math.random() < 0.06) { s.inv.vara--; texto(h.x, h.y - 80, 'a vara quebrou', '#e0b070'); } }
+    else { texto(h.x, h.y - 66, h.t < h.morde ? 'cedo demais' : 'escapou', '#c9bfa2'); som('bolha', 0.4, 1.4); }
+    h.estado = 'livre'; h.t = 0;
+  };
+  J.passoPesca = function () { const h = J.heroi; if (h.estado !== 'pesca') return; if (h.t > h.morde && !h.fisgou) { h.fisgou = true; som('bolha', 0.9, 0.7); J.anel(F.atual.lugar.lago, h.y, 18, '#bfe4ee', 0.5, 2); } if (h.t > h.morde + 1.3) { texto(h.x, h.y - 66, 'escapou', '#c9bfa2'); h.estado = 'livre'; h.t = 0; } };
+  J.reforca = function () { const s = J.save, r = s.roupa; if (r === 'barro' || (s.reforco[r] || 0) >= 3 || (s.inv.couro || 0) < 4 || (s.inv.fibra || 0) < 4 || !(s.lar && s.lar.curtume && s.lar.curtume.n)) return false; s.inv.couro -= 4; s.inv.fibra -= 4; s.reforco[r] = (s.reforco[r] || 0) + 1; J.recalcular(); som('pano', 0.6); J.treina('oficio', 8); J.salvar(); return true; };
+  J.falaFilho = (p) => { const id = J.save.dia - p.dia; return um(C.FALAS_F[id < 3 ? 0 : id < 5 ? 1 : 2]); };
+
   J.fala = function () { const H = J.save.hum; return um(C.FALAS[faixa(H.laco)]); };
   J.ordem = function (o) { const s = J.save; s.hum.onde = o; if (J.hum) { J.hum.estado = o === 'segue' ? 'segue' : 'lar'; J.hum.dentro = false; } J.salvar(); };
 
@@ -369,7 +394,7 @@
   J.herda = function (p) {
     const s = J.save; s.prole = s.prole.filter((q) => q !== p); s.vida++; s.antes = (s.antes || []).concat(s.nome); s.nome = p.nome; s.hp = null; s.fome = 80; s.veneno = 0;
     if (!(s.lar && s.lar.bau && s.lar.bau.n)) for (const m in s.inv) s.inv[m] = Math.floor(s.inv[m] / 4);
-    for (const k in s.per) s.per[k] = { n: Math.floor(s.per[k].n * 0.65), x: 0 };
+    for (const k in s.per) s.per[k] = { n: Math.floor(s.per[k].n * Math.min(0.92, 0.65 + (p.treino || 0) * 0.03)), x: 0 };
     // a mãe fica no lar; o filho ainda vai encontrar a humana dele
     if (s.hum && s.hum.onde !== 'levada') s.mae = { nome: s.hum.nome }; s.hum = null; J.hum = null; delete s.emb.vale_e0;
     s.area = s.lar ? 'lar' : 'floresta'; s.x = null; s.hora = 7;
@@ -380,7 +405,7 @@
     const s = J.save, h = J.heroi; if (h.estado === 'morto' || h.estado === 'nasce') return;
     if (h.estado !== 'dorme') avanca(dt * HORA);
     if (J.ehNoite() && s.hora > 20) avisa('noite');
-    passoEmboscada(dt); passoHum(dt);
+    passoEmboscada(dt); passoHum(dt); J.passoPesca();
     if (s.area === 'lar') { passoGente(dt); passoRaid(dt); }
   };
 })();

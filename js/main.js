@@ -127,6 +127,7 @@
     else if (tipo === 'construiu') conquista('Você levantou', x.nome + (x.n > 1 && !C.CASAS.some((c) => c && c.nome === x.nome) ? ' (nível ' + x.n + ')' : ''), '#c8a878');
     else if (tipo === 'gravida') conquista(s.hum.nome + ' espera um filho', 'Daqui a três noites. Até lá, ela precisa de você inteiro.', '#e8b0a0');
     else if (tipo === 'nasceu') batizar = true;
+    else if (tipo === 'caderno') { const B = C.BICHOS[x[0]]; if (B) conquista(x[1] === 1 ? 'Caderno: ' + C.TIPOS[x[0]].nome : x[1] === 4 ? C.TIPOS[x[0]].nome + ': hábitos' : C.TIPOS[x[0]].nome + ': fraqueza', x[1] === 1 ? B[0] : x[1] === 4 ? B[1] : B[2] + ' (+8% de dano)', C.ESPECIES[C.TIPOS[x[0]].esp].cor); }
     else if (tipo === 'zona') { if (areaT <= 0) J.mostraArea(x.nome); }
     else if (tipo === 'marco') { J.mostraArea(x.nome); sussurra(x.texto, 6.5); som('livro', 0.5); }
     else if (tipo === 'oco') sussurra('O chão era oco.', 3);
@@ -157,12 +158,15 @@
 
   // ---------- usar o que está perto ----------
   function usar() {
+    if (modo === 'jogo' && J.heroi && J.heroi.estado === 'pesca') { J.puxa(); return; }
     if (modo !== 'jogo' || !J.heroi || J.heroi.estado !== 'livre') return;
     const p = J.perto(); if (!p) return;
     if (['levanta', 'solta', 'varal', 'horta'].includes(p.tipo)) { J.usaLar(p); return; }
     if (p.tipo === 'bau') { J.abreBau(p.o); return; }
     if (p.tipo === 'casa') { abreMenu('lar'); return; }
     if (p.tipo === 'fala') { abreFala(); return; }
+    if (p.tipo === 'pesca') { J.pesca(); return; }
+    if (p.tipo === 'crianca') { abreFilho(p.o.p); return; }
     if (p.tipo === 'coleta') J.colher(p.o);
     else if (p.tipo === 'porta') { if (p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa) { sussurra('Raízes vivas fecham a passagem. Elas só soltam para quem derrubou ' + p.o.precisa + ' donos dos caminhos.', 5); return; } if (J.hum && J.hum.caida) { sussurra('Você não vai deixá-la caída aqui.', 3); return; } viajar(p.o); }
     else if (p.tipo === 'circulo') J.aprende(p.o.magia);
@@ -199,7 +203,7 @@
     const v = $('veu'); v.classList.add('ver'); solta();
     setTimeout(() => { J.entrarArea(p.para[0], p.para[1]); D.centrar(); areaVista = null; D.quadro(0.016); setTimeout(() => { v.classList.remove('ver'); viajando = false; }, 220); }, 420);
   }
-  const rotulo = (p) => (p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
+  const rotulo = (p) => (p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
 
   // ---------- fogueira ----------
   function abreFogo(f) {
@@ -223,7 +227,7 @@
     $('fg-nome').textContent = H.nome; $('fg-sair').textContent = 'Ficar em silêncio';
     $('fg-nota').textContent = '“' + J.fala() + '”';
     c.append(el('p', 'nota', J.lacoNome(H.laco) + ' · vida ' + Math.ceil(H.hp) + ' de ' + H.hpMax + ' · ' + (H.fome < 15 ? 'faminta' : H.fome < 40 ? 'com fome' : 'alimentada') + (H.gravida ? ' · espera um filho' : '')));
-    const m = ['seca', 'carne', 'fruta'].find((k) => s.inv[k] > 0);
+    const m = ['seca', 'peixe', 'carne', 'fruta'].find((k) => s.inv[k] > 0);
     if (m && H.fome < 92) c.append(botao('Dar ' + C.MAT[m].toLowerCase(), () => { s.inv[m]--; H.fome = Math.min(100, H.fome + C.COMER[m].fome * 1.3); H.laco = Math.min(100, H.laco + 1.5); som('beber', 0.5); J.salvar(); abreFala(); }));
     if (s.area === 'lar') {
       if (H.onde !== 'segue' && !H.gravida) c.append(botao('Vem comigo', () => { J.ordem('segue'); voltar(); }));
@@ -232,13 +236,19 @@
     }
     if (!H.lanca && s.armas.includes('lanca')) c.append(botao('Fazer uma lança para ela (3 galhos, 1 pedra, 2 fibras)', () => { if ((s.inv.galho || 0) >= 3 && (s.inv.pedra || 0) >= 1 && (s.inv.fibra || 0) >= 2) { s.inv.galho -= 3; s.inv.pedra--; s.inv.fibra -= 2; H.lanca = true; H.laco = Math.min(100, H.laco + 5); som('raro', 0.6); J.salvar(); abreFala(); } else sussurra('Faltam materiais.', 2); }));
   }
+  function abreFilho(p) {
+    modo = 'fogo'; mostra('fogo'); const s = J.save, id = s.dia - p.dia, c = $('fg-corpo'); c.innerHTML = '';
+    $('fg-nome').textContent = p.nome; $('fg-sair').textContent = 'Passar a mão na cabeça'; $('fg-nota').textContent = '“' + J.falaFilho(p) + '”';
+    c.append(el('p', 'nota', id < 3 ? 'Ainda pequeno. Com 3 dias já ajuda.' : id + ' dias' + (p.treino ? ' · ' + p.treino + ' de treino' : '') + (id >= 5 ? ' · pode continuar você' : '')));
+    if (id >= 3) for (const t in C.TAREFAS) { const at = (p.tarefa || 'juntar') === t, b = botao(C.TAREFAS[t][0] + (at ? ' (agora)' : ''), () => { p.tarefa = t; J.salvar(); abreFilho(p); }, at ? 'ir' : ''); b.title = C.TAREFAS[t][1]; c.append(b, el('p', 'nota', C.TAREFAS[t][1])); }
+  }
   let batizar = false;
   function abreBatiza() { batizar = false; modo = 'batiza'; mostra('batiza'); $('bt-nome').value = ''; if (!toque) $('bt-nome').focus(); som('raro', 0.8); }
   function batiza() { const n = $('bt-nome').value.trim().slice(0, 16); if (!n) { $('bt-nome').focus(); return; } $('bt-nome').blur(); J.nasceFilho(n); voltar(); conquista(n + ' nasceu', 'Em cinco dias já poderá continuar você. Até lá, proteja o lar.', '#e8b0a0'); }
 
   // ---------- menu: criar, mochila, perícias, títulos, opções ----------
   let aba = 'criar';
-  const ABAS = [['lar', 'Lar'], ['criar', 'Criar'], ['mochila', 'Mochila'], ['mapa', 'Mapa'], ['pericias', 'Perícias'], ['titulos', 'Títulos'], ['opcoes', 'Opções']];
+  const ABAS = [['lar', 'Lar'], ['criar', 'Criar'], ['mochila', 'Mochila'], ['mapa', 'Mapa'], ['pericias', 'Perícias'], ['titulos', 'Títulos'], ['caderno', 'Caderno'], ['opcoes', 'Opções']];
   function abreMenu(qual) { if (qual) aba = qual; modo = 'menu'; mostra('menu'); som('livro', 0.5); pintaMenu(); }
   const ic = (m, t) => { const c = D.icone(m, t || 34); c.className = 'ic'; return c; };
   function pintaMenu() {
@@ -247,11 +257,20 @@
     const c = $('m-corpo'); c.innerHTML = ''; const s = J.save, h = J.heroi;
     if (aba === 'lar' && !s.lar) aba = 'criar';
     if (aba === 'mapa') { pintaMapa(c); return; }
+    if (aba === 'caderno') {
+      const todos = Object.keys(C.BICHOS), vis = todos.filter((t) => s.abates[t] > 0); c.append(el('p', 'nota', vis.length + ' de ' + todos.length + ' bichos anotados. Com 4 mortes você entende os hábitos; com 10, a fraqueza e 8% a mais de dano.'));
+      for (const e in C.ESPECIES) {
+        c.append(el('h3', '', C.ESPECIES[e].nome));
+        for (const t of todos) if (C.TIPOS[t].esp === e) { const n = s.abates[t] || 0, B = C.BICHOS[t], l = el('div', 'linha' + (n >= 10 ? ' atual' : '')), d = el('div', 'l-txt'), q = el('div'); d.append(retratoBicho(t, n > 0)); if (!n) q.append(el('b', '', '???'), el('small', '', 'Ainda não caiu nenhum.')); else { q.append(el('b', '', C.TIPOS[t].nome + ' · ' + n), el('small', '', B[0])); const ch = C.TIPOS[t].chefe; if (n >= 4 || ch) q.append(el('small', '', B[1])); if (n >= 10 || ch) q.append(el('small', 'jeito', B[2])); else q.append(el('small', '', 'Faltam ' + ((n < 4 ? 4 : 10) - n) + ' para saber mais.')); } d.append(q); l.append(d); c.append(l); }
+      }
+      return;
+    }
     if (aba === 'lar') {
       const L = s.lar, aqui = s.area === 'lar';
       c.append(el('p', 'nota', (L.casa.n ? C.CASAS[L.casa.n].nome + ', ' + Math.ceil(L.casa.hp) + ' de ' + C.CASAS[L.casa.n].hp : 'Ainda não há casa. Só chão.') + ' · fogo: ' + (L.lenha > 0 ? Math.round(L.lenha) + ' h de lenha' : 'apagado') + ' · dia ' + s.dia));
       c.append(el('p', 'nota', aqui ? 'Toda noite, às 21 h, alguém vem. Cerca segura, estaca fere, fogo aceso afasta uma onda.' : 'Para construir e consertar, volte à Clareira do Rio.'));
-      for (const id of ['casa', 'cercaE', 'cercaD', 'estacasE', 'estacasD', 'varal', 'horta', 'bau', 'berco']) {
+      if (L.curtume && L.curtume.n && s.roupa !== 'barro') { const n = s.reforco[s.roupa] || 0, b = botao(n >= 3 ? C.ROUPAS[s.roupa].nome + ': reforçada ao máximo' : 'Reforçar ' + C.ROUPAS[s.roupa].nome.toLowerCase() + ' (' + n + '/3): 4 couros e 4 fibras, +3% de defesa', () => { if (J.reforca()) pintaMenu(); }); b.disabled = !aqui || n >= 3 || (s.inv.couro || 0) < 4 || (s.inv.fibra || 0) < 4; c.append(b); }
+      for (const id of ['casa', 'cercaE', 'cercaD', 'estacasE', 'estacasD', 'varal', 'horta', 'curtume', 'bau', 'berco']) {
         const o = J.custoObra(id), tenho = id === 'casa' ? L.casa.n : L[id] && L[id].n, cheio = J.cheioObra(id), hp = id === 'casa' ? L.casa.hp : L[id] ? L[id].hp : 0;
         const l = el('div', 'linha' + (J.podeObra(id) ? ' pode' : '')), t = el('div', 'l-txt'), d = el('div');
         const nome = o ? (id === 'casa' && tenho ? 'Melhorar: ' : '') + o.nome + (id !== 'casa' && tenho ? ' · nível ' + o.n : '') : (id === 'casa' ? C.CASAS[L.casa.n].nome : C.OBRAS[id].nome);
@@ -284,7 +303,7 @@
       c.append(el('h3', '', 'Armas'));
       for (const a of C.ORDEM_ARMAS) if (s.armas.includes(a)) {
         const A = C.ARMAS[a], l = el('div', 'linha' + (s.arma === a ? ' atual' : '')), t = el('div', 'l-txt');
-        if (a !== 'punho') t.append(ic(a)); const d = el('div'); d.append(el('b', '', A.nome + (s.afiado[a] ? ' +' + s.afiado[a] : '')), el('small', '', 'Dano ' + Math.round(A.dano * (1 + J.nivel(A.per) * C.BONUS) * (1 + (s.afiado[a] || 0) * 0.04)) + ' · ' + A.desc)); t.append(d);
+        if (a !== 'punho') t.append(ic(a)); const d = el('div'); d.append(el('b', '', A.nome + (s.afiado[a] ? ' +' + s.afiado[a] : '')), el('small', '', 'Dano ' + Math.round(A.dano * (1 + J.nivel(A.per) * C.BONUS) * (1 + (s.afiado[a] || 0) * 0.04)) + ' · ' + A.desc), el('small', 'jeito', C.ESTILOS[A.per].nota)); t.append(d);
         l.append(t); if (s.arma !== a) l.append(botao('Empunhar', () => { J.empunhar(a); pintaMenu(); })); c.append(l);
       }
       c.append(el('h3', '', 'Roupas'));
@@ -316,6 +335,7 @@
     }
   }
 
+  function retratoBicho(t, visto) { const c2 = document.createElement('canvas'); c2.width = 54; c2.height = 46; c2.className = 'ic bicho'; const q = c2.getContext('2d'), tp = C.TIPOS[t], im = D.img['m_' + tp.spr], mt = window.ARTE2.monstros[tp.spr]; q.imageSmoothingEnabled = false; if (im) { const e = Math.min(54 / mt.w, 46 / mt.h, 1); q.drawImage(im, 0, 0, mt.w, mt.h, (54 - mt.w * e) / 2, 46 - mt.h * e, mt.w * e, mt.h * e); if (!visto) { q.globalCompositeOperation = 'source-in'; q.fillStyle = '#1c2624'; q.fillRect(0, 0, 54, 46); } } return c2; }
   // ---------- mapa: o perfil de cada área, só do que você já andou ----------
   const CORES = { fogo: '#ffb050', apagado: '#6a6a60', porta: '#9fd8ff', bau: '#ffe2a0', marco: '#c8b890', emb: '#d0483a', circulo: '#7ff0ff', voce: '#ffffff', covil: '#d0483a' };
   function pintaMapa(c) {
@@ -358,15 +378,15 @@
     const h = J.heroi, f = h.ficha, s = J.save, pc = (v, m) => Math.max(0, Math.min(100, (v / m) * 100)) + '%';
     const bv = $('b-vida'); bv.children[0].style.width = bv.children[1].style.width = pc(h.hp, f.vida); bv.style.width = Math.min(340, 150 + f.vida) + 'px';
     $('b-vigor').children[0].style.width = pc(h.vigor, f.vigor); $('b-fome').children[0].style.width = pc(s.fome, 100); $('b-fome').classList.toggle('pouco', s.fome < 20); $('b-sina').children[0].style.width = pc(h.sina, f.sina);
-    const chave = s.arma + (s.inv.flecha || 0) + s.magias.length + s.magia2 + (s.titulo || '') + (s.inv.fruta || 0) + (s.inv.erva || 0) + (s.inv.carne || 0) + 's' + (s.inv.seca || 0) + (s.inv.curativo || 0) + (s.afiado[s.arma] || 0);
+    const chave = s.arma + (s.inv.flecha || 0) + s.magias.length + s.magia2 + (s.titulo || '') + (s.inv.fruta || 0) + (s.inv.erva || 0) + (s.inv.carne || 0) + 's' + (s.inv.seca || 0) + 'p' + (s.inv.peixe || 0) + (s.inv.curativo || 0) + (s.afiado[s.arma] || 0);
     if (chave !== vistas) {
       vistas = chave;
       const a = $('h-arma'); a.innerHTML = ''; if (s.arma !== 'punho') a.append(ic(s.arma, 34)); a.append(el('span', '', C.ARMAS[s.arma].nome + (s.afiado[s.arma] ? ' +' + s.afiado[s.arma] : '') + (C.ARMAS[s.arma].tiro ? ' · ' + (s.inv.flecha || 0) : '')));
-      const q = $('h-comida'); q.innerHTML = ''; for (const m of ['fruta', 'carne', 'seca', 'erva', 'curativo']) if (s.inv[m] > 0) { const k = el('span'); k.append(ic(m === 'curativo' ? 'trapo' : m, 22), document.createTextNode(s.inv[m])); q.append(k); }
+      const q = $('h-comida'); q.innerHTML = ''; for (const m of ['fruta', 'peixe', 'carne', 'seca', 'erva', 'curativo']) if (s.inv[m] > 0) { const k = el('span'); k.append(ic(m === 'curativo' ? 'trapo' : m, 22), document.createTextNode(s.inv[m])); q.append(k); }
       $('h-titulo').textContent = s.nome + (s.titulo ? ', ' + s.titulo : ''); montaMagias();
     }
     const tc = $('h-tocha'); tc.hidden = !(s.tocha > 0); if (s.tocha > 0) { tc.classList.toggle('acesa', !!s.tochaAcesa); tc.style.setProperty('--k', s.tocha / 300); } const bt = document.querySelector('#botoes [data-a=tocha]'); if (bt) { bt.hidden = !(s.tocha > 0 || s.inv.tocha > 0); bt.classList.toggle('ativa', !!s.tochaAcesa); }
-    const tdia = 'Dia ' + s.dia + ' · ' + J.nomeHora() + (J.raid ? ' · onda ' + Math.max(1, J.raid.n + 1) + ' de ' + J.raid.total : ''); if ($('h-dia').textContent !== tdia) { $('h-dia').textContent = tdia; $('h-dia').classList.toggle('noite', J.ehNoite()); }
+    const tdia = 'Dia ' + s.dia + ' · ' + J.nomeHora() + (J.clima.tipo !== 'limpo' && J.clima.forca > 0.3 ? ' · ' + J.NOMECLIMA[J.clima.tipo] : '') + (J.raid ? ' · onda ' + Math.max(1, J.raid.n + 1) + ' de ' + J.raid.total : ''); if ($('h-dia').textContent !== tdia) { $('h-dia').textContent = tdia; $('h-dia').classList.toggle('noite', J.ehNoite()); }
     const H = s.hum, hv = H && J.hum && !J.hum.perdida; $('h-hum').hidden = !hv; if (hv) { $('h-hum').firstElementChild.textContent = H.nome + (J.hum.caida ? ' caiu!' : ''); $('b-hum').children[0].style.width = pc(J.hum.hp, J.hum.hpMax); $('b-hfome').children[0].style.width = pc(H.fome, 100); $('b-laco').children[0].style.width = pc(H.laco, 100); }
     for (const d of $('h-magias').children) { const M = C.MAGIAS[d.dataset.id]; d.classList.toggle('falta', h.sina < M.custo); d.lastChild.style.transform = 'scaleY(' + Math.min(1, (h.espera[d.dataset.id] || 0) / M.espera) + ')'; }
     const c = J.chefeAtivo; $('chefe').hidden = !c; if (c) { $('chefe-nome').textContent = c.T.nome; const b = $('b-chefe'); b.children[0].style.width = b.children[1].style.width = pc(c.hp, c.hpMax); }
@@ -511,7 +531,7 @@
         if (areaVista !== A.id) { areaVista = A.id; J.mostraArea(nomeArea(A.id)); if (window.Som) { Som.ambiente(C.REGIOES[A.regiao].amb); Som.prepara('batalha'); if (A.arena) Som.prepara('chefao'); } }
         for (const p of A.placas) if (Math.abs(p.x - h.x) < 46 && Math.abs(p.y - h.y) < 70) dica(p.dica);
         if (J.save.fome < 25) dica('comer');
-        if (window.Som) { let k = 0; for (const f of A.fogos) if (J.save.fogos[f.id]) k = Math.max(k, 1 - Math.abs(f.x - h.x) / 240); Som.fogueira(Math.max(0, k) * 0.6); }
+        if (window.Som) { Som.chuva(J.cl('chuva', 'tempestade') * (J.abrigado() ? 0.18 : 0.55)); let k = 0; for (const f of A.fogos) if (J.save.fogos[f.id]) k = Math.max(k, 1 - Math.abs(f.x - h.x) / 240); Som.fogueira(Math.max(0, k) * 0.6); }
       }
     }
     sussT -= dt; if (sussT <= 0) $('sussurro').classList.remove('ver');

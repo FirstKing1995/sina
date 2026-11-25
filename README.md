@@ -29,6 +29,11 @@ Um deus molda o primeiro homem do barro e vai embora. O jogador dá o nome. Ele 
 - **Variedades:** lobos cinzento, negro e vermelho; cobras comum, cuspideira, coral e de prata; mortos, a que grita, do machado, caçadora e inchado; goblins da faca, da funda, arqueiro, xamã, guerreiro e bruto.
 - **Espólio:** roupas de pele de cobra, osso e prata, adaga de presa, lança de prata e oito amuletos (dois por vez; quatro só se acham em baús).
 - **Lugares:** zonas com luz própria, grutas escuras, ruínas com baú no alto, acampamentos, chão rachado que esconde câmara (quebre com golpe para baixo ou forte) e lugares com história. Aba **Mapa** (M) desenha o que você já andou.
+- **Armas (`C.ESTILOS`):** cada uma tem combo e golpe carregado próprios (gancho, atravessar, giro que apara, onda, salto, carga, leque de flechas). `node tools/lateral-armas.js` mede.
+- **Clima (`js/clima.js`):** chuva, tempestade com raio, neblina, neve, ventania e cinza, cada um com efeito na luta.
+- **Caderno:** anota cada bicho; com 10 mortes revela a fraqueza e dá 8% de dano.
+- **Lar:** pesca no remanso, curtume para reforçar a roupa, a humana trabalha quando fica e os filhos têm falas e tarefas.
+- **Sons:** passos por terreno, voz por espécie e impacto por arma (CC0, `tools/lateral-sons.sh`).
 - **Tocha (V):** cinco minutos de luz; lobos e cobras hesitam, mortos e goblins veem de longe.
 - **Formação:** quem persegue faz fila dos dois lados e não sobe em cima do outro.
 - **Dia e noite:** um dia dura 12 minutos; de noite eles enxergam mais e batem mais forte. Deitar no fogo mostra o herói dormindo e passa as horas.
