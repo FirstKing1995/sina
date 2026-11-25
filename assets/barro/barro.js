@@ -1,0 +1,1 @@
+window.BARRO={"q": 100, "anims": {"parado": [0, 4], "correr": [4, 8], "golpe1": [12, 4], "golpe2": [16, 3], "golpe3": [19, 4], "pulo": [23, 6], "rola": [29, 6], "magia": [35, 4], "dor": [39, 3], "morte": [42, 6], "colher": [48, 4], "cima": [52, 3], "baixo": [55, 1], "arco": [56, 4], "nascer": [60, 6]}, "roupas": ["barro", "couro", "folhas"], "cols": 10};

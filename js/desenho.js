@@ -1,586 +1,538 @@
-/* SINA 2D · desenho. O mundo é pintado num quadro pequeno (cerca de 480 x 270) e ampliado sem borrar.
-   Camadas: céu, montanhas, mata ao longe, névoa, enfeites, chão, gente, frente, luz e números. */
+/* SINA · desenho. O mundo é pintado num quadro pequeno (320 px de altura) e ampliado sem borrar.
+   Camadas: fundo pintado, árvores na névoa, árvores de perto, terra, enfeites, gente, frente, luz e números. */
 (function () {
   'use strict';
   const D = window.Desenho = {};
-  const F = window.Fase, J = window.Jogo, S = window.Spr, T = F.T;
+  const F = window.Fase, J = window.Jogo, C = window.Dados, T = F.T, B = window.BARRO, A2 = window.ARTE2;
   const tela = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
   let cv, ctx, buf, g, luz, gl;
-  D.VW = 480; D.VH = 270;
-  const cam = (D.cam = { x: 0, y: 0, alvoX: 0, olha: 0, olhaT: 0 });
+  D.VW = 568; D.VH = 320;
+  const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0;
+  const img = {}; // nome -> imagem
+  const carregaImg = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { console.warn('faltou', src); ok(null); }; i.src = src; });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
-    buf = tela(480, 270); g = buf.getContext('2d');
-    luz = tela(480, 270); gl = luz.getContext('2d');
+    buf = tela(10, 10); g = buf.getContext('2d'); luz = tela(10, 10); gl = luz.getContext('2d');
     D.ajustar(); addEventListener('resize', D.ajustar);
   };
   D.ajustar = function () {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
-    const asp = innerWidth / innerHeight;
-    let VH = 270, VW = Math.round(VH * asp);
-    if (VW < 340) { VW = 340; VH = Math.round(VW / asp); }
-    if (VW > 640) VW = 640;
+    cv.width = Math.max(2, Math.round(innerWidth * dpr)); cv.height = Math.max(2, Math.round(innerHeight * dpr));
+    const asp = innerWidth / Math.max(1, innerHeight);
+    let VH = 320, VW = Math.round(VH * asp);
+    if (VW < 360) { VW = 360; VH = Math.min(640, Math.round(VW / asp)); }
+    if (VW > 760) { VW = 760; VH = Math.round(VW / asp); }
     D.VW = VW; D.VH = VH;
-    buf.width = luz.width = VW; buf.height = luz.height = VH;
+    buf.width = VW; buf.height = VH; luz.width = VW; luz.height = VH;
     g.imageSmoothingEnabled = false;
   };
+  D.carregar = async function (aviso) {
+    const l = [];
+    for (const r of B.roupas) l.push(['h_' + r, 'assets/barro/' + r + '.png']);
+    for (const m in A2.monstros) l.push(['m_' + m, 'assets/floresta/m_' + m + '.webp']);
+    for (const r in C.REGIOES) { l.push(['f_' + r, 'assets/floresta/f_' + r + '.webp']); l.push(['p_' + r, 'assets/floresta/p_' + r + '.webp']); }
+    l.push(['itens', 'assets/floresta/itens.webp'], ['armas', 'assets/floresta/armas.webp']);
+    let n = 0;
+    await Promise.all(l.map(async ([k, s]) => { img[k] = await carregaImg(s); n++; if (aviso) aviso(n / l.length); }));
+  };
+  D.img = img;
 
-  // ---------- cores ----------
-  const hex = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
-  const mist = (a, b, k) => { const x = hex(a), y = hex(b); return 'rgb(' + x.map((v, i) => Math.round(v + (y[i] - v) * k)).join(',') + ')'; };
-  // mistura a paleta da região onde a câmera está com a vizinha, para a troca ser suave
-  function paleta(px) {
-    const R = F.REGIOES, x = px / T;
-    for (let i = 0; i < R.length; i++) {
-      const r = R[i];
-      if (x >= r.x0 && x < r.x1) {
-        const viz = x > r.x1 - 20 && R[i + 1] ? R[i + 1] : null;
-        const k = viz ? (x - (r.x1 - 20)) / 40 : 0;
-        if (!viz || k <= 0) return { r, k: 0, viz: null };
-        return { r, viz, k };
-      }
-    }
-    return { r: R[R.length - 1], k: 0, viz: null };
+  // ---------- peças ----------
+  const regiao = () => C.REGIOES[F.atual.regiao];
+  function prop(n, x, y, o) { // base no meio de baixo
+    const p = A2.props[n], at = img['p_' + F.atual.regiao]; if (!p || !at) return;
+    o = o || {}; const e = o.e || 1, w = p[2] * e, h = p[3] * e;
+    if (x + w < cam.x - 10 || x - w > cam.x + D.VW + 10) return;
+    if (o.a != null) g.globalAlpha = o.a;
+    if (o.v) { g.save(); g.translate(Math.round(x), 0); g.scale(-1, 1); g.drawImage(at, p[0], p[1], p[2], p[3], Math.round(-w / 2), Math.round(y - h), Math.round(w), Math.round(h)); g.restore(); }
+    else g.drawImage(at, p[0], p[1], p[2], p[3], Math.round(x - w / 2), Math.round(y - h), Math.round(w), Math.round(h));
+    g.globalAlpha = 1;
   }
-  const cor = (p, campo, i) => { const a = i == null ? p.r[campo] : p.r[campo][i]; if (!p.viz) return a; const b = i == null ? p.viz[campo] : p.viz[campo][i]; return mist(a, b, p.k); };
-  const rgb = (c) => (c[0] === '#' ? hex(c) : c.slice(4, -1).split(',').map(Number));
-  const num = (p, campo) => (p.viz ? p.r[campo] + (p.viz[campo] - p.r[campo]) * p.k : p.r[campo]);
-
-  // ---------- terreno pintado por código, em pedaços de 32 blocos ----------
-  const PED = 32, pedacos = [];
-  function pintaPedaco(i) {
-    const x0 = i * PED, w = PED * T, h = F.H * T;
-    const c = tela(w, h), gc = c.getContext('2d');
-    const im = gc.createImageData(w, h), d = im.data;
-    const put = (x, y, rgb, a) => { if (x < 0 || y < 0 || x >= w || y >= h) return; const k = (y * w + x) * 4; d[k] = rgb[0]; d[k + 1] = rgb[1]; d[k + 2] = rgb[2]; d[k + 3] = a == null ? 255 : a; };
-    const fundoT = (tx, ty) => { let n = 0; while (n < 6 && F.tile(tx, ty - n - 1) === 1) n++; return n; };
-    for (let ty = 0; ty < F.H; ty++) for (let lx = 0; lx < PED; lx++) {
-      const tx = x0 + lx, tp = F.tile(tx, ty);
-      if (!tp) continue;
-      const reg = F.regiao(tx * T), CH = reg.chao.map(hex), GR = reg.grama.map(hex);
-      if (tp === 1) {
-        const prof = fundoT(tx, ty); // blocos sólidos acima deste
-        const expostoE = F.tile(tx - 1, ty) !== 1, expostoD = F.tile(tx + 1, ty) !== 1, expostoB = F.tile(tx, ty + 1) !== 1;
-        for (let py = 0; py < T; py++) for (let px = 0; px < T; px++) {
-          const gx = tx * T + px, gy = ty * T + py, n = F.hash(gx, gy), n2 = F.hash(gx >> 2, gy >> 2);
-          const fund = prof * T + py; // distância até a superfície
-          let base = fund < 10 ? CH[0] : fund < 40 ? CH[1] : CH[2];
-          if (fund >= 6 && fund < 12 && n < 0.5) base = CH[1];
-          if (fund >= 34 && fund < 46 && n < 0.5) base = CH[2];
-          let k = 0.88 + n2 * 0.22 + (n < 0.06 ? 0.25 : 0);
-          // pedrinhas
-          if (F.hash(gx >> 3, gy >> 3) < 0.07 && F.hash(gx, gy >> 1) < 0.7) k *= 1.35;
-          // faces expostas escurecem
-          if ((expostoE && px < 2) || (expostoD && px > T - 3) || (expostoB && py > T - 3)) k *= 0.55;
-          let rgb = base.map((v) => Math.min(255, v * k));
-          if (prof === 0 && py < 4) { // grama no topo
-            const gk = py < 2 ? 0 : 1; rgb = GR[gk].map((v) => Math.min(255, v * (0.85 + n * 0.3)));
-          }
-          if (prof === 0 && py === 4 && n < 0.5) rgb = GR[1].map((v) => v * 0.7);
-          put(lx * T + px, ty * T + py, rgb);
-        }
-        if (prof === 0) for (let px = 0; px < T; px++) { // tufos de grama por cima
-          const gx = tx * T + px, alt = Math.floor(F.hash(gx, 7) * 5);
-          for (let k = 1; k <= alt; k++) if (F.hash(gx, k + 9) < 0.75) put(lx * T + px, ty * T - k, GR[k > 2 ? 0 : 1].map((v) => v * (0.9 + k * 0.06)));
-        }
-      } else if (tp === 2) { // plataforma: tábua ou galho
-        const mata = reg.id === 'mata';
-        for (let px = 0; px < T; px++) for (let py = 0; py < 6; py++) {
-          const gx = tx * T + px, n = F.hash(gx, py);
-          let rgb = mata ? [74, 54, 34] : [96, 70, 44];
-          if (py === 0) rgb = rgb.map((v) => v * 1.35); else if (py === 5) rgb = [20, 14, 10];
-          else if (!mata && px % 8 === 0) rgb = [40, 28, 18];
-          put(lx * T + px, ty * T + py, rgb.map((v) => Math.min(255, v * (0.85 + n * 0.3))));
-        }
-        if (mata) for (let px = 0; px < T; px += 3) if (F.hash(tx * T + px, 3) < 0.5) { put(lx * T + px, ty * T - 1, GR[0]); put(lx * T + px + 1, ty * T - 2, GR[1]); }
-        if (!mata && (F.tile(tx - 1, ty) !== 2 || F.tile(tx + 1, ty) !== 2)) for (let py = 6; py < 14; py++) put(lx * T + (F.tile(tx - 1, ty) !== 2 ? 3 : 12), ty * T + py, [50, 36, 24]);
-      } else if (tp === 3) { // espinhos de osso
-        for (let s = 0; s < 4; s++) {
-          const cx = s * 4 + 2, alt = 9 + Math.floor(F.hash(tx * 4 + s, 5) * 6);
-          for (let py = 0; py < alt; py++) {
-            const meia = Math.floor((py / alt) * 2.2);
-            for (let px = -meia; px <= meia; px++) put(lx * T + cx + px, ty * T + T - alt + py, px === -meia ? [200, 190, 170] : [120, 104, 96]);
-          }
-        }
-      }
-    }
-    gc.putImageData(im, 0, 0);
-    return c;
+  const itemEm = (gg, m, x, y, e) => { const p = A2.itens && A2.itens[m]; if (!p || !img.itens) return; gg.drawImage(img.itens, p[0], p[1], p[2], p[3], x, y, p[2] * e, p[3] * e); };
+  D.icone = function (m, tam) { const c = tela(tam || 34, tam || 34), q = c.getContext('2d'); q.imageSmoothingEnabled = false; itemEm(q, m, 0, 0, (tam || 34) / 34); return c; };
+  const tintas = {};
+  function tingida(nome, regiaoId, cor, forca) { // silhueta misturada com a névoa, para as árvores ao longe
+    const k = nome + regiaoId + cor + forca; if (tintas[k]) return tintas[k];
+    const p = A2.props[nome], at = img['p_' + regiaoId]; if (!p || !at) return null;
+    const c = tela(p[2], p[3]), q = c.getContext('2d'); q.drawImage(at, p[0], p[1], p[2], p[3], 0, 0, p[2], p[3]);
+    q.globalCompositeOperation = 'source-atop'; q.globalAlpha = forca; q.fillStyle = 'rgb(' + cor + ')'; q.fillRect(0, 0, p[2], p[3]);
+    return (tintas[k] = c);
   }
-  const pedaco = (i) => pedacos[i] || (pedacos[i] = pintaPedaco(i));
-  D.repintar = () => { pedacos.length = 0; };
-  D.prepintar = async (aviso) => { const n = Math.ceil(F.W / PED); for (let i = 0; i < n; i++) { pedaco(i); if (aviso) aviso((i + 1) / n); await new Promise((ok) => setTimeout(ok, 0)); } };
-  // portão de espinhos da arena: a grade muda, mas o terreno é pintado antes, então ele é desenhado à parte
-  function portao(ox) {
-    const A = F.ARENA, x = A.porta * T;
-    if (x < ox - 20 || x > ox + D.VW + 20) return;
-    for (let ty = 18; ty < A.pisoY; ty++) {
-      if (F.tile(A.porta, ty) !== 1) continue;
-      const y = ty * T;
-      g.fillStyle = '#1a1214'; g.fillRect(x + 2, y, 12, T);
-      g.fillStyle = '#3a2a30'; g.fillRect(x + 4, y, 2, T); g.fillRect(x + 10, y, 2, T);
-      g.fillStyle = '#6a5060'; for (let k = 0; k < 3; k++) { const yy = y + k * 5 + 2; g.fillRect(x, yy, 3, 1); g.fillRect(x + 13, yy + 2, 3, 1); }
-      g.fillStyle = 'rgba(160,120,255,' + (0.25 + 0.2 * Math.sin(tempo * 4 + ty)) + ')'; g.fillRect(x + 7, y, 2, T);
-    }
-  }
+  const silh = {};
+  function silhueta(im, cor, k) { const n = k + cor; if (silh[n]) return silh[n]; const c = tela(im.width, im.height), q = c.getContext('2d'); q.drawImage(im, 0, 0); q.globalCompositeOperation = 'source-in'; q.fillStyle = cor; q.fillRect(0, 0, c.width, c.height); return (silh[n] = c); }
+  // desenhos que se repetem todo quadro ficam prontos
+  const prontos = new Map();
+  function guarda(k, w, h, f) { let c = prontos.get(k); if (!c) { c = tela(w, h); f(c.getContext('2d'), w, h); if (prontos.size > 90) prontos.clear(); prontos.set(k, c); } return c; }
+  const mancha = (cor) => guarda('m' + cor, 64, 64, (q) => { const gr = q.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(' + cor + ',1)'); gr.addColorStop(1, 'rgba(' + cor + ',0)'); q.fillStyle = gr; q.fillRect(0, 0, 64, 64); });
+  const hash = (n) => { let k = (n * 374761393) | 0; k = Math.imul(k ^ (k >>> 13), 1274126177); return ((k ^ (k >>> 16)) >>> 0) / 4294967296; };
 
   // ---------- fundo ----------
-  function ceu(p) {
-    const gr = g.createLinearGradient(0, 0, 0, D.VH);
-    gr.addColorStop(0, cor(p, 'ceu', 0)); gr.addColorStop(0.55, cor(p, 'ceu', 1)); gr.addColorStop(1, cor(p, 'ceu', 2));
-    g.fillStyle = gr; g.fillRect(0, 0, D.VW, D.VH);
-    // estrelas
-    for (let i = 0; i < 60; i++) {
-      const x = ((F.hash(i, 1) * 900 - cam.x * 0.02) % D.VW + D.VW) % D.VW, y = F.hash(i, 2) * D.VH * 0.55;
-      g.fillStyle = 'rgba(230,225,255,' + (0.25 + 0.5 * Math.abs(Math.sin(tempo * (0.5 + F.hash(i, 3)) + i))) + ')';
-      g.fillRect(x | 0, y | 0, 1, 1);
+  function fundo() {
+    const R = regiao(), im = img['f_' + F.atual.regiao], VW = D.VW, VH = D.VH;
+    g.fillStyle = 'rgb(' + R.nevoa + ')'; g.fillRect(0, 0, VW, VH);
+    if (im) {
+      const esc = Math.max(1, (VH + 40) / 384), w = Math.round(688 * esc), h = Math.round(384 * esc);
+      const off = cam.x * 0.14, i0 = Math.floor(off / w);
+      const yy = Math.round(-((h - VH) * 0.5) - (cam.y - 180) * 0.05); const y = Math.max(VH - h, Math.min(0, yy));
+      for (let i = i0; i <= i0 + Math.ceil(VW / w) + 1; i++) {
+        const x = Math.round(i * w - off);
+        if (x > VW || x + w < 0) continue;
+        if (i & 1) { g.save(); g.translate(x + w, 0); g.scale(-1, 1); g.drawImage(im, 0, y, w, h); g.restore(); } else g.drawImage(im, x, y, w, h);
+      }
     }
-    // lua
-    const lx = D.VW * 0.74 - cam.x * 0.015, ly = 46 - cam.y * 0.02;
-    const gl2 = g.createRadialGradient(lx, ly, 4, lx, ly, 70);
-    gl2.addColorStop(0, 'rgba(255,240,220,0.35)'); gl2.addColorStop(1, 'rgba(255,240,220,0)');
-    g.fillStyle = gl2; g.fillRect(lx - 70, ly - 70, 140, 140);
-    g.fillStyle = p.r.lua ? '#f0d6c8' : '#e8e4d4'; g.beginPath(); g.arc(lx, ly, 15, 0, 7); g.fill();
-    g.fillStyle = 'rgba(0,0,0,0.12)'; g.beginPath(); g.arc(lx - 4, ly - 3, 4, 0, 7); g.arc(lx + 5, ly + 4, 3, 0, 7); g.fill();
+    raios(R);
+    camadaArvores(0.34, 0.6, 150, 0.5, 11);
+    nevoa(R, 0.34);
+    camadaArvores(0.58, 0.34, 210, 0.85, 29);
+    nevoa(R, 0.2);
   }
-  function serra(p, fator, base, alt, corS, sem) {
-    g.fillStyle = corS; g.beginPath(); g.moveTo(0, D.VH);
-    for (let x = 0; x <= D.VW + 4; x += 4) {
-      const wx = x + cam.x * fator;
-      const y = base - cam.y * fator * 0.5 + Math.sin(wx * 0.006 + sem) * alt * 0.5 + Math.sin(wx * 0.017 + sem * 2) * alt * 0.3 + (F.hash((wx / 12) | 0, sem) - 0.5) * alt * 0.12;
-      g.lineTo(x, y);
-    }
-    g.lineTo(D.VW, D.VH); g.fill();
-  }
-  const silCache = {};
-  function arvoresLonge(p, fator, passo, esc, corS, sem) {
-    const base = cam.x * fator, i0 = Math.floor(base / passo) - 2;
-    for (let i = i0; i < i0 + D.VW / passo + 5; i++) {
-      const wx = (i * passo) / fator, reg = F.regiao(Math.max(0, wx));
-      const lista = { ermo: ['st19', 'cz19', 'st22'], campos: ['arv_campos0', 'cp24', 'arv_campos1'], mata: ['arv_mata0', 'mt1', 'mt4', 'arv_mata1'], clareira: ['arv_cinzas0', 'st19', 'cz19'] }[reg.id];
-      if (F.hash(i, sem) < (reg.id === 'mata' ? 0.05 : 0.35)) continue;
-      const nome = lista[Math.floor(F.hash(i, sem + 1) * lista.length)];
-      const x = i * passo - base + F.hash(i, sem + 2) * passo * 0.6;
-      const y = D.VH * 0.78 - cam.y * fator * 0.6 + F.hash(i, sem + 3) * 10;
-      S.desenha(g, nome, 0, x, y, F.hash(i, sem + 4) < 0.5, { esc: esc * (0.8 + F.hash(i, sem + 5) * 0.4), tinta: corS, tintaA: 1 });
+  function camadaArvores(par, forca, passo, esc, sem) {
+    const R = regiao(), off = cam.x * par, i0 = Math.floor(off / passo) - 2;
+    for (let i = i0; i < i0 + Math.ceil(D.VW / passo) + 4; i++) {
+      const r1 = hash(i * 7 + sem), r2 = hash(i * 13 + sem), seca = ['zumbis', 'goblins', 'lobos'].includes(F.atual.regiao);
+      if (r1 < (seca ? 0.5 : 0.12)) continue;
+      const nome = r2 < 0.5 && !seca ? 'arvorao' : 'arvore';
+      const t = tingida(nome, F.atual.regiao, R.nevoa, forca); if (!t) continue;
+      const e = esc * (0.85 + r1 * 0.5) * (nome === 'arvore' ? 1.35 : 1), w = Math.round(t.width * e), h = Math.round(t.height * e);
+      const x = Math.round(i * passo - off + r2 * 90), y = Math.round(D.VH * 0.94 - (cam.y - 190) * par * 0.3);
+      if (r2 * 7 % 1 < 0.5) { g.save(); g.translate(x, 0); g.scale(-1, 1); g.drawImage(t, -w / 2, y - h, w, h); g.restore(); } else g.drawImage(t, x - w / 2, y - h, w, h);
     }
   }
-  function nevoa(p, y0, alfa) {
-    const gr = g.createLinearGradient(0, y0 - 50, 0, y0 + 40);
-    const c = rgb(cor(p, 'nevoa'));
-    gr.addColorStop(0, 'rgba(' + c + ',0)'); gr.addColorStop(0.6, 'rgba(' + c + ',' + alfa + ')'); gr.addColorStop(1, 'rgba(' + c + ',' + alfa * 0.6 + ')');
-    g.fillStyle = gr; g.fillRect(0, y0 - 50, D.VW, D.VH - y0 + 50);
+  function nevoa(R, a) {
+    g.drawImage(guarda('nev' + R.nevoa + a, 2, 128, (q, w, h) => { const gr = q.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(' + R.nevoa + ',0)'); gr.addColorStop(0.7, 'rgba(' + R.nevoa + ',' + a + ')'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',' + a * 0.7 + ')'); q.fillStyle = gr; q.fillRect(0, 0, w, h); }), 0, D.VH * 0.3, D.VW, D.VH * 0.7);
+  }
+  function raios(R) {
+    g.save(); g.globalCompositeOperation = 'lighter';
+    const off = cam.x * 0.2;
+    for (let i = 0; i < 5; i++) {
+      const x = ((i * 190 - off) % (D.VW + 300) + D.VW + 300) % (D.VW + 300) - 150, a = 0.05 + 0.035 * Math.sin(tempo * 0.5 + i * 1.7), w = 26 + i * 9;
+      g.globalAlpha = a * 2; g.setTransform(1, 0, -0.42, 1, x, 0);
+      g.drawImage(guarda('raio' + R.nevoa, 32, 160, (q, rw, rh) => { const gr = q.createLinearGradient(0, 0, 0, rh); gr.addColorStop(0, 'rgba(' + R.nevoa + ',1)'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',0)'); q.fillStyle = gr; q.fillRect(4, 0, rw - 8, rh); q.globalAlpha = 0.5; q.fillRect(0, 0, rw, rh); }), 0, 0, w, D.VH * 0.85); g.setTransform(1, 0, 0, 1, 0, 0);
+    }
+    g.restore();
   }
 
-  // ---------- gente ----------
-  const ANDA = 'h_anda', GOLPE = 'h_golpe';
-  function desenhaHeroi(h) {
-    const info = S.info(ANDA); if (!info) return;
-    const gi = S.info(GOLPE);
-    let nome = ANDA, q = 0, o = { sx: 1, sy: 1 }, x = h.x, y = h.y;
-    const vir = h.dir < 0;
+  // ---------- terra, em pedaços guardados ----------
+  const PED = 32; let pedacos = new Map(), areaPed = null;
+  function pintaPedaco(i) {
+    const c = tela(PED * T, F.H * T), q = c.getContext('2d'); q.imageSmoothingEnabled = false;
+    const at = img['p_' + F.atual.regiao], p = A2.props.chao, R = regiao(); if (!at) return c;
+    const x0 = i * PED, LARG = 560, SUP = 27; // SUP: altura da linha do chão dentro da peça
+    const solido = (tx, ty) => F.tile(tx, ty) === 1;
+    for (let lx = 0; lx < PED; lx++) {
+      const tx = x0 + lx; if (tx >= F.W) break;
+      let prof = -1;
+      for (let ty = 0; ty < F.H; ty++) {
+        if (!solido(tx, ty)) { prof = -1; continue; }
+        prof = prof < 0 ? (ty === 0 || solido(tx, ty - 1) ? 6 : 0) : prof + 1;
+        const x = lx * T, y = ty * T, sx = p[0] + ((tx * T) % LARG), k = prof & 3, linha = k === 0 ? 0 : k === 1 ? 1 : k === 2 ? 1 : 0;
+        const sy = p[1] + 48 + linha * 18;
+        if (k >= 2) { q.save(); q.translate(0, y + T); q.scale(1, -1); q.drawImage(at, sx, sy, T, T, x, 0, T, T); q.restore(); } else q.drawImage(at, sx, sy, T, T, x, y, T, T);
+        q.fillStyle = 'rgba(' + R.terra.map((v) => Math.round(v * 0.35)).join(',') + ',' + Math.min(0.94, 0.1 + prof * 0.11) + ')'; q.fillRect(x, y, T, T);
+        // paredes: luz fraca na quina
+        if (!solido(tx - 1, ty) && tx > 0) { q.fillStyle = 'rgba(0,0,0,0.55)'; q.fillRect(x, y, 2, T); q.fillStyle = 'rgba(' + R.nevoa + ',0.16)'; q.fillRect(x + 2, y, 1, T); }
+        if (!solido(tx + 1, ty)) { q.fillStyle = 'rgba(0,0,0,0.6)'; q.fillRect(x + T - 2, y, 2, T); q.fillStyle = 'rgba(' + R.nevoa + ',0.08)'; q.fillRect(x + T - 3, y, 1, T); }
+      }
+    }
+    // capim por cima de toda superfície
+    for (let lx = -1; lx <= PED; lx++) {
+      const tx = x0 + lx; if (tx < 0 || tx >= F.W) continue;
+      for (let ty = 1; ty < F.H; ty++) {
+        if (solido(tx, ty) && !solido(tx, ty - 1) && F.tile(tx, ty - 1) !== 3) {
+          const sx = p[0] + ((tx * T) % LARG);
+          q.drawImage(at, sx, p[1], T, 46, lx * T, ty * T - SUP, T, 46);
+          if (!solido(tx - 1, ty)) q.drawImage(at, sx, p[1] + 14, 6, 30, lx * T - 4, ty * T - SUP + 15, 5, 26);
+          if (!solido(tx + 1, ty)) q.drawImage(at, sx, p[1] + 14, 6, 30, lx * T + T - 1, ty * T - SUP + 15, 5, 26);
+        }
+      }
+    }
+    // galhos para pisar
+    const po = A2.props.ponte;
+    for (let ty = 0; ty < F.H; ty++) for (let lx = -8; lx < PED; lx++) {
+      const tx = x0 + lx; if (tx < 0 || F.tile(tx, ty) !== 2 || F.tile(tx - 1, ty) === 2) continue;
+      let n = 1; while (F.tile(tx + n, ty) === 2) n++;
+      const w = n * T + 10, m = Math.min(po[2] / 2, Math.ceil(w / 2)), x = lx * T - 5, y = ty * T - 5;
+      q.drawImage(at, po[0], po[1], m, po[3], x, y, m, po[3]);
+      q.drawImage(at, po[0] + po[2] - m, po[1], m, po[3], x + w - m, y, m, po[3]);
+    }
+    // espinhos: raízes pontudas
+    for (let ty = 0; ty < F.H; ty++) for (let lx = 0; lx < PED; lx++) {
+      const tx = x0 + lx; if (F.tile(tx, ty) !== 3) continue;
+      for (let k = 0; k < 3; k++) {
+        const r = hash(tx * 31 + k * 7), bx = lx * T + 2 + k * 5, alt = 12 + r * 14, incl = (hash(tx * 17 + k) - 0.5) * 8, by = ty * T + T + 3;
+        q.fillStyle = '#0c0a0a'; q.beginPath(); q.moveTo(bx - 3, by); q.lineTo(bx + incl, by - alt - 1); q.lineTo(bx + 4, by); q.fill();
+        q.fillStyle = 'rgb(' + R.terra.map((v) => v + 34).join(',') + ')'; q.beginPath(); q.moveTo(bx - 2, by); q.lineTo(bx + incl, by - alt); q.lineTo(bx + 1, by); q.fill();
+        q.fillStyle = 'rgba(' + R.nevoa + ',0.7)'; q.fillRect(Math.round(bx + incl), Math.round(by - alt), 1, 3);
+      }
+    }
+    return c;
+  }
+  function pedaco(i) {
+    if (areaPed !== F.atual.id) { pedacos = new Map(); areaPed = F.atual.id; }
+    let c = pedacos.get(i);
+    if (!c) { c = pintaPedaco(i); if (pedacos.size > 8) pedacos.delete(pedacos.keys().next().value); pedacos.set(i, c); }
+    return c;
+  }
+  D.repintar = () => { areaPed = null; };
+
+  // ---------- herói ----------
+  // mão da frente em cada quadro: x, y, ângulo da arma (graus, 0 = para a frente), 1 = arma atrás do corpo
+  const MAO = {
+    parado: [[60, 54, 62], [60, 54, 62], [60, 54, 62], [60, 54, 62]],
+    correr: [[65, 47, -62], [68, 38, -70], [68, 36, -74], [67, 43, -66], [62, 47, -60], [69, 40, -66], [71, 36, -74], [70, 42, -68]],
+    golpe1: [[28, 33, -150, 1], [26, 28, -135, 1], [78, 38, 4], [69, 41, 28]],
+    golpe2: [[31, 51, 150, 1], [36, 18, -58], [33, 20, -110]],
+    golpe3: [[27, 21, -140, 1], [26, 18, -125, 1], [68, 81, 12], [74, 81, 8]],
+    pulo: [[68, 51, -30], [63, 21, -70], [66, 25, -62], [66, 33, -50], [57, 39, -30], [31, 50, 160, 1]],
+    cima: [[32, 53, 140, 1], [58, 18, -84], [63, 28, -50]],
+    baixo: [[57, 64, 88]], dor: [[56, 45, 70], [56, 45, 70], [55, 45, 70]],
+  };
+  const PE = 85;
+  // qual pose mostrar agora
+  function pose(h) {
+    const k = h.dur ? h.t / h.dur : 0;
     switch (h.estado) {
-      case 'golpe': case 'forte': {
-        nome = GOLPE; const k = Math.min(0.999, h.t / h.dur);
-        q = Math.floor(k * gi.n);
-        if (h.dirGolpe === 'baixo') o.rot = 0.7 * h.dir;
-        if (h.dirGolpe === 'cima') o.rot = -0.45 * h.dir;
-        break;
-      }
-      case 'carga': nome = GOLPE; q = 1; x += (Math.random() - 0.5) * (h.cheia ? 2 : 1); if (h.cheia || (tempo * 10 | 0) % 2) { o.tinta = '#ffe2a0'; o.tintaA = h.cheia ? 0.35 : 0.15; } break;
-      case 'magia': nome = GOLPE; q = Math.min(gi.n - 1, 1 + Math.floor(h.t / 0.18)); o.tinta = window.Heroi.MAGIAS[h.magia].cor; o.tintaA = 0.3 * (1 - h.t / h.dur); break;
-      case 'rola': {
-        const k = h.t / 0.34;
-        if (h.noAr) { q = 3; o.sx = 1.18; o.sy = 0.9; o.rot = 0.25 * h.dir; }
-        else { q = 0; o.rot = k * Math.PI * 2 * h.dir; o.esc = 0.78; y -= 2; }
-        break;
-      }
-      case 'dor': q = 0; o.branco = h.t < 0.1 ? 0.8 : 0; o.rot = -0.25 * h.dir; break;
-      case 'morto': q = 0; o.rot = -Math.min(1, h.t / 0.4) * (Math.PI / 2) * h.dir; o.alpha = Math.max(0.2, 1 - h.t / 3); break;
-      case 'acorda': { // sai da cova
-        const k = Math.min(1, h.t / 1.4); y += (1 - k) * 30; o.alpha = k; break;
-      }
-      default:
-        if (!h.noChao) { q = h.vy < -60 ? 1 : h.vy > 80 ? 4 : 2; const st = Math.min(0.14, Math.abs(h.vy) / 3500); o.sy = 1 + st; o.sx = 1 - st * 0.7; }
-        else if (Math.abs(h.vx) > 12) { h.andou += Math.abs(h.vx) / 60; q = Math.floor(h.andou / 7) % info.n; }
-        else { q = 0; o.sy = 1 + Math.sin(tempo * 2.4) * 0.012; }
+      case 'nasce': return ['nascer', Math.min(5, h.nq || 0)];
+      case 'morto': return ['morte', Math.min(5, Math.floor(h.t * 6))];
+      case 'dor': return ['dor', Math.min(2, Math.floor(h.t * 10))];
+      case 'colhe': return ['colher', Math.min(3, Math.floor(h.t * 10))];
+      case 'come': return ['magia', h.t < 0.3 ? 0 : 3];
+      case 'rola': return h.noAr ? ['rola', 0] : ['rola', Math.min(5, Math.floor((h.t / 0.42) * 6))];
+      case 'carga': return ['golpe1', h.t < 0.12 ? 0 : 1];
+      case 'forte': return ['golpe3', k < 0.14 ? 0 : k < 0.28 ? 1 : k < 0.75 ? 2 : 3];
+      case 'mira': return ['arco', h.t < 0.1 ? 0 : h.t < 0.3 ? 1 : 2];
+      case 'soltou': return ['arco', 3];
+      case 'magia': return ['magia', k < 0.22 ? 0 : k < 0.48 ? 1 : k < 0.75 ? 2 : 3];
+      case 'golpe':
+        if (h.dirGolpe === 'cima') return ['cima', k < 0.22 ? 0 : k < 0.7 ? 1 : 2];
+        if (h.dirGolpe === 'baixo') return ['baixo', 0];
+        if (h.combo === 2) return ['golpe2', k < 0.24 ? 0 : k < 0.72 ? 1 : 2];
+        if (h.combo === 3) return ['golpe3', k < 0.18 ? 0 : k < 0.32 ? 1 : k < 0.78 ? 2 : 3];
+        return ['golpe1', k < 0.1 ? 0 : k < 0.24 ? 1 : k < 0.72 ? 2 : 3];
     }
-    if (h.amassa > 0) { o.sy *= 1 - h.amassa * 0.16; o.sx *= 1 + h.amassa * 0.14; }
-    if (h.estado === 'beber') { q = 0; }
-    if (h.inv > 0 && h.estado !== 'rola' && h.estado !== 'dor' && h.estado !== 'morto' && (tempo * 16 | 0) % 2) o.alpha = 0.45;
-    // sombra no chão
-    sombra(h.x, h.y, 10);
-    // aura da guarda
-    if (h.guarda > 0) { o.tinta = '#9fc4e0'; o.tintaA = 0.25 + Math.sin(tempo * 12) * 0.12; }
-    if (h.estado === 'magia' || h.estado === 'carga') circuloMagico(h.x, h.y, h.estado === 'carga' ? (h.cheia ? '#ffe2a0' : '#c9a45a') : window.Heroi.MAGIAS[h.magia].cor, h.estado === 'carga' ? Math.min(1, h.carga / 0.9) : 1 - h.t / h.dur);
-    faixa(h, nome, q, x, y, vir, o, false);
-    S.desenha(g, nome, q, x, y, vir, o);
-    faixa(h, nome, q, x, y, vir, o, true);
-    if (h.estado === 'beber') S.desenha(g, 'cabaca', 0, h.x + h.dir * 6, h.y - 20 - Math.min(1, h.t * 3) * 6, vir, { esc: 0.4 });
-    if (h.guarda > 0) { g.strokeStyle = 'rgba(180,220,255,' + (0.35 + Math.sin(tempo * 9) * 0.15) + ')'; g.lineWidth = 1; g.beginPath(); for (let i = 0; i <= 6; i++) { const a = (i / 6) * Math.PI * 2 + tempo; g.lineTo(h.x + Math.cos(a) * 20, h.y - 16 + Math.sin(a) * 22); } g.stroke(); }
+    if (!h.noChao) return ['pulo', h.vy < -420 ? 1 : h.vy < -170 ? 2 : h.vy < 130 ? 3 : h.vy < 380 ? 4 : 5];
+    if (h.amassa > 0.45 && Math.abs(h.vx) < 60) return ['pulo', 0];
+    if (Math.abs(h.vx) > 16) return ['correr', Math.floor(h.andou / 13.5) % 8];
+    const c = tempo % 4; return ['parado', c < 1.4 ? 0 : c < 2.1 ? 1 : c < 3.2 ? 3 : 1];
+  }
+  function quadroHeroi(q, roupa, anim, n, x, y, o) {
+    const im = img['h_' + roupa] || img.h_barro, a = B.anims[anim]; if (!im || !a) return;
+    const k = a[0] + Math.min(a[1] - 1, n), sx = (k % B.cols) * B.q, sy = Math.floor(k / B.cols) * B.q;
+    q.save(); q.translate(Math.round(x), Math.round(y)); q.scale((o && o.dir) || 1, 1);
+    if (o && o.sx) q.scale(o.sx, o.sy);
+    const arma = o && o.arma, m = arma && MAO[anim] && MAO[anim][Math.min(MAO[anim].length - 1, n)];
+    const poeArma = () => { const p = A2.armas && A2.armas[arma]; if (!p) return; q.save(); q.translate(m[0] - 50, m[1] - PE); q.rotate(((m[2] + (o.giro || 0)) * Math.PI) / 180); const pega = arma === 'lanca' ? 18 : arma === 'machado' || arma === 'machado_ferro' ? 8 : 5; q.drawImage(img.armas, p[0], p[1], p[2], p[3], -pega, -Math.round(arma === 'machado' || arma === 'machado_ferro' ? p[3] * 0.4 : p[3] / 2), p[2], p[3]); q.restore(); };
+    if (m && m[3]) poeArma();
+    q.drawImage((o && o.sil ? silhueta(im, o.sil, 'h' + roupa) : im), sx, sy, B.q, B.q, -50, -PE, B.q, B.q);
+    if (m && !m[3]) poeArma();
+    if (o && o.branco) { q.globalAlpha = o.branco; q.drawImage(silhueta(im, '#ffffff', 'h' + roupa), sx, sy, B.q, B.q, -50, -PE, B.q, B.q); }
+    q.restore();
+  }
+  D.quadroHeroi = quadroHeroi;
+  function desenhaHeroi(h) {
+    const [anim, n] = pose(h); h.anim = anim; h.quadro = n;
+    let sx = 1, sy = 1;
+    if (h.estado === 'livre') { if (h.amassa > 0) { sx = 1 + h.amassa * 0.1; sy = 1 - h.amassa * 0.12; } else if (!h.noChao && h.vy < -300) { sx = 0.96; sy = 1.05; } }
+    const treme = h.estado === 'carga' ? (Math.random() - 0.5) * (h.cheia ? 2 : 1) : 0;
+    if (h.estado !== 'morto') sombra(h.x, h.y, 14);
+    const arma = ['golpe', 'forte', 'carga', 'livre', 'dor'].includes(h.estado) && !h.ficha.arma.tiro && J.save.arma !== 'punho' ? J.save.arma : null;
+    const k = h.dur ? h.t / h.dur : 0;
+    let giro = 0; // a arma acompanha o arco do golpe
+    if (h.estado === 'golpe' && h.dirGolpe === 'frente' && !h.ficha.arma.estoca) { if (h.combo === 1 && k > 0.24) giro = -70 + Math.min(1, (k - 0.24) / 0.25) * 90; if (h.combo === 2 && k > 0.24) giro = 70 - Math.min(1, (k - 0.24) / 0.25) * 90; }
+    const pisca = h.inv > 0 && h.estado !== 'dor' && h.estado !== 'rola' && Math.floor(h.inv * 18) % 2 === 0;
+    if (pisca) g.globalAlpha = 0.45;
+    if (h.vento > 0) { g.globalAlpha *= 0.9; }
+    quadroHeroi(g, J.save.roupa, anim, n, h.x + treme, h.y + 1 + (h.degrau > 0 ? h.degrau * 60 : 0), { dir: h.dir, sx, sy, arma, giro, branco: h.estado === 'dor' && h.t < 0.1 ? 0.8 : h.cheia ? 0.15 + 0.15 * Math.sin(tempo * 30) : 0 });
+    g.globalAlpha = 1;
+    if (h.veneno > 0) { g.globalAlpha = 0.25 + 0.15 * Math.sin(tempo * 8); quadroHeroi(g, J.save.roupa, anim, n, h.x, h.y + 1, { dir: h.dir, sil: '#8ac030' }); g.globalAlpha = 1; }
     if (h.estado === 'golpe' || h.estado === 'forte') arco(h);
+    if (h.estado === 'mira') { const k2 = Math.min(1, h.t / 0.8); g.fillStyle = h.cheia ? '#ffe2a0' : '#c9bfa2'; g.fillRect(h.x - 12, h.y - 74, 24 * k2, 2); flecha(h.x + h.dir * 14, h.y - 41, h.dir > 0 ? (J.ent.cima ? -0.55 : J.ent.baixo ? 0.35 : 0) : Math.PI + (J.ent.cima ? 0.55 : J.ent.baixo ? -0.35 : 0)); }
+    if (J.save.magias.length && h.estado === 'magia') brilhos.push([h.x + h.dir * 14, h.y - 40, 60, '255,170,80', 0.7]);
   }
-  // a faixa de brasa: pano que nasce no pescoço e segue o movimento (física de corrente)
-  function faixa(h, nome, q, x, y, vir, o, frente) {
-    const e = S.info(nome); if (!e || !e.cabeca) return;
-    const N = 9, SEG = 3.2;
-    let ax, ay;
-    if (o.rot || h.estado === 'morto' || h.estado === 'acorda') { ax = x; ay = y - 18; }
-    else {
-      const c = e.cabeca[((q | 0) % e.n + e.n) % e.n], sx = o.sx || 1, sy = o.sy || 1;
-      const hx = vir ? e.w - 1 - c.x : c.x;
-      ax = Math.round(x - (e.w * sx) / 2) + hx * sx - h.dir * 4.5; ay = Math.round(y - e.h * sy + e.fundo * sy) + (c.y + 12) * sy;
-    }
-    let F2 = D.faixa;
-    if (!F2 || Math.abs(F2[0].x - ax) > 60) { F2 = D.faixa = []; for (let i = 0; i < N; i++) F2.push({ x: ax - h.dir * i * SEG, y: ay + i, px: ax - h.dir * i * SEG, py: ay + i }); }
-    if (!frente) {
-      // passo da física uma vez por quadro (na chamada de trás)
-      F2[0].x = ax; F2[0].y = ay; F2[0].px = ax; F2[0].py = ay;
-      const vento = Math.sin(tempo * 2.3) * 0.25 + Math.sin(tempo * 5.1) * 0.12;
-      for (let i = 1; i < N; i++) {
-        const p = F2[i], vx = (p.x - p.px) * 0.9, vy = (p.y - p.py) * 0.9;
-        p.px = p.x; p.py = p.y;
-        p.x += vx - h.dir * 0.05 + vento * (i / N); p.y += vy + 0.32;
-      }
-      for (let k = 0; k < 3; k++) for (let i = 1; i < N; i++) {
-        const a = F2[i - 1], b = F2[i], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1, dif = (d - SEG) / d;
-        if (i === 1) { b.x -= dx * dif; b.y -= dy * dif; } else { a.x += dx * dif * 0.5; a.y += dy * dif * 0.5; b.x -= dx * dif * 0.5; b.y -= dy * dif * 0.5; }
-      }
-      // o pano não entra no chão
-      for (let i = 1; i < N; i++) if (J.solido(F2[i].x, F2[i].y)) F2[i].y = Math.floor(F2[i].y / T) * T - 0.5;
-    }
-    const corF = h.ficha.cor, al = o.alpha == null ? 1 : o.alpha;
-    if (!frente) {
-      g.globalAlpha = al;
-      g.lineCap = 'round';
-      for (const [cor2, extra] of [['#0a0608', 1.6], [corF, 0]]) {
-        g.strokeStyle = cor2;
-        for (let i = 1; i < N; i++) { g.lineWidth = 3.2 - (i / N) * 2 + extra; g.beginPath(); g.moveTo(F2[i - 1].x, F2[i - 1].y); g.lineTo(F2[i].x, F2[i].y); g.stroke(); }
-      }
-      // dobra de luz no pano
-      g.strokeStyle = 'rgba(255,230,200,0.35)'; g.lineWidth = 0.8;
-      g.beginPath(); for (let i = 1; i < 4; i++) { g.moveTo(F2[i - 1].x, F2[i - 1].y - 0.8); g.lineTo(F2[i].x, F2[i].y - 0.8); } g.stroke();
-      g.globalAlpha = 1;
-    } else {
-      // ponta em brasa, brilhando
-      g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = al * (0.6 + 0.3 * Math.sin(tempo * 9));
-      const ult = F2[N - 1], pen = F2[N - 2];
-      g.fillStyle = '#ffb050'; g.fillRect(Math.round(ult.x) - 1, Math.round(ult.y) - 1, 2, 2); g.fillRect(Math.round(pen.x), Math.round(pen.y), 1, 1);
-      g.restore();
-      if (Math.random() < 0.06) J.fx.push({ tipo: 'brasa', x: ult.x, y: ult.y, vx: -h.dir * 10, vy: -20, vida: 0.5, max: 0.5, cor: '#ffb050', tam: 1, grav: 0 });
-    }
-  }
-  // o arco do golpe: um crescente de luz que acompanha a lâmina
   function arco(h) {
-    const k = h.t / h.dur; if (k < 0.12 || k > 0.75) return;
-    const a = h.ficha.arma, forte = h.estado === 'forte', p = (k - 0.12) / 0.63;
-    const cx = h.x, cy = h.y - h.h / 2 - 2, R = (a.alcance + (forte ? 14 : 4)) * 0.95;
-    const corA = forte || h.investida ? '#ffe2a0' : h.combo === 3 ? '#fff1c8' : '#ffffff', corB = forte ? '#ff9a40' : h.ficha.cor;
-    g.save();
-    g.globalCompositeOperation = 'lighter';
-    if (h.ficha.arma.estoca && h.dirGolpe === 'frente' && !forte) { // estocada
-      const len = R * (0.5 + p * 0.8), y = cy + 2;
-      const gr = g.createLinearGradient(cx, y, cx + h.dir * len, y);
-      gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, corA);
-      g.globalAlpha = 1 - p * 0.7; g.fillStyle = gr; g.fillRect(Math.min(cx, cx + h.dir * len), y - 1.5, len, 3);
-      g.fillStyle = corB; g.globalAlpha = (1 - p) * 0.5; g.fillRect(Math.min(cx, cx + h.dir * len), y - 3, len, 1); g.fillRect(Math.min(cx, cx + h.dir * len), y + 2, len, 1);
+    const k = h.t / h.dur; if (k < 0.16 || k > 0.8) return;
+    const a = h.ficha.arma, forte = h.estado === 'forte', p = (k - 0.16) / 0.64;
+    const cx = h.x + h.dir * 4, cy = h.y - 36, R = (a.alcance + (forte ? 14 : h.combo === 3 ? 8 : 2)) * 0.96;
+    const punho = J.save.arma === 'punho';
+    const corA = forte || h.investida ? '#ffe2a0' : h.combo === 3 ? '#fff1c8' : '#f4f8ff', corB = forte ? '#ff8a30' : punho ? '#ff7a3a' : h.combo === 3 ? '#ffb060' : '#9fc8d8';
+    g.save(); g.globalCompositeOperation = 'lighter';
+    if ((a.estoca || (punho && h.combo < 3)) && h.dirGolpe === 'frente' && !forte) {
+      const len = R * (0.55 + p * 0.75), y = cy + (punho ? -8 : 2), x1 = cx + h.dir * len;
+      const gr = g.createLinearGradient(cx, y, x1, y); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, corA);
+      g.globalAlpha = 1 - p * 0.8; g.fillStyle = gr; g.beginPath(); g.moveTo(cx, y - 1); g.lineTo(x1 - h.dir * 8, y - 4); g.lineTo(x1, y); g.lineTo(x1 - h.dir * 8, y + 4); g.lineTo(cx, y + 1); g.fill();
+      g.fillStyle = corB; g.globalAlpha = (1 - p) * 0.6; g.fillRect(Math.min(cx, x1), y - 6, len, 1); g.fillRect(Math.min(cx, x1), y + 5, len, 1);
+      if (punho) { g.globalAlpha = 1 - p; g.strokeStyle = corB; g.beginPath(); g.arc(x1, y, 4 + p * 8, 0, 7); g.stroke(); }
       g.restore(); return;
     }
     let a0, a1;
-    if (h.dirGolpe === 'cima') { a0 = Math.PI * 1.05; a1 = Math.PI * 1.95; }
-    else if (h.dirGolpe === 'baixo') { a0 = Math.PI * 0.05; a1 = Math.PI * 0.95; }
-    else { a0 = -Math.PI * 0.62; a1 = Math.PI * 0.38; if (h.combo === 2) { const t2 = a0; a0 = a1; a1 = t2; } }
-    if (h.dir < 0 && h.dirGolpe === 'frente') { a0 = Math.PI - a0; a1 = Math.PI - a1; }
-    const ponta = a0 + (a1 - a0) * Math.min(1, p * 1.6), cauda = a0 + (a1 - a0) * Math.max(0, p * 1.6 - 0.75);
-    const n = 14, esp = forte ? 9 : h.combo === 3 ? 7 : 5;
-    g.globalAlpha = 1 - p * 0.6;
-    g.beginPath();
-    for (let i = 0; i <= n; i++) { const t = cauda + (ponta - cauda) * (i / n); g.lineTo(cx + Math.cos(t) * R, cy + Math.sin(t) * R); }
-    for (let i = n; i >= 0; i--) { const t = cauda + (ponta - cauda) * (i / n), e = esp * Math.sin((i / n) * Math.PI * 0.5 + 0.2); g.lineTo(cx + Math.cos(t) * (R - e), cy + Math.sin(t) * (R - e)); }
-    g.fillStyle = corB; g.fill();
-    g.beginPath();
-    for (let i = 0; i <= n; i++) { const t = cauda + (ponta - cauda) * (i / n); g.lineTo(cx + Math.cos(t) * R, cy + Math.sin(t) * R); }
-    for (let i = n; i >= 0; i--) { const t = cauda + (ponta - cauda) * (i / n), e = esp * 0.45 * (i / n); g.lineTo(cx + Math.cos(t) * (R - e), cy + Math.sin(t) * (R - e)); }
-    g.fillStyle = corA; g.fill();
+    if (h.dirGolpe === 'cima') { a0 = Math.PI * 1.02; a1 = Math.PI * 1.98; }
+    else if (h.dirGolpe === 'baixo') { a0 = Math.PI * 0.02; a1 = Math.PI * 0.98; }
+    else { a0 = -Math.PI * 0.72; a1 = Math.PI * 0.42; if (h.combo === 2 && !forte) { const t2 = a0; a0 = a1 * 0.9; a1 = t2; } }
+    if (h.dir < 0) { a0 = Math.PI - a0; a1 = Math.PI - a1; }
+    const ponta = a0 + (a1 - a0) * Math.min(1, p * 1.7), cauda = a0 + (a1 - a0) * Math.max(0, p * 1.7 - 0.8);
+    const n = 18, esp = forte ? 15 : h.combo === 3 ? 12 : 8;
+    const fita = (e2, cor, al) => {
+      g.globalAlpha = al; g.fillStyle = cor; g.beginPath();
+      for (let i = 0; i <= n; i++) { const t = cauda + (ponta - cauda) * (i / n); g.lineTo(cx + Math.cos(t) * R, cy + Math.sin(t) * R * 0.92); }
+      for (let i = n; i >= 0; i--) { const t = cauda + (ponta - cauda) * (i / n), e = e2 * Math.pow(i / n, 0.7) * Math.sin((i / n) * Math.PI * 0.6 + 0.4); g.lineTo(cx + Math.cos(t) * (R - e), cy + Math.sin(t) * (R - e) * 0.92); }
+      g.fill();
+    };
+    const al = p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
+    fita(esp * 1.7, corB, al * 0.28); fita(esp, corB, al * 0.75); fita(esp * 0.45, corA, al);
+    g.globalAlpha = al; g.fillStyle = '#ffffff'; const px = cx + Math.cos(ponta) * (R - 2), py = cy + Math.sin(ponta) * (R - 2) * 0.92; g.fillRect(px - 2, py - 2, 4, 4);
     g.restore();
+    if (forte || h.combo === 3) brilhos.push([px, py, 46, '255,190,110', al * 0.6]);
+    if (Math.random() < 0.5) J.poe({ tipo: 'brasa', x: px, y: py, vx: (Math.random() - 0.5) * 60, vy: -30 * Math.random(), vida: 0.3, max: 0.3, cor: corB, tam: 1.6 });
   }
-  function circuloMagico(x, y, c, k) {
-    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.25 + k * 0.6;
-    g.strokeStyle = c; g.lineWidth = 1;
-    g.save(); g.translate(x, y); g.scale(1, 0.32);
-    g.beginPath(); g.arc(0, 0, 22, 0, 7); g.stroke(); g.beginPath(); g.arc(0, 0, 16, 0, 7); g.stroke();
-    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + tempo * 1.5; g.fillStyle = c; g.fillRect(Math.cos(a) * 19 - 1, Math.sin(a) * 19 - 1, 2, 2); }
-    g.beginPath(); for (let i = 0; i <= 3; i++) { const a = i * Math.PI * 2 / 3 - tempo; g.lineTo(Math.cos(a) * 16, Math.sin(a) * 16); } g.stroke();
-    g.restore(); g.restore();
-  }
+  function flecha(x, y, ang) { const p = A2.armas && A2.armas.flecha; if (!p) return; g.save(); g.translate(x, y); g.rotate(ang); g.drawImage(img.armas, p[0], p[1], p[2], p[3], -13, -2, p[2], p[3]); g.restore(); }
   function sombra(x, y, r) {
-    // procura o chão logo abaixo
     let yy = y; for (let i = 0; i < 12 && !J.solido(x, yy + 1) && F.tile(Math.floor(x / T), Math.floor((yy + 1) / T)) !== 2; i++) yy += 8;
-    const k = Math.max(0.15, 1 - (yy - y) / 100);
-    g.fillStyle = 'rgba(0,0,0,' + 0.35 * k + ')'; g.beginPath(); g.ellipse(x, Math.floor((yy + 1) / T) * T, r * k, 2.5 * k, 0, 0, 7); g.fill();
+    const k = Math.max(0.15, 1 - (yy - y) / 110);
+    g.fillStyle = 'rgba(0,0,0,' + 0.42 * k + ')'; g.beginPath(); g.ellipse(x, Math.floor((yy + 1) / T) * T + 1, r * k, 3 * k, 0, 0, 7); g.fill();
   }
+
+  // ---------- inimigos ----------
   function desenhaInimigo(e) {
-    const tp = e.T, info = S.info(tp.spr); if (!info) return;
-    let nome = tp.spr, q = 0; const o = { esc: tp.escala || 1 };
-    const ge = tp.ge && S.info(tp.ge);
+    const tp = e.T, im = img['m_' + tp.spr], mt = A2.monstros[tp.spr]; if (!im) return;
+    if (e.x < cam.x - 120 || e.x > cam.x + D.VW + 120) return;
+    let q = 0, sx = 1, sy = 1, al = 1, oy = 0;
     const prep = tp.prep * (tp.chefe && e.hp < e.hpMax * 0.5 ? 0.8 : 1);
-    if (e.estado === 'prep' || e.estado === 'golpe') {
-      if (ge) { nome = tp.ge; const meio = Math.floor(ge.n / 2); q = e.estado === 'prep' ? Math.min(meio - 1, Math.floor((e.t / prep) * meio)) : meio + Math.min(ge.n - meio - 1, Math.floor((e.t / tp.golpe) * (ge.n - meio))); }
-      else { q = e.estado === 'prep' ? 0 : 2; o.rot = (e.estado === 'prep' ? -0.18 : 0.15) * e.dir; if (e.estado === 'golpe') { o.sx = 1.12; o.sy = 0.92; } }
-      if (e.estado === 'prep') { o.tinta = '#ff2a1a'; o.tintaA = 0.1 + 0.35 * Math.min(1, e.t / prep) * (0.6 + 0.4 * Math.sin(tempo * 30)); }
-    } else if (e.estado === 'morto') { q = 0; o.alpha = Math.max(0, 1 - e.t / 1); o.rot = tp.voa ? 0 : Math.min(1, e.t / 0.35) * (Math.PI / 2) * -e.dir; o.tinta = '#ffcf6a'; o.tintaA = Math.min(0.6, e.t); }
-    else if (tp.voa) q = Math.floor(tempo * 12 + e.ox) % info.n;
-    else if (Math.abs(e.vx) > 5) q = Math.floor(e.andou / 6) % info.n;
-    else { q = 0; o.sy = 1 + Math.sin(tempo * 2 + e.ox) * 0.015; }
-    if (e.estado === 'cambaleia') { o.rot = Math.sin(e.t * 20) * 0.12; }
-    if (e.estado === 'uiva') { nome = tp.ge || tp.spr; q = 0; o.sy = 1 + Math.sin(e.t * 30) * 0.04; o.tinta = '#c0a0ff'; o.tintaA = 0.3; }
-    if (e.estado === 'salto' && e.t < 0.45) { o.sy = 0.85; o.sx = 1.12; }
-    if (e.flash > 0) o.branco = (e.flash / 0.12) * 0.6;
-    if (!tp.voa) sombra(e.x, e.y, e.w * 0.45);
-    if (e.estado === 'golpe' && !tp.atira) garra(e, tp);
-    S.desenha(g, nome, q, e.x, e.y + (tp.voa ? Math.sin(tempo * 6 + e.ox) * 2 : 0), e.dir < 0, o);
-    // olhos acendem quando ele te vê
-    if (e.pisca > 0) { g.fillStyle = 'rgba(255,60,40,' + e.pisca * 2 + ')'; g.fillRect(e.x - 1, e.y - e.h * (tp.escala || 1) - 10, 2, 5); g.fillRect(e.x - 1, e.y - e.h * (tp.escala || 1) - 3, 2, 2); }
-    if (e.estado === 'cambaleia') for (let i = 0; i < 3; i++) { const a = tempo * 6 + i * 2.1; g.fillStyle = '#ffe9a0'; g.fillRect(e.x + Math.cos(a) * 8, e.y - e.h - 6 + Math.sin(a) * 2, 2, 2); }
-    if (!tp.chefe && e.vivo && e.hp < e.hpMax) {
-      const w = Math.max(16, e.w), x = Math.round(e.x - w / 2), y = Math.round(e.y - e.h * (tp.escala || 1) - 8);
-      g.fillStyle = '#0a0808cc'; g.fillRect(x - 1, y - 1, w + 2, 4); g.fillStyle = '#a8332b'; g.fillRect(x, y, w * Math.max(0, e.hp / e.hpMax), 2);
-    }
+    if (e.estado === 'morto') { q = e.t < 0.18 ? 6 : 7; al = Math.min(1, ((tp.chefe ? 3 : 1.8) - e.t) / 0.6); }
+    else if (e.estado === 'caido') { q = e.t < 1.3 ? 7 : 4; }
+    else if (e.estado === 'cambaleia') { q = 6; }
+    else if (e.ferido > 0.1 && e.estado !== 'golpe' && e.estado !== 'prep') q = 6;
+    else if (e.estado === 'prep') { q = 4; const k = e.t / prep; sx = 1 + k * 0.05; sy = 1 - k * 0.06; }
+    else if (e.estado === 'golpe') q = e.t < (tp.salta ? 0.5 : tp.golpe + 0.05) ? 5 : 0;
+    else if (['chama', 'cuspe', 'cova'].includes(e.estado)) { q = e.t < 0.5 ? 4 : 5; oy = Math.sin(e.t * 40) * 1; }
+    else if (e.estado === 'salto') q = e.t < 0.5 ? 4 : 5;
+    else if (e.estado === 'pula') q = 5;
+    else if (Math.abs(e.vx) > 5) q = [1, 2, 3, 2][Math.floor(e.andou / (tp.passo || 8)) % 4];
+    else sy = 1 + Math.sin(tempo * 2.4 + e.ox) * 0.018;
+    const es = e.esc || 1;
+    if (e.estado !== 'morto') sombra(e.x, e.y, e.w * 0.6);
+    const pinta = (src, a) => { g.globalAlpha = a; g.drawImage(src, q * mt.w, 0, mt.w, mt.h, -Math.round(mt.w / 2), -mt.h + 1, mt.w, mt.h); };
+    g.save(); g.translate(Math.round(e.x), Math.round(e.y + 1 + oy)); g.scale(e.dir * sx * es, sy * es);
+    pinta(im, al);
+    if (tp.tinta) pinta(silhueta(im, tp.tinta, tp.spr), al);
+    if (e.estado === 'prep' || e.estado === 'cuspe' || e.estado === 'cova') pinta(silhueta(im, '#ff2a1a', tp.spr), (0.08 + 0.3 * Math.min(1, e.t / prep)) * (0.6 + 0.4 * Math.sin(tempo * 30)));
+    if (e.veneno > 0) pinta(silhueta(im, '#8ac030', tp.spr), 0.22);
+    if (e.flash > 0) pinta(silhueta(im, '#ffffff', tp.spr), (e.flash / 0.13) * 0.85);
+    g.restore(); g.globalAlpha = 1;
+    if (e.estado === 'golpe' && !tp.atira && e.t < 0.3) garra(e, tp);
+    const topo = e.y - tp.h * es - 14;
+    if (e.pisca > 0) { g.fillStyle = 'rgba(255,60,40,' + Math.min(1, e.pisca * 2) + ')'; g.fillRect(e.x - 1, topo - 6, 2, 6); g.fillRect(e.x - 1, topo + 2, 2, 2); }
+    if (e.estado === 'cambaleia') for (let i = 0; i < 3; i++) { const a = tempo * 6 + i * 2.1; g.fillStyle = '#ffe9a0'; g.fillRect(e.x + Math.cos(a) * 10, topo + 4 + Math.sin(a) * 3, 2, 2); }
+    if (!tp.chefe && e.vivo && e.hp < e.hpMax) { const w = Math.max(22, e.w), x = Math.round(e.x - w / 2), y = Math.round(topo); g.fillStyle = '#0a0808d0'; g.fillRect(x - 1, y - 1, w + 2, 4); g.fillStyle = '#a8332b'; g.fillRect(x, y, w * Math.max(0, e.hp / e.hpMax), 2); }
   }
-  // o golpe do inimigo também deixa rastro: garras para quem salta, arco escuro para quem bate
   function garra(e, tp) {
-    const dur = tp.salta ? Math.max(tp.golpe, 0.32) : tp.golpe, k = e.t / dur;
-    if (k > 0.85) return;
-    const esc = tp.escala || 1, cx = e.x + e.dir * e.w * 0.5, cy = e.y - e.h * 0.55 * esc;
-    g.save(); g.globalAlpha = (1 - k) * 0.9;
-    if (tp.salta) {
-      g.strokeStyle = tp.chefe ? '#c8a0ff' : '#ffd0c0'; g.lineWidth = 1;
-      for (let i = -1; i <= 1; i++) {
-        const ox = cx + e.dir * 6, oy = cy + i * 5 * esc;
-        g.beginPath(); g.moveTo(ox - e.dir * 10 * esc, oy - 7 * esc); g.lineTo(ox + e.dir * 8 * esc, oy + 7 * esc); g.stroke();
-      }
-    } else {
-      const R = (tp.alcance + 4) * esc, a0 = e.dir > 0 ? -1.2 : Math.PI + 1.2, a1 = e.dir > 0 ? 0.9 : Math.PI - 0.9;
-      const p = Math.min(1, k * 2), ponta = a0 + (a1 - a0) * p;
-      g.strokeStyle = 'rgba(255,90,70,0.8)'; g.lineWidth = 2;
-      g.beginPath(); g.arc(e.x, cy, R * 0.8, Math.min(a0, ponta), Math.max(a0, ponta)); g.stroke();
-      g.strokeStyle = 'rgba(255,230,220,0.9)'; g.lineWidth = 1;
-      g.beginPath(); g.arc(e.x, cy, R * 0.8, Math.min(a0, ponta), Math.max(a0, ponta)); g.stroke();
-    }
+    const k = e.t / 0.3, cx = e.x + e.dir * e.w * 0.6, cy = e.y - tp.h * 0.6;
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = (1 - k) * 0.9;
+    if (tp.salta) { g.strokeStyle = tp.esp === 'cobra' ? '#d8f0a0' : '#ffd0c0'; g.lineWidth = 1.5; for (let i = -1; i <= 1; i++) { g.beginPath(); g.moveTo(cx - e.dir * 8, cy + i * 6 - 8); g.quadraticCurveTo(cx + e.dir * 8, cy + i * 6 - 2, cx + e.dir * 4, cy + i * 6 + 8); g.stroke(); } }
+    else { const R = tp.alcance + 2, a0 = e.dir > 0 ? -1.2 : Math.PI + 1.2, a1 = e.dir > 0 ? 0.9 : Math.PI - 0.9, p = a0 + (a1 - a0) * Math.min(1, k * 2); g.strokeStyle = 'rgba(255,90,70,0.8)'; g.lineWidth = 4; g.beginPath(); g.arc(e.x, cy, R, Math.min(a0, p), Math.max(a0, p)); g.stroke(); g.strokeStyle = '#ffe6dc'; g.lineWidth = 1.5; g.beginPath(); g.arc(e.x, cy, R, Math.min(a0, p), Math.max(a0, p)); g.stroke(); }
     g.restore();
   }
+
+  // ---------- balas, magias e efeitos ----------
   function desenhaBala(b) {
+    if (b.flecha) { flecha(b.x, b.y, Math.atan2(b.vy, b.vx)); if (b.forte) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5; g.fillStyle = '#ffe2a0'; g.fillRect(b.x - b.vx * 0.06, b.y - 1, b.vx * 0.05, 2); g.restore(); } return; }
+    if (b.tipo === 'pedra') { g.fillStyle = '#1a1612'; g.fillRect(b.x - 4, b.y - 3, 8, 7); g.fillStyle = b.cor; g.fillRect(b.x - 3, b.y - 3, 6, 5); return; }
     g.save(); g.globalCompositeOperation = 'lighter';
-    if (b.tipo === 'lanca') {
-      const a = Math.atan2(b.vy, b.vx); g.translate(b.x, b.y); g.rotate(a);
-      g.fillStyle = b.cor; g.globalAlpha = 0.5; g.fillRect(-22, -1, 22, 2); g.globalAlpha = 1; g.fillStyle = '#fff'; g.fillRect(-10, -1, 14, 2); g.beginPath(); g.moveTo(8, 0); g.lineTo(2, -3); g.lineTo(2, 3); g.fill();
-    } else {
-      const r = b.r + Math.sin(tempo * 30) * 0.8;
-      const gr = g.createRadialGradient(b.x, b.y, 0, b.x, b.y, r * 2.4);
+    if (b.tipo === 'espinho') { g.translate(b.x, b.y); g.rotate(Math.atan2(b.vy, b.vx)); g.fillStyle = b.cor; g.globalAlpha = 0.5; g.fillRect(-26, -1, 26, 2); g.globalAlpha = 1; g.beginPath(); g.moveTo(10, 0); g.lineTo(-8, -4); g.lineTo(-4, 0); g.lineTo(-8, 4); g.fill(); }
+    else {
+      const r = b.r + Math.sin(tempo * 30) * 0.8, gr = g.createRadialGradient(b.x, b.y, 0, b.x, b.y, r * 2.6);
       gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.3, b.cor); gr.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = gr; g.beginPath(); g.arc(b.x, b.y, r * 2.4, 0, 7); g.fill();
+      g.fillStyle = gr; g.beginPath(); g.arc(b.x, b.y, r * 2.6, 0, 7); g.fill();
+      if (b.tipo === 'brasa') { g.fillStyle = '#ffb050'; for (let i = 1; i < 5; i++) { g.globalAlpha = 0.5 - i * 0.1; g.fillRect(b.x - Math.sign(b.vx) * i * 7 - 2, b.y - 3 + Math.sin(tempo * 30 + i) * 2, 6 - i, 6 - i); } }
     }
     g.restore();
+    brilhos.push([b.x, b.y, b.tipo === 'brasa' ? 90 : 46, b.tipo === 'veneno' ? '170,220,80' : b.tipo === 'espinho' ? '160,220,100' : '255,160,70', 0.8]);
   }
   function desenhaMagia(m) {
-    g.save(); g.globalCompositeOperation = 'lighter';
-    if (m.tipo === 'coluna') {
-      const k = m.t / m.dur, sobe = Math.min(1, m.t / 0.12), alt = m.h * sobe, fade = k > 0.75 ? (1 - k) / 0.25 : 1;
-      for (let i = 0; i < 3; i++) {
-        const w = m.w * (1 - i * 0.28) * (0.9 + Math.sin(tempo * 40 + i) * 0.1);
-        const gr = g.createLinearGradient(0, m.y - alt, 0, m.y);
-        gr.addColorStop(0, 'rgba(255,120,40,0)'); gr.addColorStop(0.3, i === 2 ? '#fff6d0' : i === 1 ? '#ffb050' : '#ff5a20'); gr.addColorStop(1, i === 2 ? '#ffffff' : '#ffd27a');
-        g.globalAlpha = fade * (0.6 + i * 0.15); g.fillStyle = gr; g.fillRect(m.x - w / 2, m.y - alt, w, alt);
-      }
-      g.globalAlpha = fade * 0.8; g.fillStyle = '#ffd27a'; g.beginPath(); g.ellipse(m.x, m.y, m.w * 0.9, 4, 0, 0, 7); g.fill();
-    } else if (m.tipo === 'onda') {
+    if (m.tipo === 'onda') {
       const k = m.t / m.dur, px = m.px == null ? m.x : m.px;
-      g.globalAlpha = 1 - k; g.fillStyle = m.inimiga ? '#8a60c0' : '#e0b070';
-      for (let i = 0; i < 5; i++) { const hh = (14 - i * 2.4) * (1 - k * 0.5); g.fillRect(px - m.d * i * 6 - 3, m.y - hh, 5, hh); }
-    } else if (m.tipo === 'lampejo') {
-      const k = m.t / m.dur, r = m.raio * (0.3 + k * 0.9);
-      const gr = g.createRadialGradient(m.x, m.y, 0, m.x, m.y, r);
-      gr.addColorStop(0, 'rgba(255,250,220,' + (1 - k) + ')'); gr.addColorStop(0.7, 'rgba(255,230,160,' + (1 - k) * 0.5 + ')'); gr.addColorStop(1, 'rgba(255,230,160,0)');
-      g.fillStyle = gr; g.beginPath(); g.arc(m.x, m.y, r, 0, 7); g.fill();
-      g.strokeStyle = 'rgba(255,255,230,' + (1 - k) + ')'; g.lineWidth = 2; g.beginPath(); g.arc(m.x, m.y, r, 0, 7); g.stroke();
-      for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; g.fillStyle = '#fff6d0'; g.globalAlpha = 1 - k; g.fillRect(m.x + Math.cos(a) * r * 1.05 - 1, m.y + Math.sin(a) * r * 1.05 - 1, 2, 2); }
+      g.globalAlpha = 1 - k; for (let i = 0; i < 6; i++) { const hh = (22 - i * 3.4) * (1 - k * 0.5); g.fillStyle = i === 0 ? '#e8c890' : m.cor; g.fillRect(px - m.d * i * 7 - 4, m.y - hh, 7, hh); g.fillStyle = 'rgba(0,0,0,0.4)'; g.fillRect(px - m.d * i * 7 - 4, m.y - hh, 2, hh); } g.globalAlpha = 1;
+    } else if (m.tipo === 'maos') {
+      if (m.t < 0) { g.fillStyle = 'rgba(184,160,200,' + (0.25 + 0.2 * Math.sin(tempo * 30)) + ')'; g.fillRect(m.x - 14, m.y - 2, 28, 2); return; }
+      const k = m.t / m.dur, alt = 46 * Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.9);
+      for (let i = -1; i <= 1; i++) { const x = m.x + i * 9, a = alt * (1 - Math.abs(i) * 0.25); g.fillStyle = '#0c0a0c'; g.fillRect(x - 3, m.y - a, 7, a); g.fillStyle = '#8a7a86'; g.fillRect(x - 2, m.y - a, 5, a); g.fillStyle = '#b8a8b4'; g.fillRect(x - 2, m.y - a, 1, a); for (let d = -1; d <= 1; d++) { g.fillStyle = '#0c0a0c'; g.fillRect(x + d * 3 - 1, m.y - a - 6, 3, 7); g.fillStyle = '#a898a4'; g.fillRect(x + d * 3, m.y - a - 5, 1, 6); } }
     }
+  }
+  function circuloMagico(x, y, c, k, tam) {
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.25 + k * 0.6; g.strokeStyle = c; g.lineWidth = 1.2;
+    g.translate(x, y); g.scale(1, 0.3); const r = tam * (1.1 - k * 0.2);
+    g.beginPath(); g.arc(0, 0, r, 0, 7); g.stroke(); g.beginPath(); g.arc(0, 0, r * 0.72, 0, 7); g.stroke();
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + tempo * 1.5; g.fillStyle = c; g.fillRect(Math.cos(a) * r * 0.86 - 1.5, Math.sin(a) * r * 0.86 - 1.5, 3, 3); }
+    g.beginPath(); for (let i = 0; i <= 3; i++) { const a = i * Math.PI * 2 / 3 - tempo; g.lineTo(Math.cos(a) * r * 0.72, Math.sin(a) * r * 0.72); } g.stroke();
     g.restore();
+    g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createLinearGradient(0, y - 60, 0, y); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, c); g.globalAlpha = k * 0.22; g.fillStyle = gr; g.fillRect(x - tam * 0.8, y - 60, tam * 1.6, 60); g.restore();
   }
   function desenhaFx(f) {
     const k = Math.max(0, f.vida / f.max);
-    if (f.tipo === 'anel') {
-      g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = f.cor; g.globalAlpha = k; g.lineWidth = f.larg * k + 0.5;
-      g.beginPath(); g.arc(f.x, f.y, f.raio * (1 - k * 0.7), 0, 7); g.stroke(); g.restore(); return;
-    }
-    if (f.tipo === 'circulo') { circuloMagico(f.x, f.y, f.cor, k); return; }
-    if (f.tipo === 'corte') { // o risco branco do impacto
-      g.save(); g.globalCompositeOperation = 'lighter'; g.translate(f.x, f.y); g.rotate(-0.6 * f.dir); g.globalAlpha = k;
-      g.fillStyle = f.cor; const l = f.tam * (1.2 - k * 0.4); g.fillRect(-l / 2, -1, l, 2); g.fillRect(-1, -l / 4, 2, l / 2); g.restore(); return;
-    }
+    if (f.tipo === 'anel') { g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = f.cor; g.globalAlpha = k; g.lineWidth = f.larg * k + 0.5; g.beginPath(); g.arc(f.x, f.y, f.raio * (1 - k * 0.7), 0, 7); g.stroke(); g.restore(); return; }
+    if (f.tipo === 'circulo') { circuloMagico(f.x, f.y, f.cor, k, f.tam); return; }
+    if (f.tipo === 'bola') { g.save(); g.globalCompositeOperation = 'lighter'; const r = f.tam * (1.15 - k * 0.5), gr = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, r); gr.addColorStop(0, 'rgba(255,250,220,' + k + ')'); gr.addColorStop(0.4, f.cor); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = k; g.fillStyle = gr; g.beginPath(); g.arc(f.x, f.y, r, 0, 7); g.fill(); g.restore(); brilhos.push([f.x, f.y, f.tam * 3, '255,160,70', k]); return; }
+    if (f.tipo === 'estrela') { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = f.cor; g.globalAlpha = k; const r = f.tam; g.translate(f.x, f.y); g.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + 0.3, q = i & 1 ? r * 0.28 : r; g.lineTo(Math.cos(a) * q, Math.sin(a) * q); } g.fill(); g.restore(); return; }
+    if (f.tipo === 'corte') { g.save(); g.globalCompositeOperation = 'lighter'; g.translate(f.x, f.y); g.rotate((f.ang || -0.6) * f.dir); g.globalAlpha = k; g.fillStyle = f.cor; const l = f.tam * (1.3 - k * 0.5); g.beginPath(); g.moveTo(-l / 2, 0); g.lineTo(0, -2); g.lineTo(l / 2, 0); g.lineTo(0, 2); g.fill(); g.restore(); return; }
     const lighter = f.tipo === 'brasa' || f.tipo === 'alma' || f.tipo === 'faisca';
     if (lighter) { g.save(); g.globalCompositeOperation = 'lighter'; }
-    g.globalAlpha = f.tipo === 'gota' ? (f.preso ? k : 1) : k;
-    g.fillStyle = f.cor; const t = f.tipo === 'poeira' ? f.tam * (2 - k) : f.tam * (f.tipo === 'gota' ? 1 : 0.5 + k * 0.5);
+    g.globalAlpha = f.tipo === 'gota' ? (f.preso ? k : 1) : f.tipo === 'poeira' ? k * 0.5 : k;
+    g.fillStyle = f.tipo === 'poeira' ? 'rgb(' + regiao().terra.map((v) => v + 60).join(',') + ')' : f.cor;
+    const t = f.tipo === 'poeira' ? f.tam * (1.8 - k) : f.tam * (f.tipo === 'gota' ? 1 : 0.5 + k * 0.5);
     g.fillRect(Math.round(f.x - t / 2), Math.round(f.y - t / 2), Math.max(1, Math.round(t)), Math.max(1, Math.round(t)));
-    g.globalAlpha = 1;
-    if (lighter) g.restore();
-  }
-  function desenhaRastro(r) {
-    const o = { alpha: (r.vida / r.max) * 0.45, tinta: r.cor, tintaA: 0.9 };
-    if (r.noAr) { o.sx = 1.18; o.sy = 0.9; } else if (!r.anda) { o.rot = r.rot; o.esc = 0.78; }
-    S.desenha(g, ANDA, r.noAr ? 3 : r.anda ? 2 : 0, r.x, r.y - (r.noAr || r.anda ? 0 : 2), r.dir < 0, o);
-  }
-  function placa(x, y) {
-    g.fillStyle = '#2a1d12'; g.fillRect(x - 1, y - 18, 3, 18);
-    g.fillStyle = '#5a4128'; g.fillRect(x - 9, y - 22, 19, 10); g.fillStyle = '#7a5a38'; g.fillRect(x - 9, y - 22, 19, 2);
-    g.fillStyle = '#2a1d12'; g.fillRect(x - 6, y - 18, 12, 1); g.fillRect(x - 6, y - 15, 9, 1);
+    g.globalAlpha = 1; if (lighter) g.restore();
   }
 
-  // ---------- vida no ar: vaga-lumes, folhas, cinzas ----------
-  const ar = [];
-  const AR = { ermo: { n: 22, tipos: ['nevoa', 'nevoa', 'cinza'] }, campos: { n: 24, tipos: ['vagalume', 'petala', 'petala'] }, mata: { n: 40, tipos: ['vagalume', 'vagalume', 'folha', 'esporo'] }, clareira: { n: 46, tipos: ['cinza', 'cinza', 'brasinha'] } };
-  function ambiente(dt, p, ox, oy) {
-    const cfg = AR[p.r.id];
-    while (ar.length < cfg.n) {
-      const tipo = cfg.tipos[Math.floor(Math.random() * cfg.tipos.length)];
-      const cai = tipo === 'folha' || tipo === 'petala' || tipo === 'cinza';
-      ar.push({ tipo, x: ox + Math.random() * D.VW, y: cai ? oy - 10 - Math.random() * 40 : oy + Math.random() * D.VH, vida: 6 + Math.random() * 6, fase: Math.random() * 7, reg: p.r.id });
-      if (ar.length === 1) for (const q of ar) q.y = oy + Math.random() * D.VH;
+  // ---------- coisas do cenário ----------
+  const COLETA = { galho: 'galhada', pedra: 'pedras', folha: 'planta', fibra: 'samambaia', fruta: 'frutas', osso: 'ossos' };
+  function desenhaColeta(c) {
+    if (J.colhidos[c.id] > 0 || c.x < cam.x - 60 || c.x > cam.x + D.VW + 60) return;
+    const p = COLETA[c.m];
+    if (p) { prop(p, c.x, c.y + 2); if (c.m === 'fruta') for (let i = 0; i < 6; i++) { const x = c.x - 14 + hash(c.x + i) * 28, y = c.y - 8 - hash(c.x * 3 + i) * 22; g.fillStyle = '#1a0608'; g.fillRect(x - 1, y - 1, 4, 4); g.fillStyle = '#d83030'; g.fillRect(x, y, 2, 2); } }
+    else itemEm(g, c.m, Math.round(c.x - 14), Math.round(c.y - 26), 0.82);
+    const a = 0.5 + 0.5 * Math.sin(tempo * 3 + c.x);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = '#fff2c0';
+    for (let i = 0; i < 2; i++) { const x = Math.round(c.x - 10 + hash(c.x + i * 9) * 20), y = Math.round(c.y - 14 - hash(c.x * 2 + i) * 16 - a * 3), f = Math.max(0, Math.sin(tempo * 2.4 + c.x + i * 2.2)); g.globalAlpha = f; g.fillRect(x, y - 2, 1, 5); g.fillRect(x - 2, y, 5, 1); }
+    g.restore();
+    brilhos.push([c.x, c.y - 14, 34, '255,236,180', 0.14 + 0.1 * a]);
+  }
+  function chama(x, y, k) {
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 9; i++) {
+      const t = (tempo * 1.4 + i * 0.137) % 1, s = (1 - t) * 8 * k, xx = x + Math.sin(tempo * 5 + i * 2) * 5 * (1 - t) + (hash(i) - 0.5) * 12 * (1 - t * 0.6);
+      g.globalAlpha = (1 - t) * 0.85; g.fillStyle = t < 0.25 ? '#fff0b0' : t < 0.55 ? '#ffb040' : '#ff5a20';
+      g.fillRect(Math.round(xx - s / 2), Math.round(y - 8 - t * 30 * k), Math.max(1, Math.round(s)), Math.max(1, Math.round(s * 1.2)));
     }
+    g.restore();
+    brilhos.push([x, y - 20, 130 + Math.sin(tempo * 9) * 5, '255,170,80', 0.95]);
+    if (Math.random() < 0.12) J.poe({ tipo: 'brasa', x: x + (Math.random() - 0.5) * 12, y: y - 18, vx: (Math.random() - 0.5) * 14, vy: -30 - Math.random() * 30, vida: 1.2, max: 1.2, cor: '#ff9a40', tam: 1.4 });
+  }
+  function desenhaPorta(p) {
+    if (p.x < cam.x - 140 || p.x > cam.x + D.VW + 140) return;
+    const alvo = C.REGIOES[F.area ? (F.IDS.includes(p.para[0]) ? regDe(p.para[0]) : F.atual.regiao) : F.atual.regiao];
+    prop(p.d === 'arco' ? 'arco' : 'caverna', p.x, p.y + 8, { e: p.d === 'arco' ? 1 : 0.92 });
+    const h = p.d === 'arco' ? 70 : 58, gr = g.createRadialGradient(p.x, p.y - h * 0.5, 2, p.x, p.y - h * 0.5, 40);
+    gr.addColorStop(0, 'rgba(' + alvo.nevoa + ',' + (0.34 + 0.1 * Math.sin(tempo * 1.6 + p.x)) + ')'); gr.addColorStop(1, 'rgba(' + alvo.nevoa + ',0)');
+    g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = gr; g.fillRect(p.x - 40, p.y - h * 0.5 - 40, 80, 80); g.restore();
+    brilhos.push([p.x, p.y - 34, 76, alvo.nevoa, 0.55]);
+  }
+  const regDe = (id) => id.replace('covil_', '');
+  function desenhaCirculo(c) {
+    if (c.x < cam.x - 140 || c.x > cam.x + D.VW + 140) return;
+    const sabe = J.save.magias.includes(c.magia), preso = F.atual.arena && !J.save.chefes[F.atual.arena.chefe];
+    prop('circulo', c.x, c.y + 34, { a: sabe ? 0.75 : 1 });
+    if (!sabe && !preso) { circuloMagico(c.x, c.y - 4, C.MAGIAS[c.magia].cor, 0.5 + 0.3 * Math.sin(tempo * 2), 62); brilhos.push([c.x, c.y - 20, 130, '110,230,240', 0.8]); if (Math.random() < 0.25) J.poe({ tipo: 'alma', x: c.x + (Math.random() - 0.5) * 120, y: c.y, vy: -20 - Math.random() * 30, vida: 1.6, max: 1.6, cor: '#7ff0ff', tam: 1.6 }); }
+  }
+
+  // ---------- vida no ar ----------
+  const ar = [];
+  function ambiente(dt, ox, oy) {
+    const R = regiao(), n = 44;
+    while (ar.length < n) { const tipo = R.ar[Math.floor(Math.random() * R.ar.length)], cai = ['folha', 'cinza', 'neve'].includes(tipo); ar.push({ tipo, x: ox + Math.random() * D.VW, y: cai && ar.cheio ? oy - 10 : oy + Math.random() * D.VH, vida: 6 + Math.random() * 6, fase: Math.random() * 7, reg: F.atual.regiao, z: 0.6 + Math.random() * 0.8 }); }
+    ar.cheio = true;
     for (let i = ar.length - 1; i >= 0; i--) {
       const a = ar[i]; a.vida -= dt; a.fase += dt;
-      if (a.tipo === 'vagalume') { a.x += Math.sin(a.fase * 0.9) * 10 * dt; a.y += Math.cos(a.fase * 1.3) * 8 * dt; }
-      else if (a.tipo === 'folha' || a.tipo === 'petala') { a.x += (Math.sin(a.fase * 2) * 18 - 8) * dt; a.y += 16 * dt; }
-      else if (a.tipo === 'cinza') { a.x += (Math.sin(a.fase) * 6 - 4) * dt; a.y += 10 * dt; }
-      else if (a.tipo === 'brasinha' || a.tipo === 'esporo') { a.x += Math.sin(a.fase * 1.7) * 6 * dt; a.y -= 12 * dt; }
-      else if (a.tipo === 'nevoa') { a.x += 6 * dt; }
-      if (a.vida <= 0 || a.x < ox - 40 || a.x > ox + D.VW + 40 || a.y > oy + D.VH + 20 || a.y < oy - 80 || a.reg !== p.r.id && a.vida > 1) ar.splice(i, 1);
+      if (a.tipo === 'vagalume') { a.x += Math.sin(a.fase * 0.9) * 12 * dt; a.y += Math.cos(a.fase * 1.3) * 9 * dt; }
+      else if (a.tipo === 'folha') { a.x += (Math.sin(a.fase * 2) * 20 - 10) * dt; a.y += 18 * dt; }
+      else if (a.tipo === 'neve') { a.x += (Math.sin(a.fase * 1.2) * 10 - 22) * dt; a.y += 26 * a.z * dt; }
+      else if (a.tipo === 'cinza') { a.x += (Math.sin(a.fase) * 6 - 4) * dt; a.y += 12 * dt; }
+      else if (a.tipo === 'brasinha' || a.tipo === 'esporo') { a.x += Math.sin(a.fase * 1.7) * 8 * dt; a.y -= 14 * dt; }
+      else if (a.tipo === 'nevoa') a.x += 8 * dt;
+      if (a.vida <= 0 || a.reg !== F.atual.regiao) { ar.splice(i, 1); continue; }
+      if (a.x < ox - 30) a.x += D.VW + 50; if (a.x > ox + D.VW + 30) a.x -= D.VW + 50;
+      if (a.y > oy + D.VH + 20) a.y -= D.VH + 30; if (a.y < oy - 30) a.y += D.VH + 40;
     }
   }
   function desenhaAr() {
     for (const a of ar) {
-      const f = Math.min(1, a.vida, (12 - a.vida) / 1 + 0.2);
-      if (a.tipo === 'vagalume') { g.save(); g.globalCompositeOperation = 'lighter'; const b = 0.4 + 0.6 * Math.max(0, Math.sin(a.fase * 2.2)); g.globalAlpha = f * b; g.fillStyle = '#d8ff70'; g.fillRect(a.x | 0, a.y | 0, 1, 1); g.globalAlpha = f * b * 0.3; g.fillRect((a.x | 0) - 1, (a.y | 0) - 1, 3, 3); g.restore(); }
-      else if (a.tipo === 'folha' || a.tipo === 'petala') { g.globalAlpha = f * 0.9; g.fillStyle = a.tipo === 'folha' ? (a.fase % 2 < 1 ? '#3a5a28' : '#5a4a20') : '#c8a0b0'; const w = Math.abs(Math.sin(a.fase * 3)) > 0.5 ? 2 : 1; g.fillRect(a.x | 0, a.y | 0, w, 1); g.globalAlpha = 1; }
-      else if (a.tipo === 'cinza') { g.globalAlpha = f * 0.6; g.fillStyle = '#9a90a0'; g.fillRect(a.x | 0, a.y | 0, 1, 1); g.globalAlpha = 1; }
-      else if (a.tipo === 'brasinha' || a.tipo === 'esporo') { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = f * (0.5 + 0.5 * Math.sin(a.fase * 5)); g.fillStyle = a.tipo === 'esporo' ? '#80c8a0' : '#ff8a40'; g.fillRect(a.x | 0, a.y | 0, 1, 1); g.restore(); }
-      else if (a.tipo === 'nevoa') { const gr = g.createRadialGradient(a.x, a.y, 0, a.x, a.y, 30); gr.addColorStop(0, 'rgba(140,140,170,' + 0.05 * f + ')'); gr.addColorStop(1, 'rgba(140,140,170,0)'); g.fillStyle = gr; g.fillRect(a.x - 30, a.y - 30, 60, 60); }
+      const f = Math.max(0, Math.min(1, a.vida)), x = a.x | 0, y = a.y | 0;
+      if (a.tipo === 'vagalume') { const b = 0.35 + 0.65 * Math.max(0, Math.sin(a.fase * 2.2)); g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = '#d8ff70'; g.globalAlpha = f * b; g.fillRect(x, y, 2, 2); g.globalAlpha = f * b * 0.25; g.fillRect(x - 2, y - 2, 6, 6); g.restore(); if (a.z > 1.1) brilhos.push([x, y, 22, '200,255,110', b * 0.35]); }
+      else if (a.tipo === 'folha') { g.globalAlpha = f * 0.9; g.fillStyle = a.z > 1 ? '#5a8a5a' : '#3a6a54'; g.fillRect(x, y, Math.abs(Math.sin(a.fase * 3)) > 0.5 ? 3 : 1, 2); g.globalAlpha = 1; }
+      else if (a.tipo === 'neve') { g.globalAlpha = f * 0.7; g.fillStyle = '#d8e4f4'; g.fillRect(x, y, a.z > 1 ? 2 : 1, a.z > 1 ? 2 : 1); g.globalAlpha = 1; }
+      else if (a.tipo === 'cinza') { g.globalAlpha = f * 0.6; g.fillStyle = '#b8aab8'; g.fillRect(x, y, 1, 1); g.globalAlpha = 1; }
+      else if (a.tipo === 'brasinha' || a.tipo === 'esporo') { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = f * (0.5 + 0.5 * Math.sin(a.fase * 5)); g.fillStyle = a.tipo === 'esporo' ? '#80c8a0' : '#ff8a40'; g.fillRect(x, y, a.z > 1 ? 2 : 1, a.z > 1 ? 2 : 1); g.restore(); }
+      else if (a.tipo === 'nevoa') { g.globalAlpha = 0.07 * f; g.drawImage(mancha(regiao().nevoa), x - 46, y - 46, 92, 92); g.globalAlpha = 1; }
     }
   }
-
-  // ---------- luz ----------
-  function brilho(x, y, r, c, a) {
-    const gr = gl.createRadialGradient(x, y, 0, x, y, r);
-    gr.addColorStop(0, c.replace('A', a)); gr.addColorStop(1, c.replace('A', 0));
-    gl.fillStyle = gr; gl.fillRect(x - r, y - r, r * 2, r * 2);
+  // folhagem preta bem perto da câmera
+  function frente() {
+    const passo = 300, off = cam.x * 1.35, i0 = Math.floor(off / passo) - 1;
+    for (let i = i0; i < i0 + Math.ceil(D.VW / passo) + 3; i++) {
+      const r = hash(i * 53 + 5); if (r < 0.45) continue;
+      const n = r < 0.7 ? 'samambaia' : 'planta', t = tingida(n, F.atual.regiao, '3,6,8', 0.88); if (!t) continue;
+      const e = 1.9 + r, x = Math.round(i * passo - off + r * 120), w = t.width * e, h = t.height * e, y = D.VH + 34 - (cam.y - 190) * 0.1;
+      g.drawImage(t, Math.round(x - w / 2), Math.round(y - h), Math.round(w), Math.round(h));
+    }
   }
 
   // ---------- o quadro ----------
+  const brilhos = [];
+  D.centrar = function () { const h = J.heroi; cam.x = alvoX(h); cam.y = alvoY(h); };
+  const limX = (x) => Math.max(2 * T, Math.min(F.W * T - D.VW - 8, x)), limY = (y) => Math.max(-40, Math.min(y, F.H * T - D.VH));
+  const alvoX = (h) => limX(h.x - D.VW / 2 + cam.olha);
+  const alvoY = (h) => limY(h.y - D.VH * 0.68);
   D.quadro = function (dt) {
-    tempo += dt;
-    const h = J.heroi; if (!h) return;
-    const VW = D.VW, VH = D.VH;
-    // câmera
-    cam.alvoX += ((h.dir * 46 + h.vx * 0.15) - cam.alvoX) * Math.min(1, dt * 2.2);
-    const olha = h.estado === 'livre' && h.noChao && Math.abs(h.vx) < 5 ? (J.ent.cima ? -1 : J.ent.baixo ? 1 : 0) : 0;
-    cam.olhaT = olha ? (cam.olhaT || 0) + dt : 0;
-    cam.olha += ((cam.olhaT > 0.45 ? olha * 70 : 0) - (cam.olha || 0)) * Math.min(1, dt * 4) || 0;
-    let cx = h.x + cam.alvoX - VW / 2, cy = h.y - VH * 0.62 + cam.olha;
-    if (J.chefeAtivo && J.chefeAtivo.T.chefe) { cx = Math.max(F.ARENA.x0 - 8, Math.min(cx, F.ARENA.x1 - VW + 8)); }
-    cx = Math.max(0, Math.min(cx, F.W * T - VW)); cy = Math.max(0, Math.min(cy, F.H * T - VH));
-    cam.x += (cx - cam.x) * Math.min(1, dt * 7); cam.y += (cy - cam.y) * Math.min(1, dt * 5);
-    const tr = J.tremor, ox = Math.round(cam.x + (Math.random() - 0.5) * tr), oy = Math.round(cam.y + (Math.random() - 0.5) * tr);
-    const p = paleta(cam.x + VW / 2);
-
-    // fundo
-    ceu(p);
-    serra(p, 0.08, VH * 0.52, 60, cor(p, 'longe'), 3);
-    arvoresLonge(p, 0.22, 46, 0.55, cor(p, 'longe'), 11);
-    nevoa(p, VH * 0.72, 0.18);
-    serra(p, 0.3, VH * 0.82, 30, cor(p, 'meio'), 7);
-    arvoresLonge(p, 0.42, 58, 0.8, cor(p, 'meio'), 19);
-    nevoa(p, VH * 0.9, 0.22);
-
-    g.save(); g.translate(-ox, -oy);
-    // enfeites de fundo
-    for (const d of F.DECOR) {
-      if (d.camada !== 0 || d.x < ox - 120 || d.x > ox + VW + 120) continue;
-      S.desenha(g, d.spr, 0, d.x, d.y + 1, F.hash(d.x, 1) < 0.5, { esc: d.esc, tinta: '#05070c', tintaA: d.escuro });
-    }
-    // chão
-    const p0 = Math.max(0, Math.floor(ox / (PED * T))), p1 = Math.min(Math.ceil(F.W / PED) - 1, Math.floor((ox + VW) / (PED * T)));
-    for (let i = p0; i <= p1; i++) g.drawImage(pedaco(i), i * PED * T, 0);
-    portao(ox);
-    // coisas do mundo
-    for (const pl of F.PLACAS) if (Math.abs(pl.x - h.x) < VW) placa(pl.x, pl.y);
-    for (const b of F.BAUS) if (Math.abs(b.x - h.x) < VW) S.desenha(g, 'bau', 0, b.x, b.y, false, { esc: 0.5, alpha: J.save.abertos[b.id] ? 0.55 : 1, tinta: J.save.abertos[b.id] ? '#000' : null, tintaA: 0.4 });
-    for (const fg of F.FOGUEIRAS) {
-      if (Math.abs(fg.x - h.x) > VW) continue;
-      const acesa = J.save.acesas[fg.id];
-      // espada cravada, como marco
-      g.fillStyle = '#6a6a72'; g.fillRect(fg.x - 1, fg.y - 26, 2, 20); g.fillStyle = '#3a2a1a'; g.fillRect(fg.x - 4, fg.y - 26, 8, 2); g.fillRect(fg.x - 1, fg.y - 31, 2, 5);
-      S.desenha(g, acesa ? 'fogueira' : 'fogueira_apagada', acesa ? Math.floor(tempo * 9) : 0, fg.x, fg.y + 4, false, { esc: 0.75 });
-    }
-    for (const n of F.NPCS) if (Math.abs(n.x - h.x) < VW) S.desenha(g, n.spr, Math.floor(tempo * 3) % 4, n.x, n.y, false);
-    const per = J.save.perdidas;
-    if (per) { g.save(); g.globalCompositeOperation = 'lighter'; const r = 4 + Math.sin(tempo * 5); g.fillStyle = '#ffcf6a'; g.globalAlpha = 0.8; g.beginPath(); g.arc(per.x, per.y - 12, r, 0, 7); g.fill(); g.restore(); if (Math.random() < 0.3) J.fx.push({ tipo: 'brasa', x: per.x + (Math.random() - 0.5) * 8, y: per.y - 12, vx: 0, vy: -30, vida: 0.6, max: 0.6, cor: '#ffcf6a', tam: 1.5, grav: 0 }); }
-
-    for (const e of J.inimigos) if (e.x > ox - 80 && e.x < ox + VW + 80) desenhaInimigo(e);
-    for (const r of J.rastro) desenhaRastro(r);
-    desenhaHeroi(h);
+    const h = J.heroi; if (!h || !F.atual) return;
+    tempo += dt; D.tempo = tempo; brilhos.length = 0;
+    const R = regiao();
+    // câmera: olha à frente e só sobe ou desce de verdade quando você pisa
+    const olha = h.dir * 34 + Math.max(-40, Math.min(40, h.vx * 0.22)); cam.olha += (olha - cam.olha) * Math.min(1, dt * 1.8);
+    cam.x += (alvoX(h) - cam.x) * Math.min(1, dt * 7);
+    const ay = alvoY(h) + (h.noChao && J.ent.baixo && Math.abs(h.vx) < 5 ? 50 : 0), dif = ay - cam.y;
+    const vy = h.noChao ? 4.5 : Math.abs(dif) > 70 ? 6 : 1.4; cam.y += dif * Math.min(1, dt * vy);
+    if (F.fechada && F.atual.arena) { const A = F.atual.arena, lar = A.x1 - A.x0; if (lar > D.VW) cam.x = Math.max(A.x0 - 10, Math.min(A.x1 + 10 - D.VW, cam.x)); }
+    if (D.foco) { cam.x += (limX(D.foco.x - D.VW / 2) - cam.x) * Math.min(1, dt * 3); }
+    const tr = J.tremor, ox = Math.round(cam.x + (tr ? (Math.random() - 0.5) * tr : 0)), oy = Math.round(cam.y + (tr ? (Math.random() - 0.5) * tr : 0));
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    fundo();
+    g.translate(-ox, -oy);
+    const A = F.atual;
+    for (const d of A.decor) if (d.c === 0) prop(d.n, d.x, d.y, d);
+    for (const p of A.portas) desenhaPorta(p);
+    for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) if (i >= 0 && i * PED < F.W) g.drawImage(pedaco(i), 0, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8), i * PED * T, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8));
+    for (const d of A.decor) if (d.c === 1) { prop(d.n, d.x, d.y, d); if (d.n === 'cogumelos' && Math.abs(d.x - h.x) < D.VW) brilhos.push([d.x, d.y - 18, 54, '90,220,230', 0.5 + 0.15 * Math.sin(tempo * 2 + d.x)]); }
+    for (const c of A.circulos) desenhaCirculo(c);
+    for (const c of A.coleta) desenhaColeta(c);
+    for (const f of A.fogos) { if (Math.abs(f.x - ox - D.VW / 2) > D.VW) continue; prop('fogo', f.x, f.y + 4); if (J.save.fogos[f.id]) chama(f.x, f.y, 1.1); }
+    if (F.fechada && A.arena) for (const x of [A.arena.x0 + 8, A.arena.x1 - 8]) { const gr = g.createLinearGradient(x - 22, 0, x + 22, 0); gr.addColorStop(0, 'rgba(' + R.nevoa + ',0)'); gr.addColorStop(0.5, 'rgba(' + R.nevoa + ',0.75)'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',0)'); g.fillStyle = gr; g.fillRect(x - 22, A.arena.piso - 340, 44, 340); }
+    for (const f of J.fx) if (f.tipo === 'circulo') desenhaFx(f);
     for (const m of J.magias) desenhaMagia(m);
+    for (const e of J.inimigos) if (!e.vivo || e.estado === 'caido') desenhaInimigo(e);
+    for (const e of J.inimigos) if (e.vivo && e.estado !== 'caido') desenhaInimigo(e);
+    for (const r of J.restos) { itemEm(g, r.m, Math.round(r.x - 8), Math.round(r.y - 14 + Math.sin(tempo * 4 + r.x) * 1.5), 0.5); brilhos.push([r.x, r.y - 6, 22, '255,236,180', 0.3]); }
+    for (const r of J.rastro) { g.globalAlpha = (r.vida / r.max) * 0.5; quadroHeroi(g, J.save.roupa, r.anim, r.q, r.x, r.y, { dir: r.dir, sil: r.cor }); g.globalAlpha = 1; }
+    desenhaHeroi(h);
     for (const b of J.balas) desenhaBala(b);
-    for (const f of J.fx) if (f.x > ox - 20 && f.x < ox + VW + 20) desenhaFx(f);
-    ambiente(dt, p, ox, oy); desenhaAr();
-    // frente
-    for (const d of F.DECOR) {
-      if (d.camada !== 1 || d.x < ox - 120 || d.x > ox + VW + 120) continue;
-      S.desenha(g, d.spr, 0, d.x, d.y + 8, F.hash(d.x, 2) < 0.5, { esc: d.esc, tinta: '#020304', tintaA: 0.85 });
-    }
-    g.restore();
+    for (const f of J.fx) if (f.tipo !== 'circulo') desenhaFx(f);
+    for (const d of A.decor) if (d.c === 2) prop(d.n, d.x, d.y, d);
+    ambiente(dt, ox, oy); desenhaAr();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    frente();
+    // névoa baixa correndo na frente
+    g.save(); for (let i = 0; i < 3; i++) { const x = ((tempo * (6 + i * 3) - cam.x * (0.9 + i * 0.15) + i * 260) % (D.VW + 320) + D.VW + 320) % (D.VW + 320) - 160, y = D.VH * (0.78 + i * 0.07); g.globalAlpha = 0.11; g.drawImage(mancha(R.nevoa), x - 150, y - 52, 300, 104); } g.restore();
 
-    // luz: escuridão com furos de luz quente
-    const reg = p.r, amb = num(p, 'luz');
-    const a = Math.round(amb * 255), ab = Math.round(Math.min(255, amb * 255 * 1.15));
-    gl.globalCompositeOperation = 'source-over'; gl.fillStyle = 'rgb(' + a + ',' + a + ',' + ab + ')'; gl.fillRect(0, 0, VW, VH);
+    // luz
+    gl.setTransform(1, 0, 0, 1, 0, 0); gl.globalCompositeOperation = 'source-over';
+    const k = D.escuro == null ? 1 : D.escuro;
+    gl.fillStyle = 'rgb(' + R.luz.map((v) => Math.round(v * k)).join(',') + ')'; gl.fillRect(0, 0, D.VW, D.VH);
     gl.globalCompositeOperation = 'lighter';
-    const L = (x, y, r, c, al) => brilho(x - ox, y - oy, r, c, al);
-    L(h.x, h.y - 16, 135, 'rgba(255,200,140,A)', 0.5);
-    for (const fg of F.FOGUEIRAS) if (J.save.acesas[fg.id] && Math.abs(fg.x - h.x) < VW) L(fg.x, fg.y - 10, 150 + Math.sin(tempo * 13) * 6, 'rgba(255,160,70,A)', 0.85);
-    for (const b of J.balas) L(b.x, b.y, 60, b.dono === 'h' ? 'rgba(255,170,80,A)' : 'rgba(170,110,255,A)', 0.7);
-    for (const m of J.magias) L(m.px || m.x, m.y - 20, m.tipo === 'coluna' ? 140 : 90, m.tipo === 'lampejo' ? 'rgba(255,250,220,A)' : 'rgba(255,150,70,A)', m.tipo === 'onda' ? 0.3 : 0.9);
-    if (per) L(per.x, per.y - 12, 50, 'rgba(255,200,100,A)', 0.7);
-    if (h.estado === 'magia') L(h.x, h.y - 16, 90, 'rgba(255,230,180,A)', 0.6);
-    if (reg.lua) L(VW * 0.74 + ox, 46 + oy, 160, 'rgba(200,170,220,A)', 0.25);
+    // claridade que desce da copa
+    gl.globalAlpha = k; gl.drawImage(guarda('copa' + R.nevoa, 2, 160, (q, w, h) => { const cl = q.createLinearGradient(0, 0, 0, h); cl.addColorStop(0, 'rgba(' + R.nevoa + ',0.42)'); cl.addColorStop(0.6, 'rgba(' + R.nevoa + ',0.2)'); cl.addColorStop(1, 'rgba(' + R.nevoa + ',0)'); q.fillStyle = cl; q.fillRect(0, 0, w, h); }), 0, 0, D.VW, D.VH); gl.globalAlpha = 1;
+    brilhos.push([h.x, h.y - 32, 104, '255,206,150', 0.5]);
+    for (const b of brilhos) { const x = b[0] - ox, y = b[1] - oy; if (x < -b[2] || x > D.VW + b[2]) continue; gl.globalAlpha = Math.max(0, Math.min(1, b[4])); gl.drawImage(mancha(b[3]), x - b[2], y - b[2], b[2] * 2, b[2] * 2); }
+    gl.globalAlpha = 1;
     g.globalCompositeOperation = 'multiply'; g.drawImage(luz, 0, 0); g.globalCompositeOperation = 'source-over';
+    // escurece as bordas
+    g.drawImage(guarda('borda' + D.VW, D.VW, D.VH, (q, w, h) => { const vg = q.createRadialGradient(w / 2, h * 0.52, h * 0.4, w / 2, h * 0.52, w * 0.66); vg.addColorStop(0, 'rgba(2,5,7,0)'); vg.addColorStop(1, 'rgba(2,5,7,0.62)'); q.fillStyle = vg; q.fillRect(0, 0, w, h); }), 0, 0);
+    if (J.clarao > 0) { g.globalAlpha = Math.min(0.5, J.clarao * 0.5); g.fillStyle = J.heroi.estado === 'dor' ? '#8a1a10' : '#fff2d8'; g.fillRect(0, 0, D.VW, D.VH); g.globalAlpha = 1; }
+    const perigo = h.estado !== 'morto' && h.hp < h.ficha.vida * 0.28; if (perigo) { const pv = g.createRadialGradient(D.VW / 2, D.VH / 2, D.VH * 0.35, D.VW / 2, D.VH / 2, D.VW * 0.6); pv.addColorStop(0, 'rgba(120,10,10,0)'); pv.addColorStop(1, 'rgba(120,10,10,' + (0.28 + 0.12 * Math.sin(tempo * 5)) + ')'); g.fillStyle = pv; g.fillRect(0, 0, D.VW, D.VH); }
 
-    // vinheta, sangue na borda quando a vida está baixa, clarão
-    const vg = g.createRadialGradient(VW / 2, VH / 2, VH * 0.35, VW / 2, VH / 2, VW * 0.62);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)');
-    g.fillStyle = vg; g.fillRect(0, 0, VW, VH);
-    const pouca = h.hp / h.ficha.vida;
-    if (pouca < 0.3 && h.estado !== 'morto') { const rv = g.createRadialGradient(VW / 2, VH / 2, VH * 0.3, VW / 2, VH / 2, VW * 0.6); rv.addColorStop(0, 'rgba(120,0,0,0)'); rv.addColorStop(1, 'rgba(140,10,10,' + (0.3 + Math.sin(tempo * 5) * 0.1) * (1 - pouca / 0.3) + ')'); g.fillStyle = rv; g.fillRect(0, 0, VW, VH); }
-    if (J.clarao > 0) { g.fillStyle = 'rgba(255,240,220,' + Math.min(0.5, J.clarao * 0.5) + ')'; g.fillRect(0, 0, VW, VH); }
-
-    // para a tela grande
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(buf, 0, 0, cv.width, cv.height);
-    // números de dano, nítidos
-    const ex = cv.width / VW, ey = cv.height / VH;
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    // números nítidos, por cima
+    const ex = cv.width / D.VW, ey = cv.height / D.VH;
     ctx.textAlign = 'center';
-    for (const t of J.textos) {
-      const k = t.vida / t.max, sz = Math.round((t.grande ? 13 : 10) * ey * 0.5 + 6) * (t.grande ? 1.15 : 1);
-      ctx.font = '700 ' + sz + 'px Cinzel, serif'; ctx.globalAlpha = Math.min(1, k * 2.5);
-      const x = (t.x - ox) * ex, y = (t.y - oy) * ey;
-      ctx.lineWidth = Math.max(2, sz / 5); ctx.strokeStyle = '#000'; ctx.strokeText(t.t, x, y); ctx.fillStyle = t.cor; ctx.fillText(t.t, x, y);
-    }
+    for (const t of J.textos) { const a = Math.min(1, t.vida / 0.35), s = (t.grande ? 13 : 10) * (1 + Math.max(0, t.vida - t.max + 0.12) * 4); ctx.globalAlpha = a; ctx.font = '700 ' + Math.round(s * ex) + 'px Cinzel, serif'; ctx.lineWidth = 3 * ex * 0.6; ctx.strokeStyle = 'rgba(6,5,4,0.85)'; const x = (t.x - ox) * ex, y = (t.y - oy) * ey; ctx.strokeText(t.t, x, y); ctx.fillStyle = t.cor; ctx.fillText(t.t, x, y); }
     ctx.globalAlpha = 1;
   };
-  D.telaDe = (x, y) => ({ x: ((x - cam.x) * cv.width) / D.VW, y: ((y - cam.y) * cv.height) / D.VH });
-  D.centrar = function () { const h = J.heroi; cam.x = Math.max(0, h.x - D.VW / 2); cam.y = Math.max(0, Math.min(h.y - D.VH * 0.62, F.H * T - D.VH)); cam.alvoX = 0; };
-  D.ANDA = ANDA; D.GOLPE = GOLPE;
 })();

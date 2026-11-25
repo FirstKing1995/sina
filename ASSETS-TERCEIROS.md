@@ -39,3 +39,13 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 
 ## Animações dos monstros comuns (assets/spr/*_e e *_ge)
 - Caminhada de bandido, apagado, aranha, cobra, escorpião, onça, jagunço, cangaceiro, esqueleto, cururu, queixada, benzedor, cão, múmia, jacaré, tatu, brutamontes, afogado, cavaleiro, assombração, morcego, alma, marimbondo, espectro e cabra, e ataque de bandido, apagado, jagunço, cangaceiro, esqueleto, benzedor, múmia, cavaleiro, assombração e cabra: geradas no **PixelLab** (animate_image) a partir dos próprios sprites do jogo, na conta do autor. Originais em `arte-pixel/anim-pl`.
+
+## SINA · O Primeiro (24/11/2026)
+
+| O quê | Origem |
+|---|---|
+| `assets/barro/barro.png` (herói de barro, 14 movimentos) | PixelLab, personagem próprio |
+| `assets/barro/folhas.png`, `couro.png` | Gemini, a partir da folha de poses do herói |
+| `assets/floresta/f_*.webp`, `nasce.webp`, `p_*.webp`, `m_*.webp` | Gemini, pedidos próprios |
+| `assets/floresta/itens.webp`, `armas.webp` | ChatGPT, pedido próprio |
+| `som/` | os mesmos do jogo anterior, listados acima |
