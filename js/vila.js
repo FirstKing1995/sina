@@ -20,6 +20,7 @@
     const s = J.save; s.vila = s.vila || {}; J.preso = null; J.povo = [];
     for (const id in C.VILA) if (C.VILA[id].area === s.area && !naVila(id)) { const m = F.atual.marcos.filter((q) => q.acampa); const q = m[m.length - 1]; if (q) J.preso = { id, x: q.x + 84, y: F.chao(q.x + 84) }; }
     if (F.atual.lugar) for (const id of J.moradores()) { const x = vaga(id) + rnd(-20, 20); J.povo.push({ id, x, y: F.chao(x), vx: 0, vy: 0, w: 14, h: 52, dir: 1, noChao: true, t: rnd(0, 3), andou: 0, vai: null, cd: 1 }); }
+    J.poeCidade();
   };
   const vaga = (id) => F.atual.terreno.x0 + VAGAS[C.VILA[id].fila] * T;
   J.vagaDe = vaga;
@@ -28,7 +29,7 @@
   };
   J.pertoVila = function (h) {
     if (J.preso && Math.abs(J.preso.x - h.x) < 34 && Math.abs(J.preso.y - h.y) < 50 && !J.inimigos.some((e) => e.vivo && e.estado !== 'vaga' && Math.abs(e.x - h.x) < 240)) return { tipo: 'preso', o: J.preso };
-    if (!J.raid) for (const q of J.povo || []) if (Math.abs(q.x - h.x) < 22 && Math.abs(h.vx) < 20 && Math.abs(q.y - h.y) < 40) return { tipo: 'morador', o: q };
+    if (!J.raid) for (const q of J.povo || []) if (!q.dentro && Math.abs(q.x - h.x) < 22 && Math.abs(h.vx) < 20 && Math.abs(q.y - h.y) < 40) return { tipo: 'morador', o: q };
     return null;
   };
   // o que cada um faz por você (uma vez por dia)
@@ -51,6 +52,7 @@
   };
   J.passoVila = function (dt) {
     for (const q of J.povo || []) {
+      if (q.id === 'fam') continue;
       q.t += dt; q.cd -= dt; q.tGolpe = Math.max(0, (q.tGolpe || 0) - dt); const casa = vaga(q.id);
       // na noite de ataque, vigia e caçador lutam; os outros se escondem
       const luta = J.raid && (q.id === 'vigia' || q.id === 'cacador'); q.dentro = !!J.raid && !luta;

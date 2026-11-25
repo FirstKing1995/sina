@@ -16,8 +16,9 @@ Um deus molda o primeiro homem do barro e vai embora. O jogador dá o nome. Ele 
 3. **Cada caminho** tem duas saídas além do covil: uma trilha no meio e uma passagem no fim, que ligam um caminho ao outro. No covil está o dono do caminho e um círculo com outra magia.
 4. **Vale do Rio Manso** (abre com dois donos derrotados): a humana perdida está cercada; é preciso protegê-la por três ondas.
 5. **Clareira do Rio:** o lar. Barraca de folhas, de couro, cabana trançada, de toras e casa de pedra; cercas, estacas, varal, horta, baú e berço. Às 21 h a casa é atacada.
-6. **Vila (primeira etapa, `js/vila.js`):** quatro pessoas presas nos acampamentos do fundo dos caminhos. Soltas, vão morar na clareira: ferreiro (afia até +9), curandeira, caçador e vigia. Com duas, a vila ganha nome.
-7. **Próximas fases:** a vila crescer e a cidade.
+6. **Vila (`js/vila.js` e `js/cidade.js`):** quatro pessoas presas nos acampamentos do fundo dos caminhos. Soltas, vão morar na clareira: ferreiro (afia até +9), curandeira, caçador e vigia. Cada uma faz pedidos e, atendida, dá um bônus permanente (confiança até 5).
+   Obras da vila: poço, celeiro, casas de família, torres, arsenal e praça. Famílias chegam de manhã se houver água, casa e comida; com fome três dias, vão embora. Estágios: acampamento, aldeia, vila (mercador a cada três dias) e cidade (bônus, e um cerco a cada sete dias).
+7. **Próximas fases:** a definir com quem joga.
 
 ## Regras
 

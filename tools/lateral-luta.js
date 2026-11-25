@@ -2,7 +2,7 @@
 // "bate" só ataca; "joga" rola quando vê o golpe vindo e bate quando há brecha.
 global.window = global; global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const L = __dirname + (require('fs').existsSync(__dirname + '/../js/motor.js') ? '/../js/' : '/../lateral/js/');
-for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila']) require(L + f + '.js');
+for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila', 'cidade']) require(L + f + '.js');
 const J = window.Jogo, F = window.Fase; J.semSalvar = true;
 function luta(tipos, modo, manha, o) {
   J.save = J.novoSave('bot'); Object.assign(J.save, o || {}); J.heroi = null; J.entrarArea('lar'); J.inimigos = []; J.save.emb = {}; J.save.lar.ultimo = 1; J.hum = null;

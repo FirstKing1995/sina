@@ -129,6 +129,11 @@
     else if (tipo === 'nasceu') batizar = true;
     else if (tipo === 'caderno') { const B = C.BICHOS[x[0]]; if (B) conquista(x[1] === 1 ? 'Caderno: ' + C.TIPOS[x[0]].nome : x[1] === 4 ? C.TIPOS[x[0]].nome + ': hábitos' : C.TIPOS[x[0]].nome + ': fraqueza', x[1] === 1 ? B[0] : x[1] === 4 ? B[1] : B[2] + ' (+8% de dano)', C.ESPECIES[C.TIPOS[x[0]].esp].cor); }
     else if (tipo === 'morador') { const V = C.VILA[x], v = s.vila[x]; J.mostraArea(v.nome + ' está livre', V.oficio + ' · foi para ' + nomeArea('lar')); setTimeout(() => sussurra('“' + V.chega + '”', 6), 3200); const n = J.moradores().length; if (n === 2) setTimeout(() => conquista('Já dá para chamar de vila', 'Dê um nome a ela na aba Lar.', '#8fe0c8'), 7000); if (n === 4) setTimeout(() => conquista('Fundador', 'Quatro vidas devolvidas. A clareira nunca mais ficou em silêncio.', '#e9c47a'), 7000); }
+    else if (tipo === 'estagio') { J.mostraArea(nomeArea('lar') + ' agora é ' + C.ESTAGIOS[x].toLowerCase(), x === 4 ? 'você saiu do barro sozinho, e olhe só' : 'um mercador vai passar a cada três dias'); if (x === 4) setTimeout(() => conquista('O Primeiro da Cidade', '+15 de vida e +10 de fôlego. A cada sete dias, um cerco.', '#e9c47a'), 4200); }
+    else if (tipo === 'familia') conquista('Chegou gente', x.nome + ': ficaram numa das casas.', '#8fe0c8');
+    else if (tipo === 'familiaFoi') conquista('Foram embora', x.nome + ': três dias sem comida no celeiro.', '#d8a060');
+    else if (tipo === 'confia') conquista(s.vila[x[0]].nome + ' confia em você', C.CONFIA[x[0]] + ' (confiança ' + x[1] + ' de 5)', '#8fe0c8');
+    else if (tipo === 'cerco') { J.mostraArea('O cerco', x + ' ondas, e os fortes de cada espécie no fim'); som('uivo', 0.9, 0.6); }
     else if (tipo === 'zona') { if (areaT <= 0) J.mostraArea(x.nome); }
     else if (tipo === 'marco') { J.mostraArea(x.nome); sussurra(x.texto, 6.5); som('livro', 0.5); }
     else if (tipo === 'oco') sussurra('O chão era oco.', 3);
@@ -167,7 +172,10 @@
     if (p.tipo === 'casa') { abreMenu('lar'); return; }
     if (p.tipo === 'fala') { abreFala(); return; }
     if (p.tipo === 'preso') { J.soltaPreso(); return; }
-    if (p.tipo === 'morador') { abreMorador(p.o.id); return; }
+    if (p.tipo === 'morador') { if (p.o.id === 'fam') sussurra('“' + J.falaFamilia() + '”', 4.5); else abreMorador(p.o.id); return; }
+    if (p.tipo === 'poco') { J.bebePoco(); return; }
+    if (p.tipo === 'celeiro') { abreCeleiro(); return; }
+    if (p.tipo === 'mercador') { abreMercador(); return; }
     if (p.tipo === 'pesca') { J.pesca(); return; }
     if (p.tipo === 'crianca') { abreFilho(p.o.p); return; }
     if (p.tipo === 'coleta') J.colher(p.o);
@@ -206,7 +214,7 @@
     const v = $('veu'); v.classList.add('ver'); solta();
     setTimeout(() => { J.entrarArea(p.para[0], p.para[1]); D.centrar(); areaVista = null; D.quadro(0.016); setTimeout(() => { v.classList.remove('ver'); viajando = false; }, 220); }, 420);
   }
-  const rotulo = (p) => (p.tipo === 'preso' ? 'Quebrar a jaula' : p.tipo === 'morador' ? 'Falar com ' + J.save.vila[p.o.id].nome : p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
+  const rotulo = (p) => (p.tipo === 'preso' ? 'Quebrar a jaula' : p.tipo === 'morador' ? (p.o.id === 'fam' ? 'Conversar' : 'Falar com ' + J.save.vila[p.o.id].nome) : p.tipo === 'poco' ? 'Beber do poço' : p.tipo === 'celeiro' ? 'Abrir o celeiro' : p.tipo === 'mercador' ? 'Trocar com o mercador' : p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
 
   // ---------- fogueira ----------
   function abreFogo(f) {
@@ -247,7 +255,22 @@
     if (id === 'curandeira') { op('Cuidar das feridas', 'cura', true); op(v.deu === s.dia ? 'O chá de hoje já foi' : 'Chá forte: +20 de vida até amanhã (2 ervas)', 'cha', v.deu !== s.dia && (s.inv.erva || 0) >= 2); }
     if (id === 'cacador') op(v.deu === s.dia ? 'A lição de hoje já foi' : 'Treinar com ele: perícia da arma e das pernas', 'ensina', v.deu !== s.dia);
     if (id === 'vigia') op('Remendar as cercas (1 galho cada)', 'remenda', (s.inv.galho || 0) > 0 && ['cercaE', 'cercaD'].some((k) => s.lar[k] && s.lar[k].n && s.lar[k].hp < J.cheioObra(k)));
+    { const p = J.pedido(id), cf = v.conf || 0; if (p) { const b = botao('Pedido: ' + p.n + '× ' + C.MAT[p.m].toLowerCase() + ' (tem ' + (s.inv[p.m] || 0) + ')', () => { if (J.atende(id)) abreMorador(id); }); b.disabled = (s.inv[p.m] || 0) < p.n; c.append(b); } c.append(el('p', 'nota', 'Confiança ' + cf + ' de 5 · cada uma dá ' + C.CONFIA[id] + (p || cf >= 5 ? '' : ' · novo pedido em ' + Math.max(1, v.prox - s.dia) + (v.prox - s.dia > 1 ? ' dias' : ' dia')))); }
     c.append(el('p', 'nota', { ferreiro: 'Afia até +9 e às vezes deixa um ferro pela manhã.', curandeira: 'Deixa um curativo por manhã.', cacador: 'Traz carne e couro. Na noite de ataque, atira.', vigia: 'Conserta a cerca de madrugada e luta na noite de ataque.' }[id]));
+  }
+  function abreCeleiro() {
+    modo = 'fogo'; mostra('fogo'); const s = J.save, c = $('fg-corpo'), f = J.familias().length; c.innerHTML = '';
+    $('fg-nome').textContent = 'Celeiro'; $('fg-sair').textContent = 'Fechar'; $('fg-nota').textContent = J.comidaPovo() + ' de 60 porções. ' + (f ? f + (f > 1 ? ' famílias comem ' : ' família come ') + f + ' por dia.' : 'Ninguém para comer ainda.');
+    let tem = 0; for (const m in C.PORCAO) if (s.inv[m] > 0) { tem++; const b = botao('Guardar ' + C.MAT[m].toLowerCase() + ' (' + s.inv[m] + '): vale ' + C.PORCAO[m], () => { if (J.doaComida(m)) abreCeleiro(); else sussurra('O celeiro está cheio.', 2); }); c.append(b); }
+    if (!tem) c.append(el('p', 'nota', 'Você não tem carne, peixe nem fruta na mochila.'));
+    c.append(el('p', 'nota', 'Três dias sem comida e uma família vai embora. A horta põe uma porção por manhã.'));
+  }
+  function abreMercador() {
+    modo = 'fogo'; mostra('fogo'); const s = J.save, c = $('fg-corpo'); c.innerHTML = '';
+    $('fg-nome').textContent = 'Mercador'; $('fg-sair').textContent = 'Boa estrada'; $('fg-nota').textContent = '“Moeda não vale nada por aqui. Couro vale.”';
+    const lista = (o) => Object.keys(o).map((m) => o[m] + '× ' + C.MAT[m].toLowerCase()).join(', ');
+    for (const t of J.trocas()) { const k = Object.keys(t.custo)[0], b = botao(t.resta > 0 ? lista(t.custo) + ' (tem ' + (s.inv[k] || 0) + ') por ' + t.n + '× ' + C.MAT[t.da].toLowerCase() : C.MAT[t.da] + ': acabou', () => { if (J.troca(t)) abreMercador(); }); b.disabled = !J.podeTroca(t); c.append(b); }
+    c.append(el('p', 'nota', 'Passa a cada três dias, das 7 às 18 h. Cada troca, duas vezes.'));
   }
   function abreFilho(p) {
     modo = 'fogo'; mostra('fogo'); const s = J.save, id = s.dia - p.dia, c = $('fg-corpo'); c.innerHTML = '';
@@ -283,7 +306,8 @@
       c.append(el('p', 'nota', (L.casa.n ? C.CASAS[L.casa.n].nome + ', ' + Math.ceil(L.casa.hp) + ' de ' + C.CASAS[L.casa.n].hp : 'Ainda não há casa. Só chão.') + ' · fogo: ' + (L.lenha > 0 ? Math.round(L.lenha) + ' h de lenha' : 'apagado') + ' · dia ' + s.dia));
       c.append(el('p', 'nota', aqui ? 'Toda noite, às 21 h, alguém vem. Cerca segura, estaca fere, fogo aceso afasta uma onda.' : 'Para construir e consertar, volte à Clareira do Rio.'));
       if (L.curtume && L.curtume.n && s.roupa !== 'barro') { const n = s.reforco[s.roupa] || 0, b = botao(n >= 3 ? C.ROUPAS[s.roupa].nome + ': reforçada ao máximo' : 'Reforçar ' + C.ROUPAS[s.roupa].nome.toLowerCase() + ' (' + n + '/3): 4 couros e 4 fibras, +3% de defesa', () => { if (J.reforca()) pintaMenu(); }); b.disabled = !aqui || n >= 3 || (s.inv.couro || 0) < 4 || (s.inv.fibra || 0) < 4; c.append(b); }
-      for (const id of ['casa', 'cercaE', 'cercaD', 'estacasE', 'estacasD', 'varal', 'horta', 'curtume', 'bau', 'berco']) {
+      for (const id of ['casa', 'cercaE', 'cercaD', 'estacasE', 'estacasD', 'varal', 'horta', 'curtume', 'bau', 'berco', ...C.OBRAS_VILA]) {
+        if (id === 'poco') { c.append(el('h3', '', C.ESTAGIOS[J.estagio()])); const ft = J.faltaEstagio(); if (ft) c.append(el('p', 'nota', ft)); if (L.celeiro && L.celeiro.n) c.append(el('p', 'nota', 'Celeiro: ' + J.comidaPovo() + ' porções · famílias: ' + J.familias().length)); }
         const o = J.custoObra(id), tenho = id === 'casa' ? L.casa.n : L[id] && L[id].n, cheio = J.cheioObra(id), hp = id === 'casa' ? L.casa.hp : L[id] ? L[id].hp : 0;
         const l = el('div', 'linha' + (J.podeObra(id) ? ' pode' : '')), t = el('div', 'l-txt'), d = el('div');
         const nome = o ? (id === 'casa' && tenho ? 'Melhorar: ' : '') + o.nome + (id !== 'casa' && tenho ? ' · nível ' + o.n : '') : (id === 'casa' ? C.CASAS[L.casa.n].nome : C.OBRAS[id].nome);
@@ -298,7 +322,7 @@
       c.append(el('p', 'nota', H ? H.nome + ': ' + J.lacoNome(H.laco).toLowerCase() + (H.onde === 'levada' ? ', levada para ' + nomeArea(H.cativeiro) : H.onde === 'segue' ? ', com você' : ', no lar') + (H.gravida ? ', espera um filho' : '') : 'Ninguém ainda. No vale, alguém gritou.'));
       if (s.mae) c.append(el('p', 'nota', s.mae.nome + ', sua mãe, cuida do lar.'));
       for (const p of s.prole) { const id = s.dia - p.dia; c.append(el('p', 'nota', p.nome + ': ' + (id < 2 ? 'bebê de colo' : id < 5 ? 'criança, faltam ' + (5 - id) + ' dias para poder continuar você' : 'crescido, pode continuar você'))); }
-      { const ms = J.moradores(); c.append(el('h3', '', 'Vila')); if (!ms.length) c.append(el('p', 'nota', 'Há gente presa nos quatro caminhos, nos acampamentos do fundo.')); for (const m of ms) c.append(el('p', 'nota', s.vila[m].nome + ', ' + C.VILA[m].oficio.toLowerCase() + ', desde o dia ' + s.vila[m].dia)); if (ms.length >= 2) { const i = el('input', 'nomevila'); i.maxLength = 22; i.placeholder = 'Nome da vila'; i.value = s.nomeVila || ''; i.onchange = () => { s.nomeVila = i.value.trim(); J.salvar(); }; c.append(i); } }
+      { const ms = J.moradores(); c.append(el('h3', '', 'Vila')); if (!ms.length) c.append(el('p', 'nota', 'Há gente presa nos quatro caminhos, nos acampamentos do fundo.')); for (const m of ms) c.append(el('p', 'nota', s.vila[m].nome + ', ' + C.VILA[m].oficio.toLowerCase() + ', desde o dia ' + s.vila[m].dia)); for (const f of J.familias()) c.append(el('p', 'nota', f.nome + ', desde o dia ' + f.dia + (f.fome ? ' · com fome há ' + f.fome + (f.fome > 1 ? ' dias' : ' dia') : ''))); if (ms.length >= 2) { const i = el('input', 'nomevila'); i.maxLength = 22; i.placeholder = 'Nome da vila'; i.value = s.nomeVila || ''; i.onchange = () => { s.nomeVila = i.value.trim(); J.salvar(); }; c.append(i); } }
       c.append(el('p', 'nota', 'Filhos: laço de Companhia (60), cabana trançada, berço e uma noite dormida no lar.'));
     } else if (aba === 'criar') {
       c.append(el('p', 'nota', 'Ofício ' + J.nivel('oficio') + '. Quanto mais você faz, melhor o que consegue fazer.'));

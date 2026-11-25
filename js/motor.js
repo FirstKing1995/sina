@@ -97,7 +97,7 @@
 
   // ---------- vida guardada ----------
   J.save = null;
-  J.novoSave = (nome) => ({ v: 3, abates: {}, reforco: {}, vila: {}, nomeVila: '', amuletos: [], amu: [], tocha: 0, marcos: {}, baus: {}, fracas: {}, mapa: {}, hora: 8, dia: 1, emb: {}, lar: null, hum: null, mae: null, prole: [], nome, area: 'floresta', x: null, hp: null, fome: 100, inv: {}, armas: ['punho'], arma: 'punho', afiado: {}, roupas: ['barro'], roupa: 'barro', per: {}, mortes: { lobo: 0, cobra: 0, zumbi: 0, goblin: 0 }, magias: [], magia2: null, sina: 0, chefes: {}, dicas: {}, fogos: {}, fogo: null, filhos: 0, vida: 1, tempo: 0, colhido: 0, visitas: {}, distancia: 0 });
+  J.novoSave = (nome) => ({ v: 3, abates: {}, reforco: {}, vila: {}, nomeVila: '', familias: [], estagio: 0, amuletos: [], amu: [], tocha: 0, marcos: {}, baus: {}, fracas: {}, mapa: {}, hora: 8, dia: 1, emb: {}, lar: null, hum: null, mae: null, prole: [], nome, area: 'floresta', x: null, hp: null, fome: 100, inv: {}, armas: ['punho'], arma: 'punho', afiado: {}, roupas: ['barro'], roupa: 'barro', per: {}, mortes: { lobo: 0, cobra: 0, zumbi: 0, goblin: 0 }, magias: [], magia2: null, sina: 0, chefes: {}, dicas: {}, fogos: {}, fogo: null, filhos: 0, vida: 1, tempo: 0, colhido: 0, visitas: {}, distancia: 0 });
   const nv = (k) => (J.save.per[k] ? J.save.per[k].n : 0);
   J.nivel = nv;
   J.treina = function (k, xp) {
@@ -127,6 +127,7 @@
     f.critico = (a.critico || 0.04) + (tem('goblin', 2) ? 0.15 : 0) + (amu('presas') ? 0.1 : 0);
     f.rola = 18 * (tem('lobo', 2) ? 0.5 : 1) * (r.rola || 1);
     if (amu('pena')) f.pulo += 0.07;
+    if (J.bonusVila) J.bonusVila(f); f.vida = Math.round(f.vida);
     return f;
   };
   J.recalcular = function () { const h = J.heroi; if (!h) return; const antes = h.ficha ? h.ficha.vida : 0; h.ficha = J.ficha(); if (antes && h.ficha.vida > antes && h.estado !== 'morto') h.hp += h.ficha.vida - antes; h.hp = Math.min(h.hp, h.ficha.vida); };

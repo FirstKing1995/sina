@@ -57,3 +57,5 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 | `assets/floresta/m_goblin_*.webp` | ChatGPT, pedido próprio |
 | `assets/floresta/itens.webp`, `armas.webp` | ChatGPT, pedido próprio |
 | `som/` | os mesmos do jogo anterior, listados acima |
+
+- 25/11/2026: moradores e povo (`assets/barro/vila.png`), construções da vila (`assets/floresta/cidade.webp`) e andar dos goblins (`m_goblin_*_anda.webp`): Gemini, recorte por `tools/lateral-cidade.py` e `tools/lateral-pernas.py`. Lobo vermelho: recoloração da corrida do PixelLab.

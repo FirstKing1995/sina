@@ -282,14 +282,14 @@
   }
   // ---------- o lar: terra vazia; tudo aqui é você que levanta ----------
   function lar() {
-    const o = Obra('lar', 'vale', 226, 88); o.a.nome = 'Clareira do Rio'; o.a.semMata = [34, 196];
+    const o = Obra('lar', 'vale', 262, 88); o.a.nome = 'Clareira do Rio'; o.a.semMata = [34, 232];
     o.plano(14).porta('volta', ['vale', 'lar'], 'Voltar ao vale', 'arco', -7); o.a.inicio = { x: 12 * T };
     o.plano(6).pega('madeira').plano(5).pega('galho').plano(6).pega('madeira').plano(5);
     const x0 = o.x; // 36: começo do terreno
-    o.plano(154);
-    o.a.terreno = { x0: x0 * T, x1: (x0 + 154) * T, piso: o.y * T };
+    o.plano(190);
+    o.a.terreno = { x0: x0 * T, x1: (x0 + 190) * T, piso: o.y * T };
     const px = (d) => (x0 + d) * T;
-    o.a.lugar = { lago: px(5), curtume: px(38), casa: px(50), fogo: px(62), varal: px(34), horta: px(76), berco: px(43), bau: px(57), cercaE: px(16), cercaD: px(142), estacasE: px(10), estacasD: px(148), cepo: px(26), lenha: px(68) };
+    o.a.lugar = { lago: px(5), curtume: px(38), casa: px(50), fogo: px(62), varal: px(34), horta: px(76), berco: px(43), bau: px(57), cercaE: px(16), cercaD: px(178), estacasE: px(10), estacasD: px(184), cepo: px(26), lenha: px(68), torre: px(23), arsenal: px(30), poco: px(81), celeiro: px(88), mercador: px(96), praca: px(103), casario: px(142), torreD: px(174) };
     o.a.fogos.push({ id: 'lar_f0', nome: 'O fogo do lar', x: px(62), tx: x0 + 62, y: o.y * T });
     o.plano(6).pega('madeira').plano(5).pega('pedra').plano(4).pega('madeira').plano(4).pega('fibra').plano(4).pega('folha').plano(4);
     return o.fim();

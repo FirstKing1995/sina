@@ -1,7 +1,7 @@
 // Dano por segundo e golpe carregado de cada arma num boneco parado. node tools/lateral-armas.js
 global.window = global; global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const L = __dirname + (require('fs').existsSync(__dirname + '/../js/motor.js') ? '/../js/' : '/../lateral/js/');
-for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila']) require(L + f + '.js');
+for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila', 'cidade']) require(L + f + '.js');
 const J = window.Jogo, F = window.Fase, C = window.Dados; J.semSalvar = true;
 for (const a of C.ORDEM_ARMAS) {
   J.save = J.novoSave('b'); J.save.armas = [a]; J.save.arma = a; J.save.inv.flecha = 99; J.save.hora = 12; J.heroi = null; J.entrarArea('lar'); J.passoClima = null; J.recalcular();

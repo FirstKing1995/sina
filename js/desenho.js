@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=12' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=13' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -33,7 +33,7 @@
     for (const r of B.roupas) l.push(['h_' + r, 'assets/barro/' + r + '.png']);
     for (const m in A2.monstros) { l.push(['m_' + m, 'assets/floresta/m_' + m + '.webp']); for (const x of ['anda', 'pose']) if (A2.monstros[m][x]) l.push(['m_' + m + '_' + x, 'assets/floresta/m_' + m + '_' + x + '.webp']); }
     for (const r in C.REGIOES) { l.push(['f_' + r, 'assets/floresta/f_' + r + '.webp']); l.push(['p_' + r, 'assets/floresta/p_' + r + '.webp']); }
-    l.push(['h_mulher', 'assets/barro/mulher.png'], ['h_filho', 'assets/barro/filho.png'], ['h_vila', 'assets/barro/vila.png'], ['casa', 'assets/floresta/casa.webp'], ['marcos', 'assets/floresta/marcos.webp'], ['itens', 'assets/floresta/itens.webp'], ['armas', 'assets/floresta/armas.webp']);
+    l.push(['h_mulher', 'assets/barro/mulher.png'], ['h_filho', 'assets/barro/filho.png'], ['h_vila', 'assets/barro/vila.png'], ['casa', 'assets/floresta/casa.webp'], ['cidade', 'assets/floresta/cidade.webp'], ['marcos', 'assets/floresta/marcos.webp'], ['itens', 'assets/floresta/itens.webp'], ['armas', 'assets/floresta/armas.webp']);
     let n = 0;
     await Promise.all(l.map(async ([k, s]) => { img[k] = await carregaImg(s); n++; if (aviso) aviso(n / l.length); }));
   };
@@ -610,10 +610,24 @@
     for (const q of J.povo || []) {
       if (q.dentro || Math.abs(q.x - cam.x - D.VW / 2) > D.VW) continue; const c = (tempo + q.x * 0.01) % 4;
       const n = q.tGolpe > 0 ? 5 : q.tTrab > 0 ? 4 : Math.abs(q.vx) > 8 ? [2, 0, 3, 1][Math.floor(q.andou / 13) % 4] : c < 2.6 ? 0 : 1;
-      sombra(q.x, q.y, 12); quadroVila(C.VILA[q.id].fila, n, q.x, q.y + 1 + (q.tTrab > 0 ? Math.abs(Math.sin(tempo * 5)) : 0), q.dir);
+      sombra(q.x, q.y, 12); quadroVila(q.id === 'fam' ? q.fila : C.VILA[q.id].fila, n, q.x, q.y + 1 + (q.tTrab > 0 ? Math.abs(Math.sin(tempo * 5)) : 0), q.dir);
     }
   }
-  function tendasVila(y) { for (const id of J.moradores()) { const x = J.vagaDe(id), v = J.save.vila[id], n = J.save.dia - v.dia >= 6 ? 'casa3' : J.save.dia - v.dia >= 2 ? 'casa2' : 'casa1'; if (x < cam.x - 120 || x > cam.x + D.VW + 120) continue; peca(n, x, y + 4, { e: n === 'casa3' ? 0.72 : 0.86, v: C.VILA[id].fila % 2 === 1 }); brilhos.push([x, y - 22, 54, '255,180,100', 0.35]); if (id === 'ferreiro') { peca('cepo', x + 40, y + 3, { e: 0.8 }); if (Math.random() < 0.1) J.poe({ tipo: 'brasa', x: x + 40, y: y - 18, vx: 0, vy: -30, vida: 0.8, max: 0.8, cor: '#ff9a40', tam: 1.3 }); } if (id === 'cacador') peca('varal', x - 44, y + 3, { e: 0.7 }); if (id === 'curandeira') prop('planta', x + 40, y + 3, { e: 0.7 }); } }
+  function predio(n, x, y, o) {
+    const p = A2.cidade && A2.cidade[n]; if (!p || !img.cidade || x + p[2] < cam.x - 10 || x - p[2] > cam.x + D.VW + 10) return; o = o || {};
+    g.save(); g.translate(Math.round(x), Math.round(y)); if (o.v) g.scale(-1, 1); g.drawImage(img.cidade, p[0], p[1], p[2], p[3], Math.round(-p[2] / 2), -p[3], p[2], p[3]); g.restore();
+  }
+  function desenhaCidade(y) {
+    const L = J.save.lar, lug = F.atual.lugar, t = (k) => (L[k] && L[k].n) || 0, noite = J.ehNoite();
+    if (t('arsenal')) predio('arsenal', lug.arsenal, y + 5);
+    J.torres().forEach((x, i) => { predio('torre', x, y + 5, { v: i === 1 }); const fx = x + (i ? 30 : -30); brilhos.push([fx, y - 112, 90 + Math.sin(tempo * 8 + i) * 5, '255,170,80', 0.8]); if (Math.random() < 0.12) J.poe({ tipo: 'brasa', x: fx, y: y - 116, vx: 0, vy: -24, vida: 0.7, max: 0.7, cor: '#ffb060', tam: 1.2 }); });
+    if (t('poco')) predio('poco', lug.poco, y + 4);
+    if (t('celeiro')) predio('celeiro', lug.celeiro, y + 5);
+    if (t('praca')) { predio('praca', lug.praca, y + 5); brilhos.push([lug.praca + 2, y - 62, 80 + Math.sin(tempo * 1.6) * 8, '255,160,90', 0.8]); if (Math.random() < 0.06) J.poe({ tipo: 'alma', x: lug.praca + (Math.random() - 0.5) * 30, y: y - 50, vy: -14, vida: 1.6, max: 1.6, cor: '#ffcf8a', tam: 1.4 }); }
+    for (let i = 0; i < t('casario'); i++) { const x = J.loteDe(i), f = J.familias().find((q) => q.lote === i); predio(i < 2 ? 'fam1' : 'fam2', x, y + 5, { v: i % 2 === 1 }); if (f) { brilhos.push([x, y - 34, noite ? 84 : 50, '255,190,110', noite ? 0.7 : 0.14]); if (i >= 2 && Math.random() < 0.06) J.poe({ tipo: 'poeira', x: x + (i % 2 ? -30 : 30), y: y - 114, vy: -20, vx: 6, vida: 1.8, max: 1.8, tam: 4 }); } }
+    if (J.mercador() && !J.raid) { predio('mercado', lug.mercador, y + 5); quadroVila(6, Math.floor(tempo * 0.6) % 2, lug.mercador - 8, y + 1, 1); brilhos.push([lug.mercador, y - 40, 70, '255,190,120', 0.2]); }
+  }
+  function tendasVila(y) { for (const id of J.moradores()) { const x = J.vagaDe(id), v = J.save.vila[id], n = J.save.dia - v.dia >= 6 ? 'casa3' : J.save.dia - v.dia >= 2 ? 'casa2' : 'casa1'; if (x < cam.x - 120 || x > cam.x + D.VW + 120) continue; peca(n, x, y + 4, { e: n === 'casa3' ? 0.72 : 0.86, v: C.VILA[id].fila % 2 === 1 }); brilhos.push([x, y - 22, 54, '255,180,100', J.ehNoite() ? 0.4 : 0.16]); if (id === 'ferreiro') { peca('cepo', x + 40, y + 3, { e: 0.8 }); if (Math.random() < 0.1) J.poe({ tipo: 'brasa', x: x + 40, y: y - 18, vx: 0, vy: -30, vida: 0.8, max: 0.8, cor: '#ff9a40', tam: 1.3 }); } if (id === 'cacador') peca('varal', x - 44, y + 3, { e: 0.7 }); if (id === 'curandeira') prop('planta', x + 40, y + 3, { e: 0.7 }); } }
   function barraObra(x, y, o, cheio) { if (!o || o.hp >= cheio || !cheio) return; g.fillStyle = '#0a0808d0'; g.fillRect(x - 21, y, 42, 4); g.fillStyle = o.hp < cheio * 0.35 ? '#d0482e' : '#a8845a'; g.fillRect(x - 20, y + 1, 40 * Math.max(0, o.hp / cheio), 2); }
   function desenhaLar(frenteDe) {
     const A = F.atual, L = J.save.lar; if (!A.lugar || !L) return; const lug = A.lugar, y = A.terreno.piso;
@@ -630,7 +644,7 @@
       if (L.horta && L.horta.n) peca('horta', lug.horta, y + 8, { a: 1 });
       if (L.bau && L.bau.n) { const bx = Math.round(lug.bau), by = y + 2; for (const [q, w, h1, cx, cy] of [['#0c0906', 30, 20, -15, -20], ['#4a3220', 28, 18, -14, -19], ['#6a4a2e', 28, 6, -14, -19], ['#8a6640', 28, 1, -14, -19], ['#2c1d12', 28, 1, -14, -13], ['#2c1d12', 1, 18, -6, -19], ['#2c1d12', 1, 18, 5, -19], ['#1a1410', 28, 2, -14, -3], ['#8a8078', 5, 6, -2, -15], ['#1a1410', 1, 2, 0, -13]]) { g.fillStyle = q; g.fillRect(bx + cx, by + cy, w, h1); } }
       if (L.berco && L.berco.n) { peca('berco', lug.berco, y + 3); if ((J.gente || []).some((q) => q.bebe)) { g.fillStyle = '#b87850'; g.beginPath(); g.arc(lug.berco - 6, y - 24 + Math.sin(tempo * 2) * 0.6, 4, 0, 7); g.fill(); g.fillStyle = '#2a1c14'; g.fillRect(lug.berco - 10, y - 29, 8, 3); } }
-      tendasVila(y); lago(lug.lago, y);
+      desenhaCidade(y); tendasVila(y); lago(lug.lago, y);
       if (L.curtume && L.curtume.n) { peca('varal', lug.curtume, y + 3, { e: 0.8 }); itemEm(g, 'couro', lug.curtume - 16, y - 40, 0.9); itemEm(g, 'pele', lug.curtume + 2, y - 40, 0.8); }
       peca('cepo', lug.cepo, y + 3); if (L.lenha > 0) peca('lenha', lug.lenha, y + 3, { e: 0.5 + Math.min(0.4, L.lenha / 80) });
       for (const k of ['cercaE', 'cercaD']) if (L[k] && L[k].n) { const o = L[k]; if (o.hp > 0) { peca('cerca', lug[k], y + 4, { e: 0.62 + o.n * 0.1 }); barraObra(lug[k], y - 92, o, J.cheioObra(k)); } else peca('lenha', lug[k], y + 4, { e: 0.5 }); }

@@ -74,7 +74,7 @@
     if (L && L.horta) { L.horta.fruta = Math.min(8, (L.horta.fruta || 0) + 2); L.horta.erva = Math.min(4, (L.horta.erva || 0) + 1); }
     const traz = (m, n) => { L.trouxe = L.trouxe || {}; L.trouxe[m] = (L.trouxe[m] || 0) + n; };
     for (const p of s.prole || []) { const id = s.dia - p.dia; if (id >= 3 && L) { if ((p.tarefa || 'juntar') === 'juntar') for (let i = 0; i < 2; i++) traz(um(['galho', 'fruta', 'fibra', 'pedra', 'folha']), 1); if (p.tarefa === 'treinar') p.treino = (p.treino || 0) + 1; } if (id === 5) avisa('cresceu', p); }
-    J.vilaAmanhece(traz);
+    J.vilaAmanhece(traz); J.cidadeAmanhece(traz);
     const H = s.hum;
     // ela também trabalha quando fica
     if (L && H && H.onde === 'lar' && H.laco >= 25 && H.fome > 15) { traz(um(['erva', 'fibra', 'fruta']), 2); if (H.laco >= 55) traz(Math.random() < 0.5 ? 'flecha' : 'curativo', Math.random() < 0.5 ? 2 : 1); }
@@ -88,7 +88,7 @@
     if (s.area === 'lar' && J.heroi && J.heroi.estado !== 'morto') { J.raidEm = 3; return; }
     const H = s.hum, emCasa = (H && H.onde === 'lar') || (s.prole && s.prole.length) || s.mae;
     if (!emCasa && Math.random() < 0.5) return;
-    const def = L.casa.n * 22 + ['cercaE', 'cercaD'].reduce((t, k) => t + (L[k] && L[k].hp > 0 ? L[k].n * 16 : 0), 0) + ['estacasE', 'estacasD'].reduce((t, k) => t + (L[k] && L[k].hp > 0 ? 8 : 0), 0) + (H && H.onde === 'lar' ? 10 + (H.lanca ? 12 : 0) : 0) + J.moradores().length * 7 + (L.lenha > 0 ? 14 : 0);
+    const def = L.casa.n * 22 + ['cercaE', 'cercaD'].reduce((t, k) => t + (L[k] && L[k].hp > 0 ? L[k].n * 16 : 0), 0) + ['estacasE', 'estacasD'].reduce((t, k) => t + (L[k] && L[k].hp > 0 ? 8 : 0), 0) + (H && H.onde === 'lar' ? 10 + (H.lanca ? 12 : 0) : 0) + J.moradores().length * 7 + J.defesaCidade() + (L.lenha > 0 ? 14 : 0);
     const atq = (34 + Math.min(90, s.dia * 4)) * rnd(0.65, 1.25);
     const falta = atq - def;
     for (const k of ['cercaE', 'cercaD']) if (L[k] && L[k].hp > 0) L[k].hp = Math.max(0, L[k].hp - atq * 0.35);
@@ -301,14 +301,15 @@
   // ---------- a noite de ataque ----------
   J.raid = null; J.raidEm = 0;
   function comecaRaid() {
-    const s = J.save, L = s.lar, n = clamp(2 + Math.floor(s.dia / 5), 2, 5) + (L.lenha > 0 ? 0 : 1);
-    J.raid = { n: -1, total: n, t: 3, dia: s.dia }; montaBarreiras(); avisa('raid', n); som('uivo', 0.9);
+    const s = J.save, L = s.lar, n = clamp(2 + Math.floor(s.dia / 5), 2, 5) + (L.lenha > 0 ? 0 : 1) + (J.ehCerco() ? 1 : 0);
+    J.raid = { n: -1, total: n, t: 3, dia: s.dia }; montaBarreiras(); avisa(J.ehCerco() ? 'cerco' : 'raid', n); som('uivo', 0.9);
   }
   function ondaRaid() {
     const s = J.save, r = J.raid, k = clamp(0.2 + s.dia * 0.04 + Object.keys(s.chefes).length * 0.1, 0.2, 1);
-    const esp = um(['lobo', 'lobo', 'goblin', 'goblin', 'zumbi', 'cobra']), q = 3 + Math.floor(r.n * 0.8) + Math.floor(s.dia / 8) + Math.floor(J.moradores().length / 2);
+    const esp = um(['lobo', 'lobo', 'goblin', 'goblin', 'zumbi', 'cobra']), q = 3 + Math.floor(r.n * 0.8) + Math.floor(s.dia / 8) + Math.floor(J.moradores().length / 2) + Math.floor(J.familias().length / 2);
     const vigia = (s.prole || []).some((p) => p.tarefa === 'vigiar' && s.dia - p.dia >= 3) ? 1 : 0;
-    for (let i = 0; i < Math.max(2, Math.min(8, q) - vigia); i++) { const lado = i % 2 ? 1 : -1, x = lado > 0 ? (F.W - 7) * T - i * 10 : 8 * T + i * 10; J.inimigos.push(nasce(F.varia(esp, k, Math.random), x, F.chao(x), { estado: 'persegue', raid: true, chamado: true, t: -i * 0.25, dir: -lado })); }
+    for (let i = 0; i < Math.max(2, Math.min(10, q) - vigia); i++) { const lado = i % 2 ? 1 : -1, x = lado > 0 ? (F.W - 7) * T - i * 10 : 8 * T + i * 10; J.inimigos.push(nasce(F.varia(esp, k, Math.random), x, F.chao(x), { estado: 'persegue', raid: true, chamado: true, t: -i * 0.25, dir: -lado })); }
+    if (J.ehCerco() && r.n + 1 >= r.total) J.ondaCerco();
     avisa('ondaRaid', [r.n + 1, r.total, esp]);
   }
   function passoRaid(dt) {
@@ -325,7 +326,7 @@
       if (vivos) return;
       J.raid = null; montaBarreiras();
       if (s.hum && s.hum.onde !== 'levada') s.hum.laco = Math.min(100, s.hum.laco + 4);
-      avisa('raidFim'); for (const m of ['couro', 'ferro', 'carne', 'osso']) J.ganha(m, 1 + Math.floor(s.dia / 6)); J.salvar(); return;
+      avisa('raidFim'); for (const m of ['couro', 'ferro', 'carne', 'osso']) J.ganha(m, (1 + Math.floor(s.dia / 6)) * (J.ehCerco() ? 3 : 1)); J.salvar(); return;
     }
     r.n++; r.t = 2.4; ondaRaid();
   }
@@ -334,7 +335,7 @@
   J.custoObra = function (id) {
     const L = J.save.lar; if (!L) return null;
     if (id === 'casa') { const n = L.casa.n + 1; return C.CASAS[n] ? { nome: C.CASAS[n].nome, custo: C.CASAS[n].custo, desc: C.CASAS[n].desc, hp: C.CASAS[n].hp, n } : null; }
-    const O = C.OBRAS[id], n = L[id] && L[id].n ? L[id].n : 0, v = O.niveis[n]; return v ? { nome: O.nome, custo: v.custo, desc: O.desc, hp: v.hp, n: n + 1, trava: O.casa && L.casa.n < O.casa ? C.CASAS[O.casa].nome : null } : null;
+    const O = C.OBRAS[id], n = L[id] && L[id].n ? L[id].n : 0, v = O.niveis[n]; return v ? { nome: O.nome, custo: v.custo, desc: O.desc, hp: v.hp, n: n + 1, trava: O.casa && L.casa.n < O.casa ? C.CASAS[O.casa].nome : O.vila && J.moradores().length < O.vila ? O.vila + (O.vila > 1 ? ' moradores' : ' morador') : null } : null;
   };
   const tem = (c) => { for (const m in c) if ((J.save.inv[m] || 0) < c[m]) return false; return true; };
   J.podeObra = (id) => { const c = J.custoObra(id); return !!c && !c.trava && tem(c.custo) && J.save.area === 'lar' && !J.raid; };
@@ -342,7 +343,7 @@
     if (!J.podeObra(id)) return false;
     const s = J.save, L = s.lar, c = J.custoObra(id); let peso = 0; for (const m in c.custo) { s.inv[m] -= c.custo[m]; peso += c.custo[m]; }
     if (id === 'casa') L.casa = { n: c.n, hp: c.hp }; else L[id] = Object.assign(L[id] || {}, { n: c.n, hp: c.hp });
-    J.treina('oficio', 6 + peso); montaBarreiras(); som('minerar', 0.9); som('quebra', 0.4, 1.3); const x = F.atual.lugar[id]; J.faiscas(x, F.chao(x) - 20, 26, '#c8a878', 1.2, 'pedra'); poeira(x, F.chao(x), 16, 0); treme(3);
+    J.treina('oficio', 6 + peso); montaBarreiras(); som('minerar', 0.9); som('quebra', 0.4, 1.3); if (C.OBRAS_VILA.includes(id)) J.confereEstagio(); const x = id === 'casario' ? J.loteDe(c.n - 1) : id === 'torre' && c.n > 1 ? F.atual.lugar.torreD : F.atual.lugar[id]; J.faiscas(x, F.chao(x) - 20, 26, '#c8a878', 1.2, 'pedra'); poeira(x, F.chao(x), 16, 0); treme(3);
     if (s.hum && s.hum.onde !== 'levada') s.hum.laco = Math.min(100, s.hum.laco + (id === 'casa' ? 8 : 2));
     J.salvar(); avisa('construiu', c); return true;
   };
@@ -353,7 +354,7 @@
 
   // ---------- o que dá para usar por perto ----------
   J.pertoLar = function (h) {
-    const vz = J.pertoVila(h); if (vz) return vz;
+    const vz = J.pertoVila(h) || J.pertoCidade(h); if (vz) return vz;
     const H = J.hum, s = J.save, A = F.atual;
     if (H && H.caida && Math.abs(H.x - h.x) < 34 && Math.abs(H.y - h.y) < 50) return { tipo: 'levanta', o: H };
     if (J.cativeiro && Math.abs(J.cativeiro.x - h.x) < 34 && !J.inimigos.some((e) => e.vivo && e.guarda && e.estado !== 'vaga' && Math.abs(e.x - h.x) < 260)) return { tipo: 'solta', o: J.cativeiro };
@@ -408,6 +409,6 @@
     if (h.estado !== 'dorme') avanca(dt * HORA);
     if (J.ehNoite() && s.hora > 20) avisa('noite');
     passoEmboscada(dt); passoHum(dt); J.passoPesca();
-    if (F.atual.lugar) { passoGente(dt); J.passoVila(dt); passoRaid(dt); }
+    if (F.atual.lugar) { passoGente(dt); J.passoVila(dt); J.passoCidade(dt); passoRaid(dt); }
   };
 })();
