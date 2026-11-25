@@ -33,6 +33,8 @@ POSES = [
     ("baixo", "east", [0]),
     ("arco", "east", [1, 3, 5, 7]),
 ]
+# entrou depois das folhas 6x5: a roupa destes quadros vem de tools/folha-familia.py sono
+DEPOIS = [("dormir", "east", [1, 2, 3, 4, 5, 7])]
 SO_BARRO = [("nascer", "east", [1, 2, 3, 5, 6, 7])]
 
 
@@ -196,7 +198,7 @@ def tiras():
             if p.is_dir():
                 roupas[p.name] = p
                 meta["roupas"].append(p.name)
-    blocos = [(n, d, ids) for n, d, ids in POSES]
+    blocos = [(n, d, ids) for n, d, ids in POSES + DEPOIS]
     total = sum(len(i) for _, _, i in blocos)
     pos = 0
     for n, d, ids in blocos:
@@ -204,7 +206,7 @@ def tiras():
         pos += len(ids)
     meta["anims"]["nascer"] = [pos, len(SO_BARRO[0][2])]
     nasc = [limpa(Image.open(pasta_anim("nascer", "east") / f"frame_{i:03d}.png"), "nascer") for i in SO_BARRO[0][2]]
-    orig = [q for _, _, q in quadros()]
+    orig = [q for _, _, q in quadros()] + [limpa(Image.open(pasta_anim(n, d) / f"frame_{i:03d}.png"), n) for n, d, ids in DEPOIS for i in ids]
     cols = 10
     for r, p in roupas.items():
         fs = orig if p is None else [Image.open(p / f"{n}_{i}.png").convert("RGBA") for n, d, ids in blocos for i in ids]

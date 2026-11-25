@@ -14,7 +14,7 @@
   // ---------- construtor ----------
   function Obra(id, regiao, W, semente) {
     const g = new Uint8Array(W * H), r = sorte(semente);
-    const a = { id, regiao, W, grade: g, topo: new Int16Array(W).fill(H), inimigos: [], coleta: [], fogos: [], portas: [], decor: [], placas: [], circulos: [], arena: null, inicio: null, nome: null };
+    const a = { id, regiao, W, grade: g, topo: new Int16Array(W).fill(H), inimigos: [], coleta: [], fogos: [], portas: [], decor: [], placas: [], circulos: [], emboscadas: [], obras: [], arena: null, inicio: null, nome: null };
     let x = 0, y = 30;
     const set = (tx, ty, v) => { if (tx >= 0 && ty >= 0 && tx < W && ty < H) g[ty * W + tx] = v; };
     const coluna = (tx, ty) => { for (let k = ty; k < H; k++) set(tx, k, 1); if (tx >= 0 && tx < W) a.topo[tx] = ty; };
@@ -54,6 +54,8 @@
       porta(id, para, nome, desenho, dx) { const tx = x + (dx == null ? -4 : dx); a.portas.push({ id, para, nome, d: desenho || 'caverna', x: px(tx), tx }); return o; },
       placa(dica, dx) { a.placas.push({ dica, x: px(x + (dx || 0)) }); return o; },
       circulo(magia, dx) { a.circulos.push({ magia, x: px(x + (dx || -5)), tx: x + (dx || -5) }); return o; },
+      // emboscada: as saídas fecham e as ondas vêm uma depois da outra
+      embosca(ondas, larg) { const x0 = x; o.plano(larg || 46); a.emboscadas.push({ id: a.id + '_e' + a.emboscadas.length, x0: x0 * T, x1: x * T, piso: y * T, ondas }); return o; },
       fim() { while (x < W) coluna(x++, y - (x > W - 4 ? 14 : 0)); for (let i = 0; i < 2; i++) for (let k = 0; k < H; k++) set(i, k, 1); acaba(a, r); return a; },
     };
     return o;
@@ -66,21 +68,32 @@
     for (const d of a.decor) d.y = chao(Math.floor(d.x / T));
     const livre = (tx, larg) => { const y0 = a.topo[tx]; for (let k = -larg; k <= larg; k++) { const t = a.topo[Math.max(0, Math.min(W - 1, tx + k))]; if (Math.abs(t - y0) > 1) return false; } return true; };
     const perto = (x, l, d) => l.some((o) => Math.abs(o.x - x) < d);
-    const PLANTAS = { floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'] }[a.regiao];
+    const PLANTAS = { vale: ['samambaia', 'planta', 'pedras', 'frutas', 'tronco', 'planta'],  floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'] }[a.regiao];
     for (let tx = 4; tx < W - 4; tx += 2 + Math.floor(r() * 4)) {
       const x = tx * T + 8;
       if (perto(x, a.portas, 110) || perto(x, a.circulos, 100) || perto(x, a.fogos, 46) || perto(x, a.coleta, 26)) continue;
       const k = r();
-      if (k < 0.16 && livre(tx, 4)) a.decor.push({ n: r() < (a.regiao === 'floresta' || a.regiao === 'cobras' ? 0.55 : 0.25) ? 'arvorao' : 'arvore', x, y: chao(tx) + 3, c: 0, e: 0.85 + r() * 0.3, v: r() < 0.5 });
+      if (a.semMata && k < 0.5 && tx > a.semMata[0] && tx < a.semMata[1]) continue;
+      if (k < 0.16 && livre(tx, 4)) a.decor.push({ n: r() < (a.regiao === 'floresta' || a.regiao === 'cobras' || a.regiao === 'vale' ? 0.55 : 0.25) ? 'arvorao' : 'arvore', x, y: chao(tx) + 3, c: 0, e: 0.85 + r() * 0.3, v: r() < 0.5 });
       else if (k < 0.62 && livre(tx, 1)) { const n = PLANTAS[Math.floor(r() * PLANTAS.length)]; a.decor.push({ n, x, y: chao(tx) + 2, c: 1, e: 0.8 + r() * 0.35, v: r() < 0.5 }); }
       else if (k < 0.7 && livre(tx, 1)) a.decor.push({ n: r() < 0.5 ? 'samambaia' : 'planta', x, y: chao(tx) + 10, c: 2, e: 1.3 + r() * 0.5, v: r() < 0.5 });
     }
     a.decor.sort((p, q) => p.c - q.c);
   }
 
+  // quem aparece de cada espécie, conforme o quanto já se andou (k de 0 a 1)
+  const VARIA = {
+    lobo: [['lobo', 0, 1], ['lobo_negro', 0.22, 0.42], ['lobo_rubro', 0.4, 0.24]],
+    cobra: [['cobra', 0, 1], ['cobra_coral', 0.18, 0.4], ['cobra_cuspe', 0.28, 0.4], ['cobra_prata', 0.45, 0.28]],
+    zumbi: [['zumbi', 0, 1], ['zumbi_mulher', 0.14, 0.42], ['zumbi_machado', 0.3, 0.32], ['zumbi_lanca', 0.36, 0.36], ['zumbi_inchado', 0.5, 0.18]],
+    goblin: [['goblin', 0, 1], ['goblin_pedra', 0.1, 0.3], ['goblin_arco', 0.22, 0.36], ['goblin_guerreiro', 0.34, 0.36], ['goblin_xama', 0.46, 0.2], ['goblin_porrete', 0.5, 0.22]],
+  };
+  function varia(esp, k, r) { const l = VARIA[esp].filter((v) => k >= v[1]); let t = 0; for (const v of l) t += v[2]; let q = r() * t; for (const v of l) { q -= v[2]; if (q <= 0) return v[0]; } return l[0][0]; }
+  F.varia = varia;
+
   // ---------- Floresta Antiga ----------
   function floresta() {
-    const o = Obra('floresta', 'floresta', 1180, 7);
+    const o = Obra('floresta', 'floresta', 2100, 7);
     o.plano(16); o.a.inicio = { x: 15 * T };
     o.a.decor.push({ n: 'barro', x: 13 * T, y: 0, c: 0, e: 1 });
     o.plano(8).placa('andar').ondula(14).pega('galho').plano(6).placa('colher', -4).pega('folha').ondula(10).pega('galho').pega('pedra', -6).plano(6).pega('fibra').ondula(10).pega('galho').placa('criar').pega('folha', -7);
@@ -95,26 +108,58 @@
     o.escada(13).plano(12).pega('galho').pega('fruta', -8).bicho('cobra').vao(14, true).plano(8).pega('erva').queda(5).plano(16).bicho('zumbi').placa('forte', -14).ondula(20).bicho('zumbi').pega('pedra').pega('folha', -9);
     o.vao(5).plano(6).vao(5).plano(6).vao(6).plano(14).bicho('lobo').bicho('lobo', -6).bicho('lobo', -10).pega('galho').ondula(20).pega('fibra').bicho('goblin');
     o.muro(3, 5).muro(4, 5).escada(9).plano(10).pega('pedra').bicho('goblin').galho(o.x - 8, o.y - 5, 5).pegaAlto('erva', o.x - 6, o.y - 5).queda(6).plano(6).queda(6).plano(16).bicho('cobra').bicho('cobra', -6).pega('folha');
+    o.embosca([['lobo', 'lobo'], ['lobo', 'lobo', 'lobo_negro']], 46);
     // ruínas e o círculo
     o.ondula(16).enf('pilar', -10).plano(10).enf('arco', -4, 0).plano(12).enf('pilar', -4).plano(16).circulo('brasa', -7).plano(8).enf('pilar', -5).placa('magia').plano(10).enf('arco', -5, 0).ondula(14).bicho('zumbi').bicho('zumbi', -6);
     o.plano(14).fogo('Fogueira das Ruínas').plano(6).desce(3).ondula(24).bicho('lobo').bicho('lobo', -6).pega('fruta').pega('galho', -9).vao(10, true).plano(10).bicho('goblin').bicho('goblin', -5).pega('fibra');
     o.escada(12).plano(14).bicho('cobra').pega('erva').vao(16, true).plano(8).pega('pedra').queda(4).plano(14).bicho('zumbi').bicho('zumbi', -5).ondula(24).bicho('lobo').bicho('lobo', -5).bicho('lobo', -9).pega('folha');
     o.muro(2, 6).vao(6).muro(2, 6).vao(6).muro(2, 8).pega('fruta').queda(3).plano(10).bicho('goblin').queda(3).ondula(26).bicho('goblin').bicho('cobra', -8).pega('galho').pega('fibra', -5);
     o.vao(8, true).plano(12).bicho('zumbi').vao(9, true).plano(14).bicho('lobo').bicho('lobo', -7).pega('erva').ondula(20).pega('pedra').pega('galho', -8);
-    // enche o que falta até a clareira
-    let k = 0; while (o.x < 1040) { o.ondula(o.ent(16, 24)).bicho(o.um(['lobo', 'cobra', 'zumbi', 'goblin'])); if (k % 2) o.bicho(o.um(['lobo', 'goblin']), -7); o.pega(o.um(['galho', 'pedra', 'folha', 'fibra', 'fruta'])); if (k++ % 3 === 1) o.vao(o.ent(5, 7)); if (k % 4 === 2) o.sobe(2); if (k % 4 === 0) o.desce(2); }
+    // a mata fechada: longa, com variedades, emboscadas e três fogueiras até a clareira
+    const PARADAS = [
+      [1120, () => o.plano(8).fogo('Fogueira do Tronco Caído').plano(8)],
+      [1200, () => o.embosca([['cobra', 'cobra_coral', 'cobra'], ['cobra_coral', 'cobra_cuspe', 'cobra']], 46)],
+      [1330, () => o.embosca([['zumbi', 'zumbi_mulher'], ['zumbi', 'zumbi', 'zumbi_machado']], 48)],
+      [1400, () => o.plano(8).fogo('Fogueira da Pedra Partida').plano(8)],
+      [1540, () => o.embosca([['goblin', 'goblin', 'goblin_arco'], ['goblin_guerreiro', 'goblin', 'goblin_arco']], 50)],
+      [1650, () => o.plano(8).fogo('Fogueira do Barranco Velho').plano(8)],
+      [1790, () => o.embosca([['lobo', 'lobo_negro', 'lobo'], ['lobo_rubro', 'lobo_negro'], ['lobo_rubro', 'lobo', 'lobo']], 54)],
+      [1900, () => o.plano(8).fogo('Última fogueira da mata').plano(8)],
+    ];
+    const ESP = ['lobo', 'cobra', 'zumbi', 'goblin'];
+    let k = 0, par = 0;
+    while (o.x < 1972) {
+      if (par < PARADAS.length && o.x >= PARADAS[par][0]) { PARADAS[par++][1](); continue; }
+      const q = (o.x / 2100) * 0.75, esp = o.um(ESP);
+      if (o.y < 20) o.queda(4).plano(8);
+      switch (k % 7) {
+        case 1: o.vao(o.ent(5, 7)).plano(8); break;
+        case 2: if (o.y > 24) o.sobe(o.ent(2, 4)); break;
+        case 3: if (o.y > 27) o.escada(o.ent(7, 11)).plano(10); break;
+        case 4: o.vao(o.ent(10, 15), true).plano(9); break;
+        case 5: if (o.y < 33) o.queda(o.ent(3, 4)).plano(8); else o.sobe(3); break;
+        case 6: if (o.y > 24) o.muro(o.ent(2, 4), 5).plano(6); break;
+      }
+      o.ondula(o.ent(14, 22)).bicho(varia(esp, q, o.r)).bicho(varia(esp, q, o.r), -8);
+      if (o.r() < 0.45) o.bicho(varia(o.um(ESP), q, o.r), -13);
+      o.pega(o.um(['galho', 'pedra', 'folha', 'fibra', 'fruta', 'galho'])); if (o.r() < 0.6) o.pega(o.um(['erva', 'fruta', 'pedra', 'fibra', 'madeira']), -9);
+      k++;
+    }
     // a clareira dos quatro caminhos
-    o.y = 30; o.plano(10).placa('caminhos').fogo('Fogueira da Clareira').plano(22).enf('ossos', -13, 1).enf('placa', -11, 1).enf('ossos', 3, 1).porta('p_lobos', ['lobos', 'volta'], 'Serra dos Uivos').plano(24).enf('ninho', -13, 1).enf('placa', -11, 1).enf('ninho', 3, 1).porta('p_cobras', ['cobras', 'volta'], 'Alagado das Presas').plano(24).enf('lapide', -13, 1).enf('placa', -11, 1).enf('lapide', 3, 1).porta('p_zumbis', ['zumbis', 'volta'], 'Chão dos Enterrados', 'arco').plano(24).enf('totem', -13, 1).enf('placa', -11, 1).enf('totem', 3, 1).porta('p_goblins', ['goblins', 'volta'], 'Barrancos do Fortim').plano(8);
+    o.y = 30; o.plano(10).placa('caminhos').fogo('Fogueira da Clareira').plano(22).enf('ossos', -13, 1).enf('placa', -11, 1).enf('ossos', 3, 1).porta('p_lobos', ['lobos', 'volta'], 'Serra dos Uivos').plano(24).enf('ninho', -13, 1).enf('placa', -11, 1).enf('ninho', 3, 1).porta('p_cobras', ['cobras', 'volta'], 'Alagado das Presas').plano(24).enf('lapide', -13, 1).enf('placa', -11, 1).enf('lapide', 3, 1).porta('p_zumbis', ['zumbis', 'volta'], 'Chão dos Enterrados', 'arco').plano(24).enf('totem', -13, 1).enf('placa', -11, 1).enf('totem', 3, 1).porta('p_goblins', ['goblins', 'volta'], 'Barrancos do Fortim').plano(24).enf('frutas', -12, 1).enf('placa', -10, 1).porta('p_vale', ['vale', 'volta'], 'Vale do Rio Manso', 'arco').plano(10);
+    o.a.portas.find((p) => p.id === 'p_vale').precisa = 2;
     return o.fim();
   }
   // ---------- um caminho ----------
   function caminho(id, semente, cfg) {
-    const o = Obra(id, id, 760, semente);
+    const LAR = 1320, o = Obra(id, id, LAR, semente), esp = cfg.b;
     o.plano(14).porta('volta', ['floresta', 'p_' + id], 'Voltar à clareira', null, -7); o.a.inicio = { x: 10 * T };
     let k = 0, fogo = 0;
-    const grupo = () => { const n = o.ent(2, cfg.bando); for (let i = 0; i < n; i++) o.bicho(r(i), -3 - i * 4); };
-    const r = (i) => (i && o.r() < cfg.outro[1] ? cfg.outro[0] : o.r() < 0.86 ? cfg.b : o.um(['lobo', 'cobra', 'zumbi', 'goblin']));
-    while (o.x < 690) {
+    let emb = 0;
+    const q = () => o.x / LAR;
+    const grupo = () => { const n = o.ent(2, cfg.bando); for (let i = 0; i < n; i++) o.bicho(o.r() < 0.9 ? varia(esp, q(), o.r) : varia(o.um(['lobo', 'cobra', 'zumbi', 'goblin']), q() * 0.6, o.r), -3 - i * 4); };
+    const onda = (n) => { const l = []; for (let i = 0; i < n; i++) l.push(varia(esp, Math.min(1, q() + 0.12), o.r)); return l; };
+    while (o.x < LAR - 84) {
       const tipo = o.um(cfg.terreno);
       if (tipo === 'ondula') o.ondula(o.ent(16, 26));
       else if (tipo === 'sobe') { if (o.y > 22) o.sobe(o.ent(3, 5)); o.plano(8); }
@@ -128,9 +173,13 @@
       grupo();
       o.pega(o.um(cfg.pega), -6); if (o.r() < 0.4) o.pega(o.um(['erva', 'fruta', 'galho']), -9);
       k++;
-      if (o.x > 220 && fogo === 0) { o.plano(16).fogo(cfg.fogos[0]).plano(6); fogo = 1; }
-      if (o.x > 380 && fogo === 1) { o.plano(16).porta('meio', cfg.meio, cfg.meioNome, 'arco', -6).plano(8); fogo = 2; }
-      if (o.x > 560 && fogo === 2) { o.plano(14).fogo(cfg.fogos[1]).plano(6); fogo = 3; }
+      if (k % 6 === 3) o.pega('madeira', -11);
+      if (o.x > 230 && fogo === 0) { o.plano(16).fogo(cfg.fogos[0]).plano(6); fogo = 1; }
+      if (o.x > 380 && emb === 0) { o.embosca([onda(2), onda(3)], 46).plano(8); emb = 1; }
+      if (o.x > 600 && fogo === 1) { o.plano(16).porta('meio', cfg.meio, cfg.meioNome, 'arco', -6).plano(8).plano(8).fogo(cfg.fogos[2]).plano(6); fogo = 2; }
+      if (o.x > 800 && emb === 1) { o.embosca([onda(3), onda(3)], 48).plano(8); emb = 2; }
+      if (o.x > 960 && fogo === 2) { o.plano(14).fogo(cfg.fogos[1]).plano(6); fogo = 3; }
+      if (o.x > 1120 && emb === 2) { o.embosca([onda(3), onda(3), [cfg.elite, varia(esp, 1, o.r), cfg.b]], 52).plano(8); emb = 3; }
     }
     o.plano(10).porta('cruza', cfg.cruza, cfg.cruzaNome, 'arco', -2).plano(22).porta('covil', ['covil_' + id, 'volta'], cfg.covil, 'caverna').plano(10);
     return o.fim();
@@ -145,12 +194,49 @@
     o.plano(12).circulo(chefe.magia, -4).plano(10);
     return o.fim();
   }
+  // ---------- o vale: onde alguém está perdido ----------
+  function vale() {
+    const o = Obra('vale', 'vale', 620, 71), ESP = ['lobo', 'cobra', 'zumbi', 'goblin'];
+    o.plano(14).porta('volta', ['floresta', 'p_vale'], 'Voltar à clareira', 'arco', -7); o.a.inicio = { x: 10 * T };
+    let k = 0, fogo = 0, res = 0;
+    while (o.x < 540) {
+      if (o.x > 150 && !fogo) { o.plano(10).fogo('Fogueira do Vau').plano(8); fogo = 1; }
+      if (o.x > 300 && !res) { // a humana perdida, cercada
+        o.plano(10).placa('grito', -6); const x0 = o.x;
+        o.embosca([['lobo', 'lobo_negro', 'lobo'], ['lobo_negro', 'lobo_rubro'], ['lobo_rubro', 'lobo_negro', 'lobo']], 56);
+        const e = o.a.emboscadas[o.a.emboscadas.length - 1]; e.resgate = (x0 + 30) * T; o.a.resgate = e;
+        o.plano(10).fogo('Fogueira do Encontro').plano(8); res = 1;
+      }
+      const esp = ESP[k % 4], n = o.ent(2, 4);
+      if (k % 4 === 1) o.vao(o.ent(5, 7)).plano(8); if (k % 5 === 2 && o.y > 24) o.sobe(3).plano(6); if (k % 5 === 4 && o.y < 33) o.queda(3).plano(8); if (o.y < 20) o.queda(5).plano(8);
+      o.ondula(o.ent(16, 24)); for (let i = 0; i < n; i++) o.bicho(varia(esp, 0.75, o.r), -3 - i * 4);
+      o.pega(o.um(['madeira', 'fruta', 'folha', 'galho']), -6).pega(o.um(['erva', 'fibra', 'pedra', 'madeira']), -11);
+      k++;
+    }
+    o.plano(14).porta('lar', ['lar', 'volta'], 'Clareira do rio', 'arco', -4).plano(8);
+    return o.fim();
+  }
+  // ---------- o lar: terra vazia; tudo aqui é você que levanta ----------
+  function lar() {
+    const o = Obra('lar', 'vale', 170, 88); o.a.nome = 'Clareira do Rio'; o.a.semMata = [34, 140];
+    o.plano(14).porta('volta', ['vale', 'lar'], 'Voltar ao vale', 'arco', -7); o.a.inicio = { x: 12 * T };
+    o.plano(6).pega('madeira').plano(5).pega('galho').plano(6).pega('madeira').plano(5);
+    const x0 = o.x; // 36: começo do terreno
+    o.plano(100);
+    o.a.terreno = { x0: x0 * T, x1: (x0 + 100) * T, piso: o.y * T };
+    const px = (d) => (x0 + d) * T;
+    o.a.lugar = { casa: px(50), fogo: px(62), varal: px(34), horta: px(76), berco: px(43), bau: px(57), cercaE: px(16), cercaD: px(88), estacasE: px(10), estacasD: px(94), cepo: px(26), lenha: px(68) };
+    o.a.fogos.push({ id: 'lar_f0', nome: 'O fogo do lar', x: px(62), tx: x0 + 62, y: o.y * T });
+    o.plano(6).pega('madeira').plano(5).pega('pedra').plano(4).pega('madeira').plano(4).pega('fibra').plano(4).pega('folha').plano(4);
+    return o.fim();
+  }
   const MONTA = {
+    vale, lar,
     floresta,
-    lobos: () => caminho('lobos', 21, { b: 'lobo', bando: 4, outro: ['lobo', 1], terreno: ['ondula', 'sobe', 'desce', 'muro', 'vao', 'escada', 'queda'], pega: ['pedra', 'galho', 'osso'], fogos: ['Fogueira da Encosta', 'Fogueira do Penhasco'], meio: ['cobras', 'meio'], meioNome: 'Trilha para o Alagado', cruza: ['goblins', 'cruza'], cruzaNome: 'Passagem dos Barrancos', covil: 'Toca do Alfa' }),
-    cobras: () => caminho('cobras', 33, { b: 'cobra', bando: 4, outro: ['cobra_cuspe', 0.4], terreno: ['ondula', 'vaoG', 'vaoG', 'vao', 'ondula', 'escada', 'queda'], pega: ['fibra', 'folha', 'erva'], fogos: ['Fogueira da Ilha Seca', 'Fogueira do Mangue'], meio: ['lobos', 'meio'], meioNome: 'Trilha para a Serra', cruza: ['zumbis', 'cruza'], cruzaNome: 'Passagem dos Enterrados', covil: 'Ninho da Rainha' }),
-    zumbis: () => caminho('zumbis', 45, { b: 'zumbi', bando: 4, outro: ['zumbi', 1], terreno: ['ondula', 'ondula', 'vao', 'muro', 'desce', 'sobe', 'queda'], pega: ['osso', 'trapo', 'pedra'], fogos: ['Fogueira das Lápides', 'Fogueira da Cripta'], meio: ['goblins', 'meio'], meioNome: 'Trilha para os Barrancos', cruza: ['cobras', 'cruza'], cruzaNome: 'Passagem do Alagado', covil: 'A Cripta Fechada' }),
-    goblins: () => caminho('goblins', 57, { b: 'goblin', bando: 4, outro: ['goblin_pedra', 0.35], terreno: ['muro', 'escada', 'vao', 'vaoG', 'queda', 'ondula', 'sobe'], pega: ['pedra', 'galho', 'ferro'], fogos: ['Fogueira da Paliçada', 'Fogueira do Barranco'], meio: ['zumbis', 'meio'], meioNome: 'Trilha para os Enterrados', cruza: ['lobos', 'cruza'], cruzaNome: 'Passagem da Serra', covil: 'O Fortim' }),
+    lobos: () => caminho('lobos', 21, { elite: 'lobo_rubro', b: 'lobo', bando: 4, outro: ['lobo', 1], terreno: ['ondula', 'sobe', 'desce', 'muro', 'vao', 'escada', 'queda'], pega: ['pedra', 'galho', 'osso'], fogos: ['Fogueira da Encosta', 'Fogueira do Penhasco', 'Fogueira da Trilha Velha'], meio: ['cobras', 'meio'], meioNome: 'Trilha para o Alagado', cruza: ['goblins', 'cruza'], cruzaNome: 'Passagem dos Barrancos', covil: 'Toca do Alfa' }),
+    cobras: () => caminho('cobras', 33, { elite: 'cobra_prata', b: 'cobra', bando: 4, outro: ['cobra_cuspe', 0.4], terreno: ['ondula', 'vaoG', 'vaoG', 'vao', 'ondula', 'escada', 'queda'], pega: ['fibra', 'folha', 'erva'], fogos: ['Fogueira da Ilha Seca', 'Fogueira do Mangue', 'Fogueira do Junco'], meio: ['lobos', 'meio'], meioNome: 'Trilha para a Serra', cruza: ['zumbis', 'cruza'], cruzaNome: 'Passagem dos Enterrados', covil: 'Ninho da Rainha' }),
+    zumbis: () => caminho('zumbis', 45, { elite: 'zumbi_inchado', b: 'zumbi', bando: 4, outro: ['zumbi', 1], terreno: ['ondula', 'ondula', 'vao', 'muro', 'desce', 'sobe', 'queda'], pega: ['osso', 'trapo', 'pedra'], fogos: ['Fogueira das Lápides', 'Fogueira da Cripta', 'Fogueira do Sino'], meio: ['goblins', 'meio'], meioNome: 'Trilha para os Barrancos', cruza: ['cobras', 'cruza'], cruzaNome: 'Passagem do Alagado', covil: 'A Cripta Fechada' }),
+    goblins: () => caminho('goblins', 57, { elite: 'goblin_porrete', b: 'goblin', bando: 4, outro: ['goblin_pedra', 0.35], terreno: ['muro', 'escada', 'vao', 'vaoG', 'queda', 'ondula', 'sobe'], pega: ['pedra', 'galho', 'ferro'], fogos: ['Fogueira da Paliçada', 'Fogueira do Barranco', 'Fogueira do Caldeirão'], meio: ['zumbis', 'meio'], meioNome: 'Trilha para os Enterrados', cruza: ['lobos', 'cruza'], cruzaNome: 'Passagem da Serra', covil: 'O Fortim' }),
     covil_lobos: () => covil('covil_lobos', 'lobos', 61, { id: 'alfa', b: 'lobo', magia: 'vento' }, 'Toca do Alfa', ['lobos', 'covil']),
     covil_cobras: () => covil('covil_cobras', 'cobras', 62, { id: 'rainha', b: 'cobra', magia: 'espinhos' }, 'Ninho da Rainha', ['cobras', 'covil']),
     covil_zumbis: () => covil('covil_zumbis', 'zumbis', 63, { id: 'carcereiro', b: 'zumbi', magia: 'folego' }, 'A Cripta Fechada', ['zumbis', 'covil']),
@@ -160,6 +246,12 @@
   F.area = (id) => areas[id] || (areas[id] = MONTA[id]());
   F.entrar = function (id) { const a = F.area(id); F.atual = a; F.W = a.W; F.grade = a.grade; F.fechada = false; return a; };
   F.chao = (x) => F.atual.topo[Math.max(0, Math.min(F.W - 1, Math.floor(x / T)))] * T;
+  // fecha um trecho (emboscada): duas paredes de raiz
+  F.fechar = function (sim, x0, x1) {
+    const a = F.atual; if (sim) a.fechos = [Math.floor(x0 / T) + 1, Math.floor(x1 / T) - 2]; if (!a.fechos) return;
+    for (const c of a.fechos) { const t = a.topo[c]; for (let k = 0; k < t; k++) F.poe(c, k, sim ? 1 : 0); }
+    F.fechos = sim ? a.fechos : null; if (!sim) a.fechos = null;
+  };
   F.fecharArena = function (sim) {
     const A = F.atual && F.atual.arena; if (!A || F.fechada === sim) return; F.fechada = sim;
     for (const c of [Math.floor(A.x0 / T), Math.floor(A.x1 / T) - 1]) { const t = F.atual.topo[c]; for (let k = 0; k < t; k++) F.poe(c, k, sim ? 1 : 0); }

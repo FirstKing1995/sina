@@ -1,7 +1,7 @@
 // Robô que atravessa cada área do SINA 2D sem inimigos e diz onde travou. node tools/lateral-robo.js
 global.window = global; global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const L = __dirname + '/../lateral/js/';
-require(L + 'dados.js'); require(L + 'fase.js'); require(L + 'motor.js');
+require(L + 'dados.js'); require(L + 'fase.js'); require(L + 'motor.js'); require(L + 'bando.js');
 const J = window.Jogo, F = window.Fase, T = 16; J.semSalvar = true;
 for (const id of F.IDS) {
   J.save = J.novoSave('robo'); J.heroi = null; J.entrarArea(id); J.inimigos = [];

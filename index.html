@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
-<link rel="stylesheet" href="css/jogo.css?v=3">
+<link rel="stylesheet" href="css/jogo.css?v=4">
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -20,8 +20,10 @@
     <div class="barra" id="b-sina" hidden><i></i></div>
     <div class="barra" id="b-fome"><i></i></div>
     <div id="h-titulo"></div>
+    <div id="h-dia"></div>
   </div>
   <div id="h-magias"></div>
+  <div id="h-hum" hidden><span></span><div class="barra" id="b-hum"><i></i></div><div class="barra" id="b-hfome"><i></i></div><div class="barra" id="b-laco"><i></i></div></div>
   <div id="h-baixo"><div id="h-comida"></div><div id="h-arma"></div></div>
   <button id="h-mochila" title="Mochila (I)">Mochila</button>
   <div id="chefe" hidden><div id="chefe-nome"></div><div class="barra" id="b-chefe"><i></i><u></u></div></div>
@@ -70,9 +72,18 @@
 <div id="fogo" class="tela" hidden>
   <div class="caixa estreita">
     <h2 id="fg-nome"></h2>
-    <p class="nota">Vida, fôlego e caminho guardados. Os bichos também voltaram.</p>
+    <p class="nota" id="fg-nota"></p>
     <div id="fg-corpo" class="menu"></div>
     <button id="fg-sair" class="ir">Levantar</button>
+  </div>
+</div>
+
+<div id="batiza" class="tela" hidden>
+  <div class="caixa estreita">
+    <h2>Um choro no meio da noite</h2>
+    <p class="nota">É um menino. Que nome ele vai carregar?</p>
+    <input id="bt-nome" maxlength="16" autocomplete="off" placeholder="Nome do filho">
+    <button id="bt-ir" class="ir">Este é o seu nome</button>
   </div>
 </div>
 
@@ -83,13 +94,16 @@
 </div>
 <div id="veu"></div>
 
-<script src="assets/barro/barro.js?v=3"></script>
-<script src="assets/floresta/arte.js?v=3"></script>
-<script src="js/som.js?v=3"></script>
-<script src="js/dados.js?v=3"></script>
-<script src="js/fase.js?v=3"></script>
-<script src="js/motor.js?v=3"></script>
-<script src="js/desenho.js?v=3"></script>
-<script src="js/main.js?v=3"></script>
+<script src="assets/barro/barro.js?v=4"></script>
+<script src="assets/barro/gente.js?v=4"></script>
+<script src="assets/floresta/arte.js?v=4"></script>
+<script src="js/som.js?v=4"></script>
+<script src="js/dados.js?v=4"></script>
+<script src="js/fase.js?v=4"></script>
+<script src="js/motor.js?v=4"></script>
+<script src="js/bando.js?v=4"></script>
+<script src="js/lar.js?v=4"></script>
+<script src="js/desenho.js?v=4"></script>
+<script src="js/main.js?v=4"></script>
 </body>
 </html>

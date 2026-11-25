@@ -150,3 +150,13 @@ button.ir:hover { background: #442a14; }
 @media (max-height: 480px) { #memorias { display: none; } .caixa { max-height: 98vh; padding: 8px 12px; } .caixa h3 { margin: 8px 0 4px; } }
 
 * { scrollbar-width: thin; scrollbar-color: #5a6a5c #0a0f10; }
+
+/* dia, companheira e sono */
+#h-dia { font: 500 12px Cinzel, serif; color: #c8bd98; text-shadow: 0 1px 3px #000, 0 0 6px #000; }
+#h-dia.noite { color: #9fb8e0; }
+#h-hum { position: absolute; right: 18px; top: 62px; width: 132px; text-align: right; font: 500 13px Cinzel, serif; color: #e8d8c0; text-shadow: 0 1px 3px #000; }
+#h-hum .barra { height: 6px; margin: 2px 0 0; }
+#b-hum i { background: linear-gradient(#d8905a, #8a4a26); } #h-hum #b-hfome { height: 6px; } #b-hfome i { background: #a8884a; } #h-hum #b-laco { height: 6px; } #b-laco i { background: #d87a8a; }
+#hud.calma > *:not(#sussurro) { opacity: 0; transition: opacity 1.2s; }
+#bt-nome { font: 600 22px 'Crimson Pro', serif; text-align: center; color: #ffe9c8; background: #0b1010; border: 1px solid #7a6a48; padding: 9px 12px; margin: 12px 0; width: 100%; user-select: text; -webkit-user-select: text; }
+#fg-nota { font-style: italic; }
