@@ -160,3 +160,8 @@ button.ir:hover { background: #442a14; }
 #hud.calma > *:not(#sussurro) { opacity: 0; transition: opacity 1.2s; }
 #bt-nome { font: 600 22px 'Crimson Pro', serif; text-align: center; color: #ffe9c8; background: #0b1010; border: 1px solid #7a6a48; padding: 9px 12px; margin: 12px 0; width: 100%; user-select: text; -webkit-user-select: text; }
 #fg-nota { font-style: italic; }
+#guardou { position: absolute; left: 22px; bottom: 18px; font: 500 14px Cinzel, serif; color: #ffcf8a; text-shadow: 0 1px 3px #000, 0 0 8px #000; opacity: 0; transition: opacity .6s; }
+#guardou::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 8px; background: #ff9a40; box-shadow: 0 0 10px #ff8a30; transform: rotate(45deg); }
+#guardou.ver { opacity: 1; }
+body.toque #guardou { left: 50%; bottom: auto; top: 10px; transform: translateX(-50%); }
+#hud.calma > #guardou { opacity: 0; }

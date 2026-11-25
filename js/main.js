@@ -23,9 +23,13 @@
       const min = Math.round((s.tempo || 0) / 60);
       m.append(botao('Continuar como ' + s.nome, () => continuar(s), 'ir'));
       m.append(el('p', 'nota', (s.titulo ? s.titulo + ' · ' : '') + min + ' min de vida · ' + nomeArea(s.area)));
-      const novo = botao('Nascer de novo', () => { novo.hidden = true; m.append(el('p', 'nota', 'A vida de ' + s.nome + ' acaba aqui. Tem certeza?'), botao('Sim, deixar ' + s.nome + ' para trás', () => { J.apagar(); nascer(); })); });
+      const novo = botao('Nascer de novo', () => { novo.hidden = true; m.append(el('p', 'nota', 'A vida de ' + s.nome + ' acaba aqui. Tem certeza?'), botao('Sim, deixar ' + s.nome + ' para trás', () => { J.apagar(); nascer(viuIntro()); })); });
       m.append(novo);
-    } else m.append(botao('Nascer', nascer, 'ir'));
+    } else if (viuIntro()) {
+      const ult = J.memorias()[0];
+      if (ult) m.append(botao('Acordar como ' + ult.nome, () => acordaComo(ult.nome), 'ir'));
+      m.append(botao(ult ? 'Acordar com outro nome' : 'Nascer', () => nascer(true), ult ? '' : 'ir'), botao('Ver a abertura', () => nascer(false)));
+    } else m.append(botao('Nascer', () => nascer(false), 'ir'));
     const mem = J.memorias(), l = $('memorias'); l.innerHTML = '';
     if (mem.length) { l.append(el('h3', '', 'Os que vieram antes')); for (const x of mem.slice(0, 4)) l.append(el('p', '', x.nome + (x.titulo ? ', ' + x.titulo : '') + ' · ' + Math.max(1, Math.round(x.tempo / 60)) + ' min · ' + x.mortes + ' mortes')); }
   }
@@ -33,13 +37,14 @@
 
   // ---------- nascimento ----------
   let nas = null;
-  function nascer() {
+  const viuIntro = () => { try { return !!localStorage.getItem('sina_intro') || J.memorias().length > 0; } catch (e) { return false; } };
+  function nascer(semIntro) {
     modo = 'nasce'; mostra('nasce'); telaCheia();
     if (window.Som) { Som.ligar(); Som.ambiente('cripta'); Som.musica(null); }
     $('n-pede').hidden = true; $('n-texto').textContent = ''; $('n-img').className = ''; $('n-luz').className = '';
     nas = { t: 0, i: -1, part: [], fim: false };
     requestAnimationFrame(() => { $('n-img').className = 'vai'; $('n-luz').className = 'vai'; });
-    proximaLinha();
+    if (semIntro === true) { nas.fim = true; pedeNome(); } else proximaLinha();
   }
   function proximaLinha() {
     if (!nas || nas.fim) return;
@@ -52,13 +57,18 @@
   function pedeNome() { $('n-texto').textContent = ''; $('n-pede').hidden = false; $('n-nome').value = ''; if (!toque) $('n-nome').focus(); }
   function daNome() {
     const n = $('n-nome').value.trim().slice(0, 16); if (!n) { $('n-nome').classList.add('falta'); $('n-nome').focus(); return; }
+    try { localStorage.setItem('sina_intro', '1'); } catch (e) { /* nada */ }
+    $('n-nome').blur(); acordaComo(n);
+  }
+  // abre os olhos na floresta, sem abertura: quem morre volta por aqui
+  function acordaComo(n) {
+    telaCheia(); fila.length = 0;
     J.save = J.novoSave(n); J.heroi = null; J.colhidos = {};
     J.entrarArea('floresta');
     const h = J.heroi; h.estado = 'nasce'; h.t = 0; h.nq = 0; h.x = h.ultimoSeguro.x;
     D.centrar(); D.escuro = 0.15; modo = 'jogo'; mostra(null); areaVista = null;
-    $('n-nome').blur();
     acorda = { t: 0, i: 0 };
-    vesteRetrato();
+    vesteRetrato(); J.salvar();
   }
   let acorda = null;
   function passoAcorda(dt) {
@@ -132,7 +142,7 @@
         const g = el('div', 'ficha');
         for (const [a, b] of [['Tempo de vida', tempo(s.tempo)], ['Maior título', s.titulo || 'nenhum'], ['Inimigos mortos', tot], ['Coisas colhidas', s.colhido], ['Última arma', C.ARMAS[s.arma].nome], ['Caiu em', nomeArea(s.area)]]) g.append(el('span', '', a), el('em', '', b));
         c.append(g, el('p', 'nota', x.pequeno ? x.pequeno + ' ainda era pequeno demais para continuar. Tudo começa do zero.' : 'Você não deixou filhos. Quem não deixa ninguém começa do zero.'));
-        c.append(botao('Nascer de novo', nascer, 'ir'), botao('Título', titulo));
+        c.append(botao('Acordar no começo', () => acordaComo(s.nome), 'ir'), botao('Acordar com outro nome', () => nascer(true)), botao('Título', titulo));
       } else {
         c.append(el('p', 'nota', s.nome + ' cresceu vendo você lutar. Carrega parte do que você sabia' + (s.lar && s.lar.bau && s.lar.bau.n ? ' e tudo o que estava na mochila.' : ' e um pouco do que estava na mochila.')));
         c.append(botao('Abrir os olhos', () => { J.heroi = null; s.x = null; J.entrarArea(s.area); D.centrar(); areaVista = null; modo = 'jogo'; mostra(null); }, 'ir'));
@@ -154,7 +164,10 @@
     else if (p.tipo === 'fogo') {
       const s = J.save;
       if (!s.fogos[p.o.id] && (s.inv.galho || 0) < 2) { sussurra('Faltam 2 galhos para acender.', 3); return; }
-      if (!s.fogos[p.o.id]) { s.inv.galho -= 2; som('fogo', 0.8); J.faiscas(p.o.x, p.o.y - 14, 26, '#ff9a40', 1.2, 'brasa'); }
+      if (!s.fogos[p.o.id]) {
+        // acender já guarda: se sair do jogo, a vida continua daqui
+        s.inv.galho -= 2; s.fogos[p.o.id] = 1; s.fogo = { area: s.area, id: p.o.id }; som('fogo', 0.8); J.faiscas(p.o.x, p.o.y - 14, 26, '#ff9a40', 1.2, 'brasa'); J.salvar(); guardou();
+      }
       if (s.area === 'lar' && s.lar && s.lar.lenha <= 0) s.lar.lenha = 4;
       if (J.inimigos.some((e) => e.vivo && !['vaga', 'volta', 'caido'].includes(e.estado) && Math.abs(e.x - J.heroi.x) < 320)) { sussurra('Não dá para deitar com eles por perto.', 3); return; }
       dormir(p.o);
@@ -162,6 +175,8 @@
   }
   // ---------- dormir: um momento de calma ----------
   let sono = null, pulaSono = false;
+  let guardT = 0;
+  function guardou() { $('guardou').classList.add('ver'); clearTimeout(guardT); guardT = setTimeout(() => $('guardou').classList.remove('ver'), 2600); }
   function dormir(f) { sono = { f, feito: false, disse: false }; pulaSono = false; solta(); J.comecaSono(f); $('hud').classList.add('calma'); $('toque').hidden = true; }
   function passoDormir(dt) {
     const h = J.heroi; if (!sono || h.estado !== 'dorme') return;
@@ -170,7 +185,7 @@
     if (Math.random() < 0.14) J.poe({ tipo: 'brasa', x: sono.f.x + (Math.random() - 0.5) * 18, y: sono.f.y - 18, vx: (Math.random() - 0.5) * 10, vy: -22 - Math.random() * 22, vida: 1.8, max: 1.8, cor: '#ffb060', tam: 1.4 });
     D.escuro = h.acordando ? Math.min(1, 0.5 + h.t * 0.45) : t < 1.7 ? 1 : Math.max(0.5, 1 - (t - 1.7) * 0.35);
     if ((t > 4.2 || h.acordando) && !sono.feito) { sono.feito = true; J.dormiu(sono.f); }
-    if (J.passoSono(dt, pulaSono)) { const f = sono.f; sono = null; D.escuro = null; $('hud').classList.remove('calma'); if (modo === 'jogo') { abreFogo(f); } }
+    if (J.passoSono(dt, pulaSono)) { const f = sono.f; sono = null; D.escuro = null; $('hud').classList.remove('calma'); guardou(); if (modo === 'jogo') { abreFogo(f); } }
   }
   addEventListener('pointerdown', () => { if (sono && J.heroi && J.heroi.estado === 'dorme') pulaSono = true; });
   let viajando = false;
@@ -464,5 +479,5 @@
   D.iniciar(cv);
   $('carrega').textContent = 'Moldando o barro...';
   D.carregar((k) => { $('carrega').textContent = 'Moldando o barro... ' + Math.round(k * 100) + '%'; }).then(() => { titulo(); requestAnimationFrame(laco); });
-  window.SINA = { dormir, abreFala, J, F, D, C, quadro, abreMenu, voltar, continuar, nascer, daNome, get modo() { return modo; } };
+  window.SINA = { acordaComo, titulo, dormir, abreFala, J, F, D, C, quadro, abreMenu, voltar, continuar, nascer, daNome, get modo() { return modo; } };
 })();

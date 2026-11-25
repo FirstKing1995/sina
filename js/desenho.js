@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { console.warn('faltou', src); ok(null); }; i.src = src + '?v=5'; });
+  const carregaImg = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { console.warn('faltou', src); ok(null); }; i.src = src + '?v=7'; });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -191,6 +191,17 @@
     cima: [[32, 53, 140, 1], [58, 18, -84], [63, 28, -50]],
     baixo: [[57, 64, 88]], dor: [[56, 45, 70], [56, 45, 70], [55, 45, 70]],
   };
+  // a lança tem jeito próprio: em pé ao lado do corpo, deitada na corrida, reta na estocada (a mão corre pelo cabo)
+  const MAO_LANCA = {
+    parado: [[63, 56, -84, 0, 24], [63, 56, -84, 0, 24], [63, 56, -84, 0, 24], [63, 56, -84, 0, 24]],
+    correr: [[65, 47, -12, 0, 20], [68, 42, -14, 0, 20], [68, 41, -15, 0, 20], [67, 45, -13, 0, 20], [62, 48, -11, 0, 20], [69, 43, -13, 0, 20], [71, 41, -15, 0, 20], [70, 44, -14, 0, 20]],
+    golpe1: [[38, 41, -4, 1, 26], [34, 40, -3, 1, 28], [78, 38, 1, 0, 12], [69, 41, 3, 0, 16]],
+    golpe2: [[36, 46, -10, 1, 26], [36, 18, -24, 0, 18], [33, 20, -60, 0, 20]],
+    golpe3: [[27, 21, -118, 1, 18], [26, 18, -100, 1, 18], [68, 81, 14, 0, 14], [74, 81, 10, 0, 14]],
+    pulo: [[68, 51, -26, 0, 20], [63, 24, -62, 0, 20], [66, 27, -56, 0, 20], [66, 34, -44, 0, 20], [57, 40, -30, 0, 20], [40, 50, -20, 1, 22]],
+    cima: [[40, 53, -84, 1, 26], [58, 18, -88, 0, 12], [63, 28, -84, 0, 16]],
+    baixo: [[57, 60, 89, 0, 14]], dor: [[56, 48, 40, 0, 20], [56, 48, 40, 0, 20], [55, 48, 40, 0, 20]],
+  };
   const PE = 85;
   // qual pose mostrar agora
   function pose(h) {
@@ -211,6 +222,10 @@
       case 'golpe':
         if (h.dirGolpe === 'cima') return ['cima', k < 0.22 ? 0 : k < 0.7 ? 1 : 2];
         if (h.dirGolpe === 'baixo') return ['baixo', 0];
+        if (h.ficha.arma.estoca) { // estocadas: a segunda recolhe menos, a terceira entra mais
+          if (h.combo === 2) return ['golpe1', k < 0.08 ? 3 : k < 0.2 ? 1 : k < 0.72 ? 2 : 3];
+          return ['golpe1', k < (h.combo === 3 ? 0.22 : 0.1) ? 0 : k < (h.combo === 3 ? 0.34 : 0.24) ? 1 : k < 0.76 ? 2 : 3];
+        }
         if (h.combo === 2) return ['golpe2', k < 0.24 ? 0 : k < 0.72 ? 1 : 2];
         if (h.combo === 3) return ['golpe3', k < 0.18 ? 0 : k < 0.32 ? 1 : k < 0.78 ? 2 : 3];
         return ['golpe1', k < 0.1 ? 0 : k < 0.24 ? 1 : k < 0.72 ? 2 : 3];
@@ -225,8 +240,8 @@
     const k = a[0] + Math.min(a[1] - 1, n), sx = (k % B.cols) * B.q, sy = Math.floor(k / B.cols) * B.q;
     q.save(); q.translate(Math.round(x), Math.round(y)); q.scale((o && o.dir) || 1, 1);
     if (o && o.sx) q.scale(o.sx, o.sy);
-    const arma = o && o.arma, m = arma && MAO[anim] && MAO[anim][Math.min(MAO[anim].length - 1, n)];
-    const poeArma = () => { const p = A2.armas && A2.armas[arma]; if (!p) return; q.save(); q.translate(m[0] - 50, m[1] - PE); q.rotate(((m[2] + (o.giro || 0)) * Math.PI) / 180); const pega = arma === 'lanca' ? 18 : arma === 'machado' || arma === 'machado_ferro' ? 8 : 5; q.drawImage(img.armas, p[0], p[1], p[2], p[3], -pega, -Math.round(arma === 'machado' || arma === 'machado_ferro' ? p[3] * 0.4 : p[3] / 2), p[2], p[3]); q.restore(); };
+    const arma = o && o.arma, tab = arma === 'lanca' ? MAO_LANCA : MAO, m = arma && tab[anim] && tab[anim][Math.min(tab[anim].length - 1, n)];
+    const poeArma = () => { const p = A2.armas && A2.armas[arma]; if (!p) return; q.save(); q.translate(m[0] - 50, m[1] - PE); q.rotate(((m[2] + (o.giro || 0)) * Math.PI) / 180); const pega = arma === 'lanca' ? m[4] : arma === 'machado' || arma === 'machado_ferro' ? 8 : 5; q.drawImage(img.armas, p[0], p[1], p[2], p[3], -pega, -Math.round(arma === 'machado' || arma === 'machado_ferro' ? p[3] * 0.4 : p[3] / 2), p[2], p[3]); q.restore(); };
     if (m && m[3]) poeArma();
     q.drawImage((o && o.sil ? silhueta(im, o.sil, 'h' + roupa) : im), sx, sy, B.q, B.q, -50, -PE, B.q, B.q);
     if (m && !m[3]) poeArma();
@@ -491,7 +506,7 @@
     quadroGente('mulher', a, n, H.x, H.y + 1, { dir: H.dir, sy: deita ? 1 + Math.sin(tempo * 1.5 + 1) * 0.025 : 1, branco: H.tDor > 0.2 ? 0.7 : 0, a: H.inv > 0 && H.tDor <= 0 && Math.floor(H.inv * 16) % 2 ? 0.6 : 1 });
     brilhos.push([H.x, H.y - 30, 70, '255,214,170', 0.35]);
     const D2 = J.save.hum;
-    if (D2 && D2.lanca && ['parado', 'correr'].includes(a) && A2.armas.lanca) { const p = A2.armas.lanca; g.save(); g.translate(H.x + H.dir * 6, H.y - 30); g.scale(H.dir, 1); g.rotate(-1.2); g.drawImage(img.armas, p[0], p[1], p[2], p[3], -18, -p[3] / 2, p[2], p[3]); g.restore(); }
+    if (D2 && D2.lanca && ['parado', 'correr'].includes(a) && A2.armas.lanca) { const p = A2.armas.lanca; g.save(); g.translate(Math.round(H.x + H.dir * 11), Math.round(H.y - 29)); g.scale(H.dir, 1); g.rotate(a === 'correr' ? -0.3 : -1.42); g.drawImage(img.armas, p[0], p[1], p[2], p[3], -22, -Math.round(p[3] / 2), p[2], p[3]); g.restore(); }
     if (H.caida) { g.fillStyle = '#0a0808d0'; g.fillRect(H.x - 18, H.y - 46, 36, 4); g.fillStyle = '#ff9a6a'; g.fillRect(H.x - 17, H.y - 45, 34 * Math.max(0, H.tCaida / 25), 2); }
     else if (H.hp < H.hpMax) { g.fillStyle = '#0a0808d0'; g.fillRect(H.x - 14, H.y - 66, 28, 4); g.fillStyle = '#d8a06a'; g.fillRect(H.x - 13, H.y - 65, 26 * (H.hp / H.hpMax), 2); }
   }

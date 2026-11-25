@@ -20,7 +20,7 @@ Um deus molda o primeiro homem do barro e vai embora. O jogador dá o nome. Ele 
 
 ## Regras
 
-- **Morreu, começou do zero.** Com um filho crescido (cinco dias), o jogador continua nele com 65% das perícias; com baú, herda a mochila inteira.
+- **Morreu, começou do zero (sem rever a abertura).** Acender ou dormir na fogueira guarda o jogo. Com um filho crescido (cinco dias), o jogador continua nele com 65% das perícias; com baú, herda a mochila inteira.
 - **Perícias crescem com o uso:** armas, magia, corpo, fôlego, pernas, coleta, ofício. Ofício libera receitas melhores.
 - **Títulos por espécie:** 25, 100 e 250 mortes. Em 100 vem uma habilidade (Caçador de Lobos corre mais e esquiva barato, e assim por diante).
 - **Fome** cai com o tempo; em zero, tira vida. Comer com Q. Cobras envenenam; erva e curativo limpam.

@@ -17,7 +17,7 @@
     porrete: { nome: 'Porrete de galho', dano: 13, alcance: 42, altura: 48, tempo: 0.36, custo: 10, quebra: 1.5, per: 'porrete', desc: 'Pesado e torto. Abala quem leva.' },
     faca: { nome: 'Faca de pedra', dano: 11, alcance: 32, altura: 34, tempo: 0.22, custo: 6, quebra: 0.6, per: 'lamina', critico: 0.18, desc: 'Rápida. Às vezes acha a carne certa.' },
     machado: { nome: 'Machado de pedra', dano: 20, alcance: 44, altura: 52, tempo: 0.46, custo: 15, quebra: 2, per: 'machado', desc: 'Lento, mas parte osso.' },
-    lanca: { nome: 'Lança de pedra', dano: 15, alcance: 66, altura: 22, tempo: 0.36, custo: 11, quebra: 1, per: 'lanca', estoca: true, desc: 'Mantém a fome dos outros longe.' },
+    lanca: { nome: 'Lança de pedra', dano: 15, alcance: 62, altura: 22, tempo: 0.36, custo: 11, quebra: 1, per: 'lanca', estoca: true, desc: 'Mantém a fome dos outros longe.' },
     arco: { nome: 'Arco de galho', dano: 17, alcance: 30, altura: 30, tempo: 0.5, custo: 10, quebra: 0.8, per: 'arco', tiro: true, desc: 'Gasta flechas. Segure para mirar mais forte.' },
     osso_clava: { nome: 'Clava de osso', dano: 22, alcance: 46, altura: 50, tempo: 0.4, custo: 13, quebra: 2, per: 'porrete', desc: 'O osso de um bate no outro.' },
     adaga: { nome: 'Adaga de ferro', dano: 18, alcance: 34, altura: 34, tempo: 0.2, custo: 6, quebra: 0.7, per: 'lamina', critico: 0.28, desc: 'Ferro achado, fio novo.' },
