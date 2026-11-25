@@ -478,6 +478,6 @@
 
   D.iniciar(cv);
   $('carrega').textContent = 'Moldando o barro...';
-  D.carregar((k) => { $('carrega').textContent = 'Moldando o barro... ' + Math.round(k * 100) + '%'; }).then(() => { titulo(); requestAnimationFrame(laco); });
+  D.carregar((k) => { $('carrega').textContent = 'Moldando o barro... ' + Math.round(k * 100) + '%'; }).then(() => { try { sessionStorage.removeItem('sina_tenta'); } catch (e) { /* nada */ } titulo(); requestAnimationFrame(laco); });
   window.SINA = { acordaComo, titulo, dormir, abreFala, J, F, D, C, quadro, abreMenu, voltar, continuar, nascer, daNome, get modo() { return modo; } };
 })();

@@ -7,7 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
-<link rel="stylesheet" href="css/jogo.css?v=7">
+<link rel="stylesheet" href="css/jogo.css?v=8">
+<script>
+// se um arquivo do jogo não vier (servidor ocupado), tenta de novo até quatro vezes em vez de travar
+addEventListener('error', function (e) {
+  var t = e.target; if (!t || t.tagName !== 'SCRIPT') return;
+  var n = 0; try { n = +sessionStorage.getItem('sina_tenta') || 0; sessionStorage.setItem('sina_tenta', n + 1); } catch (x) { n = 9; }
+  var c = document.getElementById('carrega'); if (c) c.textContent = n < 4 ? 'O servidor demorou. Tentando de novo...' : 'Não foi possível carregar. Recarregue a página em instantes.';
+  if (n < 4 && !window._tenta) { window._tenta = 1; setTimeout(function () { location.reload(); }, 900 + n * 1200); }
+}, true);
+</script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -95,17 +104,17 @@
 </div>
 <div id="veu"></div>
 
-<script src="assets/barro/barro.js?v=7"></script>
-<script src="assets/barro/gente.js?v=7"></script>
-<script src="assets/floresta/arte.js?v=7"></script>
-<script src="js/som.js?v=7"></script>
-<script src="js/dados.js?v=7"></script>
-<script src="js/fase.js?v=7"></script>
-<script src="js/motor.js?v=7"></script>
-<script src="js/bando.js?v=7"></script>
-<script src="js/donos.js?v=7"></script>
-<script src="js/lar.js?v=7"></script>
-<script src="js/desenho.js?v=7"></script>
-<script src="js/main.js?v=7"></script>
+<script src="assets/barro/barro.js?v=8"></script>
+<script src="assets/barro/gente.js?v=8"></script>
+<script src="assets/floresta/arte.js?v=8"></script>
+<script src="js/som.js?v=8"></script>
+<script src="js/dados.js?v=8"></script>
+<script src="js/fase.js?v=8"></script>
+<script src="js/motor.js?v=8"></script>
+<script src="js/bando.js?v=8"></script>
+<script src="js/donos.js?v=8"></script>
+<script src="js/lar.js?v=8"></script>
+<script src="js/desenho.js?v=8"></script>
+<script src="js/main.js?v=8"></script>
 </body>
 </html>
