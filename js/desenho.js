@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { console.warn('faltou', src); ok(null); }; i.src = src; });
+  const carregaImg = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { console.warn('faltou', src); ok(null); }; i.src = src + '?v=4'; });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
