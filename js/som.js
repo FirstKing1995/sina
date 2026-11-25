@@ -1,4 +1,4 @@
-/* SINA 2D: som. Efeitos gravados e ambiente em laço; música só nos chefes, para o silêncio pesar. (Igual ao da versão de cima.) */
+/* SINA 2D: som. Efeitos gravados e ambiente em laço; quatro músicas em laço: floresta, calma, batalha e chefão. */
 (function (raiz) {
   'use strict';
   const S = raiz.Som = {};
@@ -69,8 +69,51 @@
     for (const n of ['noite', 'masmorra', 'brisa', 'chuva', 'rio', 'cinzas', 'cripta']) laco('som/amb/' + n + '.mp3', n === nome ? (n === 'masmorra' ? 0.6 : n === 'cinzas' || n === 'cripta' ? 0.5 : 0.38) : 0);
   };
   S.fogueira = function (k) { if (ligado) { const el = lacos['som/amb/fogo.mp3']; if (!el) laco('som/amb/fogo.mp3', k); else { if (k > 0 && el.paused) el.play().catch(() => {}); el.volume = Math.min(1, k * S.vol.ambiente); if (!k) el.pause(); } } };
-  S.musica = function (nome) {
-    alvoMus = nome; if (!ligado) return;
-    for (const n of ['batalha', 'november-snow']) laco('som/musica/' + n + '.mp3', n === nome ? 0.5 : 0);
+  // ---------- músicas ----------
+  // cada uma toca em dois aparelhos: perto do fim do laço o segundo entra no ponto certo e cruza com o primeiro, sem buraco
+  const MUS = {
+    floresta: { vol: 0.34, laco: [9.262, 164.718], entra: 3, sai: 2 }, calma: { vol: 0.4, laco: [6.117, 77.137], entra: 2.2, sai: 2 },
+    batalha: { vol: 0.42, laco: [4.209, 136.746], entra: 0.6, sai: 2.4, recomeca: 12 }, chefao: { vol: 0.5, laco: [3.868, 162.189], entra: 0.4, sai: 2.5, recomeca: 0 },
   };
+  const CRUZA = 1.1;
+  // o arquivo fica na memória (uns 2 MB): os dois aparelhos usam o mesmo, e pular de ponto não depende da rede
+  function baixa(m, n) { const u = 'som/musica/sina-' + n + '.mp3?v=1'; m.baixando = fetch(u).then((r) => { if (!r.ok) throw 0; return r.blob(); }).then((b) => { m.url = URL.createObjectURL(b); }).catch(() => { m.url = u; }).then(() => { m.A = aparelho(m); m.g = 0; if (m.quer && !document.hidden) toca(m, m.A); }); }
+  function aparelho(m) { const el = new Audio(m.url); el.preload = 'auto'; el.volume = 0; return el; }
+  function toca(m, el) { const p = el.play(); if (p && p.catch) p.catch(() => { m.falhou = performance.now(); }); }
+  S.musica = function (nome) {
+    if (nome === alvoMus && (!ligado || !nome || MUS[nome].baixando)) return;
+    alvoMus = nome; if (!ligado) return;
+    for (const n in MUS) {
+      const m = MUS[n]; m.quer = n === nome ? 1 : 0;
+      if (!m.quer) continue;
+      if (!m.baixando) baixa(m, n);
+      if (!m.A) continue;
+      // a batalha recomeça do zero; a floresta continua de onde parou
+      if (m.A.paused && m.recomeca != null && performance.now() - (m.parou || 0) > m.recomeca * 1000) { m.A.currentTime = 0; if (m.B) m.B.pause(); m.k = 0; m.trocando = false; }
+      if (m.A.paused) toca(m, m.A);
+    }
+  };
+  S.prepara = (n) => { if (ligado && MUS[n] && !MUS[n].baixando) baixa(MUS[n], n); };
+  S.musicaAtual = () => alvoMus;
+  let antes = performance.now();
+  setInterval(() => {
+    const agora = performance.now(), dt = Math.min(1.2, (agora - antes) / 1000); antes = agora;
+    for (const n in MUS) {
+      const m = MUS[n]; if (!m.A) continue;
+      m.g = m.quer ? Math.min(1, m.g + dt / m.entra) : Math.max(0, m.g - dt / m.sai);
+      if (m.g <= 0 && !m.quer) { if (!m.A.paused) { m.A.pause(); if (m.B) m.B.pause(); m.parou = agora; } continue; }
+      if (m.quer && m.A.paused && !document.hidden && agora - (m.falhou || 0) > 800) { if (m.A.ended) m.A.currentTime = m.laco[0]; toca(m, m.A); }
+      const [li, lf] = m.laco, t = m.A.currentTime;
+      if (lf && t > lf - 9 && !m.trocando) { if (!m.B) m.B = aparelho(m); if (m.B.paused && Math.abs(m.B.currentTime - li) > 0.02 && m.B.readyState > 0) m.B.currentTime = li; }
+      if (lf && m.B && t >= lf - 0.05 && !m.trocando) { m.trocando = true; m.k = 0; m.B.volume = 0; m.B.currentTime = Math.max(0, li + (t - lf)); toca(m, m.B); }
+      const v = Math.max(0, Math.min(1, m.g * m.vol * S.vol.musica));
+      if (m.trocando) {
+        m.k = Math.min(1, m.k + dt / CRUZA);
+        m.A.volume = v * Math.cos(m.k * Math.PI / 2); m.B.volume = v * Math.sin(m.k * Math.PI / 2);
+        if (m.k >= 1) { m.A.pause(); const x = m.A; m.A = m.B; m.B = x; m.trocando = false; }
+      } else m.A.volume = v;
+    }
+  }, 60);
+  document.addEventListener('visibilitychange', () => { for (const n in MUS) { const m = MUS[n]; if (!m.A) continue; if (document.hidden) { m.A.pause(); if (m.B) m.B.pause(); } else if (m.quer) toca(m, m.A); } });
+  S.MUS = MUS;
 })(window);

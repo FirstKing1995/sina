@@ -161,7 +161,7 @@
       if (tp.chefe && J.save.chefes[i.t]) continue;
       J.inimigos.push(nasce(i.t, i.x, i.y));
     }
-    F.fecharArena(false); J.chefeAtivo = null; J.emb = null; if (J.poeGuardas) J.poeGuardas(); if (F.atual.fechos) F.fechar(false); if (window.Som) Som.musica(null);
+    F.fecharArena(false); J.chefeAtivo = null; J.emb = null; if (J.poeGuardas) J.poeGuardas(); if (F.atual.fechos) F.fechar(false);
   };
 
   // ---------- dano ----------
@@ -612,11 +612,11 @@
 
   // ---------- chefe ----------
   J.chefeAtivo = null;
-  J.acordaChefe = function (e) { if (J.chefeAtivo) return; J.chefeAtivo = e; F.fecharArena(true); som('rugido', 1); treme(10); if (window.Som) Som.musica('batalha'); avisa('chefe', e); };
+  J.acordaChefe = function (e) { if (J.chefeAtivo) return; J.chefeAtivo = e; F.fecharArena(true); som('rugido', 1); treme(10); avisa('chefe', e); };
   J.venceuChefe = function (e) {
     J.save.chefes[e.tipo] = true; F.fecharArena(false); J.chefeAtivo = null;
     for (const o of J.inimigos) if (o.chamado && o.vivo) { o.vivo = false; o.estado = 'morto'; o.t = 0; }
-    if (window.Som) Som.musica(null);
+    J.silencio = 7;
     J.clarao = 1; treme(12); J.pausa = 0.35; avisa('venceu', e); J.salvar();
   };
 
@@ -624,7 +624,6 @@
   J.morrer = function (quem) {
     const h = J.heroi, s = J.save; h.estado = 'morto'; h.t = 0; h.vy = -160; h.vx = -h.dir * 60; J.causa = quem;
     som('morte', 0.9, 0.8); treme(10); J.pausa = 0.35; J.lento = 1.5;
-    if (window.Som) Som.musica(null);
     J.faiscas(h.x, h.y - 30, 40, '#ff9a50', 1.4, 'brasa');
     // quem tem um filho crescido continua nele, com parte do que aprendeu; quem não tem, acaba aqui
     const her = J.herdeiro ? J.herdeiro() : null;

@@ -291,7 +291,7 @@
   J.raid = null; J.raidEm = 0;
   function comecaRaid() {
     const s = J.save, L = s.lar, n = clamp(2 + Math.floor(s.dia / 5), 2, 5) + (L.lenha > 0 ? 0 : 1);
-    J.raid = { n: -1, total: n, t: 3, dia: s.dia }; montaBarreiras(); avisa('raid', n); som('uivo', 0.9); if (window.Som) Som.musica('batalha');
+    J.raid = { n: -1, total: n, t: 3, dia: s.dia }; montaBarreiras(); avisa('raid', n); som('uivo', 0.9);
   }
   function ondaRaid() {
     const s = J.save, r = J.raid, k = clamp(0.2 + s.dia * 0.04 + Object.keys(s.chefes).length * 0.1, 0.2, 1);
@@ -311,7 +311,7 @@
     r.t -= dt; if (r.t > 0) return;
     if (r.n + 1 >= r.total) {
       if (vivos) return;
-      J.raid = null; montaBarreiras(); if (window.Som) Som.musica(null);
+      J.raid = null; montaBarreiras();
       if (s.hum && s.hum.onde !== 'levada') s.hum.laco = Math.min(100, s.hum.laco + 4);
       avisa('raidFim'); for (const m of ['couro', 'ferro', 'carne', 'osso']) J.ganha(m, 1 + Math.floor(s.dia / 6)); J.salvar(); return;
     }

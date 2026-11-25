@@ -16,7 +16,7 @@
   // ---------- título ----------
   function titulo() {
     modo = 'titulo'; mostra('titulo'); J.heroi = null; D.escuro = null; D.foco = null;
-    if (window.Som) { Som.musica(null); Som.ambiente('brisa'); Som.fogueira(0); }
+    if (window.Som) { Som.musica('calma'); Som.ambiente('brisa'); Som.fogueira(0); }
     const m = $('titulo-menu'); m.innerHTML = '';
     const s = J.carregar();
     if (s) {
@@ -35,7 +35,7 @@
   let nas = null;
   function nascer() {
     modo = 'nasce'; mostra('nasce'); telaCheia();
-    if (window.Som) { Som.ligar(); Som.ambiente('cripta'); }
+    if (window.Som) { Som.ligar(); Som.ambiente('cripta'); Som.musica(null); }
     $('n-pede').hidden = true; $('n-texto').textContent = ''; $('n-img').className = ''; $('n-luz').className = '';
     nas = { t: 0, i: -1, part: [], fim: false };
     requestAnimationFrame(() => { $('n-img').className = 'vai'; $('n-luz').className = 'vai'; });
@@ -166,7 +166,7 @@
   function passoDormir(dt) {
     const h = J.heroi; if (!sono || h.estado !== 'dorme') return;
     const t = h.acordando ? 99 : h.andaAte ? 0 : h.t;
-    if (t > 1.9 && !sono.disse) { sono.disse = true; const junto = J.hum && J.hum.dorme != null && Math.random() < 0.6; const l = junto ? C.SONHOS2 : C.SONHOS; sussurra(l[Math.floor(Math.random() * l.length)], 4.6); if (window.Som) Som.musica(null); }
+    if (t > 1.9 && !sono.disse) { sono.disse = true; const junto = J.hum && J.hum.dorme != null && Math.random() < 0.6; const l = junto ? C.SONHOS2 : C.SONHOS; sussurra(l[Math.floor(Math.random() * l.length)], 4.6); }
     if (Math.random() < 0.14) J.poe({ tipo: 'brasa', x: sono.f.x + (Math.random() - 0.5) * 18, y: sono.f.y - 18, vx: (Math.random() - 0.5) * 10, vy: -22 - Math.random() * 22, vida: 1.8, max: 1.8, cor: '#ffb060', tam: 1.4 });
     D.escuro = h.acordando ? Math.min(1, 0.5 + h.t * 0.45) : t < 1.7 ? 1 : Math.max(0.5, 1 - (t - 1.7) * 0.35);
     if ((t > 4.2 || h.acordando) && !sono.feito) { sono.feito = true; J.dormiu(sono.f); }
@@ -415,6 +415,30 @@
     nas.part = nas.part.filter((p) => p.t < p.d && p.y < H); q.globalAlpha = 1;
   }
 
+  // ---------- que música toca agora ----------
+  let musT = 0, calor = 0;
+  const FORA = ['vaga', 'volta', 'caido', 'morto', 'foge'];
+  function musicaDaHora(dt) {
+    musT -= dt; J.silencio = Math.max(0, (J.silencio || 0) - dt); if (musT > 0 || !window.Som) return; const passo = 0.25 - musT; musT = 0.25;
+    const h = J.heroi, A = F.atual; let m = 'floresta';
+    if (modo === 'morte' || h.estado === 'morto' || acorda) m = null;
+    else if (J.chefeAtivo) m = 'chefao';
+    else {
+      // a batalha entra com emboscada, ataque ao lar ou bando de verdade em cima de você; sai devagar
+      let perto = 0; for (const e of J.inimigos) if (e.vivo && !FORA.includes(e.estado) && Math.abs(e.x - h.x) < 330 && Math.abs(e.y - h.y) < 150) perto += e.T.bruto ? 2 : 1;
+      calor = J.emb || J.raid ? 6 : perto >= 2 ? Math.min(6, calor + passo * 4) : perto ? Math.max(0, calor - passo * 0.25) : Math.max(0, calor - passo * 1.3);
+      tocando = calor > (tocando ? 0.4 : 3.2);
+      if (tocando) m = 'batalha';
+      else if (J.silencio > 0) m = null;
+      else if (h.estado === 'dorme' || modo === 'fogo') m = 'calma';
+      else if (A.id === 'lar' && !J.ehNoite()) m = 'calma';
+      else if (A.arena && J.inimigos.some((e) => e.T.chefe && e.vivo)) m = null; // antes do dono, só o vento
+    }
+    Som.musica(m);
+  }
+  let tocando = false;
+  addEventListener('pointerdown', () => window.Som && Som.ligar());
+
   // ---------- laço ----------
   let antes = performance.now();
   function quadro(dt) {
@@ -422,11 +446,11 @@
     if (modo === 'nasce') passoNasce(dt);
     if (J.heroi && ['jogo', 'menu', 'fogo', 'morte', 'batiza'].includes(modo)) {
       if (modo === 'jogo' || modo === 'morte') { if (modo === 'jogo') { passoAcorda(dt); passoDormir(dt); if (batizar && !sono && J.heroi.estado === 'livre') abreBatiza(); } if (!viajando) J.passo(dt); }
-      D.quadro(dt);
+      D.quadro(dt); musicaDaHora(dt);
       if (modo !== 'morte') hud(dt);
       if (modo === 'jogo' && !acorda) {
         const h = J.heroi, A = F.atual;
-        if (areaVista !== A.id) { areaVista = A.id; J.mostraArea(nomeArea(A.id)); if (window.Som) Som.ambiente(C.REGIOES[A.regiao].amb); }
+        if (areaVista !== A.id) { areaVista = A.id; J.mostraArea(nomeArea(A.id)); if (window.Som) { Som.ambiente(C.REGIOES[A.regiao].amb); Som.prepara('batalha'); if (A.arena) Som.prepara('chefao'); } }
         for (const p of A.placas) if (Math.abs(p.x - h.x) < 46 && Math.abs(p.y - h.y) < 70) dica(p.dica);
         if (J.save.fome < 25) dica('comer');
         if (window.Som) { let k = 0; for (const f of A.fogos) if (J.save.fogos[f.id]) k = Math.max(k, 1 - Math.abs(f.x - h.x) / 240); Som.fogueira(Math.max(0, k) * 0.6); }
