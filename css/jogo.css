@@ -165,3 +165,8 @@ button.ir:hover { background: #442a14; }
 #guardou.ver { opacity: 1; }
 body.toque #guardou { left: 50%; bottom: auto; top: 10px; transform: translateX(-50%); }
 #hud.calma > #guardou { opacity: 0; }
+#h-tocha { width: 84px; height: 5px; margin-top: 4px; background: #070b0bd9; border: 1px solid #3c4a42; } #h-tocha i { display: block; height: 100%; width: calc(var(--k, 0) * 100%); background: #7a5a34; } #h-tocha.acesa i { background: linear-gradient(90deg, #ff7a24, #ffd080); box-shadow: 0 0 8px #ff8a30; }
+#botoes [data-a=tocha] { right: 252px; bottom: 74px; width: 48px; height: 48px; font-size: 12px; }
+.legenda { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; color: #c2c7b8; margin-bottom: 8px; } .legenda i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; transform: rotate(45deg); }
+.mapa { padding: 8px 0 12px; border-top: 1px solid #2c3a36; } .mapa b { font: 600 17px Cinzel, serif; color: #e2d8b8; margin-right: 10px; } .mapa.aqui b { color: #ffcf8a; } .mapa small { color: #a8b0a2; font-size: 14px; } .mapa .lugares { display: block; font-style: italic; }
+.mapa-rola { overflow-x: auto; margin: 6px 0 4px; border: 1px solid #2c3a36; touch-action: pan-x; } .mapa-rola canvas { display: block; image-rendering: pixelated; }

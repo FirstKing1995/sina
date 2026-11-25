@@ -8,9 +8,9 @@
   let cv, ctx, buf, g, luz, gl;
   D.VW = 568; D.VH = 320;
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
-  let tempo = 0;
+  let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=7' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=9' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -33,7 +33,7 @@
     for (const r of B.roupas) l.push(['h_' + r, 'assets/barro/' + r + '.png']);
     for (const m in A2.monstros) l.push(['m_' + m, 'assets/floresta/m_' + m + '.webp']);
     for (const r in C.REGIOES) { l.push(['f_' + r, 'assets/floresta/f_' + r + '.webp']); l.push(['p_' + r, 'assets/floresta/p_' + r + '.webp']); }
-    l.push(['h_mulher', 'assets/barro/mulher.png'], ['h_filho', 'assets/barro/filho.png'], ['casa', 'assets/floresta/casa.webp'], ['itens', 'assets/floresta/itens.webp'], ['armas', 'assets/floresta/armas.webp']);
+    l.push(['h_mulher', 'assets/barro/mulher.png'], ['h_filho', 'assets/barro/filho.png'], ['casa', 'assets/floresta/casa.webp'], ['marcos', 'assets/floresta/marcos.webp'], ['itens', 'assets/floresta/itens.webp'], ['armas', 'assets/floresta/armas.webp']);
     let n = 0;
     await Promise.all(l.map(async ([k, s]) => { img[k] = await carregaImg(s); n++; if (aviso) aviso(n / l.length); }));
   };
@@ -62,6 +62,17 @@
   }
   const silh = {};
   function silhueta(im, cor, k) { const n = k + cor; if (silh[n]) return silh[n]; const c = tela(im.width, im.height), q = c.getContext('2d'); q.drawImage(im, 0, 0); q.globalCompositeOperation = 'source-in'; q.fillStyle = cor; q.fillRect(0, 0, c.width, c.height); return (silh[n] = c); }
+  // fio de luz em volta do bicho, na cor da névoa do lugar: separa do fundo
+  const fios = {};
+  function fio(im, cor, k) {
+    const n = k + cor; if (fios[n]) return fios[n];
+    const c = tela(im.width, im.height), q = c.getContext('2d'), s = silhueta(im, 'rgb(' + cor + ')', k);
+    for (const [x, y] of [[1, 0], [-1, 0], [0, -1], [1, -1], [-1, -1]]) q.drawImage(s, x, y);
+    q.globalCompositeOperation = 'destination-out'; q.drawImage(im, 0, 0);
+    return (fios[n] = c);
+  }
+  const clareia = {}; // névoa puxada para o claro
+  const corFio = (R) => clareia[R.nevoa] || (clareia[R.nevoa] = R.nevoa.split(',').map((v) => Math.min(255, Math.round(+v * 0.55 + 118))).join(','));
   // desenhos que se repetem todo quadro ficam prontos
   const prontos = new Map();
   function guarda(k, w, h, f) { let c = prontos.get(k); if (!c) { c = tela(w, h); f(c.getContext('2d'), w, h); if (prontos.size > 90) prontos.clear(); prontos.set(k, c); } return c; }
@@ -116,13 +127,17 @@
 
   // ---------- terra, em pedaços guardados ----------
   const PED = 32; let pedacos = new Map(), areaPed = null;
+  const aberto = (e) => !e.oco || F.atual.fracas.some((f) => J.save.fracas[f.id] && f.c0 * T >= e.x0 && f.c1 * T <= e.x1);
   function pintaPedaco(i) {
     const c = tela(PED * T, F.H * T), q = c.getContext('2d'); q.imageSmoothingEnabled = false;
     const at = img['p_' + F.atual.regiao], p = A2.props.chao, R = regiao(); if (!at) return c;
     const x0 = i * PED, LARG = 560, SUP = 27; // SUP: altura da linha do chão dentro da peça
     // as paredes de emboscada e de arena são desenhadas à parte: não entram na terra guardada
     const AR = F.atual.arena, parede = (tx) => (F.fechos && F.fechos.includes(tx)) || (F.fechada && AR && (tx === Math.floor(AR.x0 / T) || tx === Math.floor(AR.x1 / T) - 1));
-    const solido = (tx, ty) => F.tile(tx, ty) === 1 && !(tx >= 0 && tx < F.W && ty < F.atual.topo[tx] && parede(tx));
+    // câmara escondida: parece terra maciça até o chão quebrar
+    const ocos = F.atual.escuros.filter((e) => e.oco && !aberto(e));
+    const oculto = (tx, ty) => ocos.some((e) => tx * T >= e.x0 && tx * T < e.x1 && ty * T >= e.y0 && ty * T < e.y1);
+    const solido = (tx, ty) => oculto(tx, ty) || F.tile(tx, ty) === 1 && !(tx >= 0 && tx < F.W && ty < F.atual.topo[tx] && parede(tx));
     for (let lx = 0; lx < PED; lx++) {
       const tx = x0 + lx; if (tx >= F.W) break;
       let prof = -1;
@@ -153,7 +168,7 @@
     // galhos para pisar
     const po = A2.props.ponte;
     for (let ty = 0; ty < F.H; ty++) for (let lx = -8; lx < PED; lx++) {
-      const tx = x0 + lx; if (tx < 0 || F.tile(tx, ty) !== 2 || F.tile(tx - 1, ty) === 2) continue;
+      const tx = x0 + lx; if (tx < 0 || F.tile(tx, ty) !== 2 || F.tile(tx - 1, ty) === 2 || oculto(tx, ty)) continue;
       let n = 1; while (F.tile(tx + n, ty) === 2) n++;
       const w = n * T + 10, m = Math.min(po[2] / 2, Math.ceil(w / 2)), x = lx * T - 5, y = ty * T - 5;
       q.drawImage(at, po[0], po[1], m, po[3], x, y, m, po[3]);
@@ -240,8 +255,8 @@
     const k = a[0] + Math.min(a[1] - 1, n), sx = (k % B.cols) * B.q, sy = Math.floor(k / B.cols) * B.q;
     q.save(); q.translate(Math.round(x), Math.round(y)); q.scale((o && o.dir) || 1, 1);
     if (o && o.sx) q.scale(o.sx, o.sy);
-    const arma = o && o.arma, tab = arma === 'lanca' ? MAO_LANCA : MAO, m = arma && tab[anim] && tab[anim][Math.min(tab[anim].length - 1, n)];
-    const poeArma = () => { const p = A2.armas && A2.armas[arma]; if (!p) return; q.save(); q.translate(m[0] - 50, m[1] - PE); q.rotate(((m[2] + (o.giro || 0)) * Math.PI) / 180); const pega = arma === 'lanca' ? m[4] : arma === 'machado' || arma === 'machado_ferro' ? 8 : 5; q.drawImage(img.armas, p[0], p[1], p[2], p[3], -pega, -Math.round(arma === 'machado' || arma === 'machado_ferro' ? p[3] * 0.4 : p[3] / 2), p[2], p[3]); q.restore(); };
+    const arma = o && o.arma, tab = arma && arma.startsWith('lanca') ? MAO_LANCA : MAO, m = arma && tab[anim] && tab[anim][Math.min(tab[anim].length - 1, n)];
+    const poeArma = () => { const p = A2.armas && A2.armas[arma]; if (!p) return; q.save(); q.translate(m[0] - 50, m[1] - PE); q.rotate(((m[2] + (o.giro || 0)) * Math.PI) / 180); const pega = arma.startsWith('lanca') ? m[4] : arma === 'machado' || arma === 'machado_ferro' ? 8 : 5; q.drawImage(img.armas, p[0], p[1], p[2], p[3], -pega, -Math.round(arma === 'machado' || arma === 'machado_ferro' ? p[3] * 0.4 : p[3] / 2), p[2], p[3]); q.restore(); };
     if (m && m[3]) poeArma();
     q.drawImage((o && o.sil ? silhueta(im, o.sil, 'h' + roupa) : im), sx, sy, B.q, B.q, -50, -PE, B.q, B.q);
     if (m && !m[3]) poeArma();
@@ -261,6 +276,7 @@
     let giro = 0; // a arma acompanha o arco do golpe
     if (h.estado === 'golpe' && h.dirGolpe === 'frente' && !h.ficha.arma.estoca) { if (h.combo === 1 && k > 0.24) giro = -70 + Math.min(1, (k - 0.24) / 0.25) * 90; if (h.combo === 2 && k > 0.24) giro = 70 - Math.min(1, (k - 0.24) / 0.25) * 90; }
     const pisca = h.inv > 0 && h.estado !== 'dor' && h.estado !== 'rola' && Math.floor(h.inv * 18) % 2 === 0;
+    if (J.save.tochaAcesa && !['rola', 'dorme', 'morto', 'nasce'].includes(h.estado)) tochaNaMao(h, anim);
     if (pisca) g.globalAlpha = 0.45;
     if (h.vento > 0) { g.globalAlpha *= 0.9; }
     quadroHeroi(g, J.save.roupa, anim, n, h.x + treme, h.y + 1 + (h.degrau > 0 ? h.degrau * 60 : 0), { dir: h.dir, sx, sy, arma, giro, branco: h.estado === 'dor' && h.t < 0.1 ? 0.8 : h.cheia ? 0.15 + 0.15 * Math.sin(tempo * 30) : 0 });
@@ -269,6 +285,17 @@
     if (h.estado === 'golpe' || h.estado === 'forte') arco(h);
     if (h.estado === 'mira') { const k2 = Math.min(1, h.t / 0.8); g.fillStyle = h.cheia ? '#ffe2a0' : '#c9bfa2'; g.fillRect(h.x - 12, h.y - 74, 24 * k2, 2); flecha(h.x + h.dir * 14, h.y - 41, h.dir > 0 ? (J.ent.cima ? -0.55 : J.ent.baixo ? 0.35 : 0) : Math.PI + (J.ent.cima ? 0.55 : J.ent.baixo ? -0.35 : 0)); }
     if (J.save.magias.length && h.estado === 'magia') brilhos.push([h.x + h.dir * 14, h.y - 40, 60, '255,170,80', 0.7]);
+  }
+  // a tocha vai na mão de trás
+  function tochaNaMao(h, anim) {
+    const baixo = anim === 'golpe3' || anim === 'colher', x = Math.round(h.x - h.dir * (anim === 'correr' ? 15 : 11)), y = Math.round(h.y - (baixo ? 30 : 38) + (anim === 'correr' ? Math.sin(h.andou / 8) * 1.5 : 0));
+    g.save(); g.translate(x, y); g.scale(h.dir, 1); g.rotate(-0.35);
+    g.fillStyle = '#0c0a08'; g.fillRect(-2, -15, 5, 24); g.fillStyle = '#7a5232'; g.fillRect(-1, -14, 3, 22); g.fillStyle = '#a87848'; g.fillRect(-1, -14, 1, 22); g.fillStyle = '#c8a868'; g.fillRect(-2, -16, 5, 4); g.restore();
+    const fx0 = x - h.dir * 5, fy = y - 15;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    for (const [cor, alt, larg, al] of [['#c8321a', 17, 8, 0.6], ['#ff7a24', 13, 6, 0.8], ['#ffc050', 9, 4, 0.9], ['#fff0c0', 5, 2.4, 0.9]]) { g.fillStyle = cor; g.globalAlpha = al; const hh = alt + Math.sin(tempo * 9 + alt) * 1.6; for (let yy = 0; yy < hh; yy += 2) { const q = yy / hh, w2 = larg * Math.sin(Math.PI * (0.2 + q * 0.8)) * (1 - q * 0.3), des = -h.vx * 0.012 * q * 6 + Math.sin(tempo * 8 + q * 4) * 1.6 * q; if (w2 > 0.6) g.fillRect(Math.round(fx0 + des - w2 / 2), Math.round(fy - yy), Math.max(1, Math.round(w2)), 2); } }
+    g.restore();
+    if (Math.random() < 0.16) J.poe({ tipo: 'brasa', x: fx0, y: fy - 10, vx: (Math.random() - 0.5) * 14 - h.vx * 0.1, vy: -26, vida: 0.8, max: 0.8, cor: '#ff9a40', tam: 1.3 });
   }
   function arco(h) {
     const k = h.t / h.dur; if (k < 0.16 || k > 0.8) return;
@@ -345,6 +372,7 @@
     if (e.estado !== 'morto' && al > 0.3) sombra(e.x, e.y, e.w * 0.6);
     const pinta = (src, a) => { g.globalAlpha = a; g.drawImage(src, q * mt.w, 0, mt.w, mt.h, -Math.round(mt.w / 2), -mt.h + 1, mt.w, mt.h); };
     g.save(); g.translate(Math.round(e.x), Math.round(e.y + 1 + oy)); g.scale(e.dir * sx * es, sy * es);
+    if (e.vivo) pinta(fio(im, corFio(regiao()), tp.spr), al * (0.5 + noiteK * 0.35));
     pinta(im, al);
     if (tp.tinta) pinta(silhueta(im, tp.tinta, tp.spr), al);
     if (e.estado === 'prep' || e.aviso > 0) pinta(silhueta(im, '#ff2a1a', tp.spr), (0.08 + 0.3 * Math.min(1, tp.chefe ? e.aviso : e.t / prep)) * (0.6 + 0.4 * Math.sin(tempo * 30)) * al);
@@ -353,6 +381,7 @@
     if (e.estado === 'cura') pinta(silhueta(im, '#7aff8a', tp.spr), 0.25);
     if (e.flash > 0) pinta(silhueta(im, '#ffffff', tp.spr), (e.flash / 0.13) * 0.85);
     g.restore(); g.globalAlpha = 1;
+    if (e.vivo && al > 0.5) brilhos.push([e.x, e.y - e.h * 0.55, 30 + e.h * 0.5, corFio(regiao()), (e.estado === 'vaga' ? 0.12 : 0.24) + noiteK * 0.2]);
     if (tp.chefe && e.fase > 1 && e.vivo && Math.random() < e.fase * 0.12) J.poe({ tipo: 'alma', x: e.x + (Math.random() - 0.5) * e.w, y: e.y - Math.random() * e.h, vy: -26, vida: 0.8, max: 0.8, cor: J.DONOS[e.tipo].cor, tam: 1.8 });
     if (tp.chefe && e.estado === 'acao' && e.qf === 5 && e.aviso === 0 && e.tipo !== 'alfa' && e.tipo !== 'rainha') { const k = e.rast = Math.min(1, (e.rast || 0) + 0.09); garra({ t: k * 0.3, x: e.x, y: e.y, dir: e.dir, w: e.w }, { salta: 0, alcance: 70, h: e.h, esp: tp.esp }); } else e.rast = 0;
     if (e.estado === 'golpe' && !tp.atira && e.t < 0.3) garra(e, tp);
@@ -488,6 +517,40 @@
     if (x + w < cam.x - 10 || x - w > cam.x + D.VW + 10) return;
     g.save(); if (o.a != null) g.globalAlpha = o.a; g.translate(Math.round(x), Math.round(y)); if (o.v) g.scale(-1, 1); g.drawImage(img.casa, p[0], p[1], p[2], p[3], Math.round(-w / 2), -h, w, h); g.restore();
   }
+  function lugar(n, x, y, o) {
+    const p = A2.marcos && A2.marcos[n]; if (!p || !img.marcos) return; o = o || {}; const e = o.e || 1, w = Math.round(p[2] * e), h = Math.round(p[3] * e);
+    if (x + w < cam.x - 10 || x - w > cam.x + D.VW + 10) return;
+    g.save(); g.translate(Math.round(x), Math.round(y)); if (o.v) g.scale(-1, 1); g.drawImage(img.marcos, p[0], p[1], p[2], p[3], Math.round(-w / 2), -h, w, h); g.restore();
+  }
+  function desenhaLugares() {
+    const A = F.atual;
+    for (const m of A.marcos) { lugar(m.n, m.x, m.y + 5, { e: m.e }); if (m.n === 'estatua' && Math.random() < 0.06) J.poe({ tipo: 'alma', x: m.x + 50 + Math.random() * 30, y: m.y - 70, vy: -14, vida: 1.8, max: 1.8, cor: '#ffcf8a', tam: 1.6 }); }
+    for (const q of A.pecas) { if (Math.abs(q.x - cam.x - D.VW / 2) > D.VW) continue; lugar(q.n, q.x, q.y + 4, q); if (q.n === 'tocha') brilhos.push([q.x, q.y - 70, 120 + Math.sin(tempo * 9 + q.x) * 5, '255,170,80', 0.85]); }
+  }
+  function desenhaBaus() {
+    const A = F.atual, h = J.heroi, ve = J.amu('olho');
+    for (const b of A.baus) {
+      if (Math.abs(b.x - cam.x - D.VW / 2) > D.VW * 0.7 || A.escuros.some((e) => e.oco && b.x > e.x0 && b.x < e.x1 && b.y > e.y0 && b.y <= e.y1 + 2 && !aberto(e))) continue;
+      const ab = J.save.baus[b.id]; lugar(ab ? 'bau_aberto' : 'bau', b.x, b.y + 2);
+      if (!ab) { const a = 0.5 + 0.5 * Math.sin(tempo * 2.4 + b.x); brilhos.push([b.x, b.y - 18, 40, '255,220,150', 0.3 + 0.2 * a]); g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = a; g.fillStyle = '#fff2c0'; g.fillRect(Math.round(b.x - 9), Math.round(b.y - 30), 1, 5); g.fillRect(Math.round(b.x - 11), Math.round(b.y - 28), 5, 1); g.restore(); }
+    }
+    for (const f of A.fracas) {
+      if (J.save.fracas[f.id]) continue; const x0 = f.c0 * T, w = (f.c1 - f.c0 + 1) * T, y = f.y0 * T; if (Math.abs(x0 - cam.x - D.VW / 2) > D.VW) continue;
+      for (const [corR, dd, lw] of [['rgba(4,3,2,0.95)', 0, 2.2], ['rgba(190,170,140,0.5)', 1, 0.8]]) { g.strokeStyle = corR; g.lineWidth = lw; g.beginPath(); for (let i = 0; i < 4; i++) { const bx = x0 + 6 + i * (w / 4); g.moveTo(bx + dd, y - 3); g.lineTo(bx + dd + (hash(f.c0 + i) - 0.5) * 12, y + 9); g.lineTo(bx + (hash(f.c0 * 3 + i) - 0.5) * 18, y + 18); g.lineTo(bx + dd + (hash(f.c0 * 7 + i) - 0.5) * 16, y + 29); } g.stroke(); }
+      g.fillStyle = 'rgba(8,6,5,0.35)'; g.fillRect(x0, y + 3, w, 2);
+      if (ve && Math.abs(x0 - h.x) < 240) { brilhos.push([x0 + w / 2, y + 12, 56, '110,236,226', 0.5 + 0.3 * Math.sin(tempo * 4)]); if (Math.random() < 0.15) J.poe({ tipo: 'alma', x: x0 + Math.random() * w, y, vy: -24, vida: 0.9, max: 0.9, cor: '#7ff0ff', tam: 1.5 }); }
+    }
+    if (ve) for (const b of A.baus) if (!J.save.baus[b.id] && Math.abs(b.x - h.x) < 320 && Math.random() < 0.06) J.poe({ tipo: 'alma', x: b.x, y: b.y - 20, vy: -30, vida: 1.2, max: 1.2, cor: '#7ff0ff', tam: 1.6 });
+  }
+  // o fundo de dentro da terra: parede escura, para não ver a mata através da gruta
+  function fundoGruta() {
+    const R = regiao(), at = img['p_' + F.atual.regiao], p = A2.props.chao;
+    for (const q of F.atual.escuros) {
+      if (q.x1 < cam.x - 20 || q.x0 > cam.x + D.VW + 20 || !aberto(q)) continue;
+      for (let x = Math.floor(Math.max(q.x0, cam.x - 32) / T) * T; x < Math.min(q.x1, cam.x + D.VW + 32); x += T) for (let y = q.y0; y < q.y1; y += T) { const sx = p[0] + ((x * 3 + y) % 560); if (at) g.drawImage(at, sx, p[1] + 48 + ((x + y) / T & 1) * 18, T, T, x, y, T, T); }
+      g.fillStyle = 'rgba(' + R.terra.map((v) => Math.round(v * 0.3)).join(',') + ',0.74)'; g.fillRect(q.x0, q.y0, q.x1 - q.x0, q.y1 - q.y0);
+    }
+  }
   function poseGente(H) {
     if (H.caida) return ['morte', 0];
     if (H.dorme != null && Math.abs(H.vx) < 5) { const h = J.heroi; const k = h.acordando ? 1.25 - h.t : h.andaAte ? 0 : Math.min(1.25, Math.max(0, h.t - 0.4)); return ['dormir', Math.min(4, Math.floor(k / 1.25 * 4.99))]; }
@@ -594,7 +657,7 @@
   D.quadro = function (dt) {
     const h = J.heroi; if (!h || !F.atual) return;
     tempo += dt; D.tempo = tempo; brilhos.length = 0;
-    const R = regiao();
+    const R = regiao(); noiteK = J.claridade ? 1 - J.claridade() : 0;
     // câmera: olha à frente e só sobe ou desce de verdade quando você pisa
     const olha = h.dir * 34 + Math.max(-40, Math.min(40, h.vx * 0.22)); cam.olha += (olha - cam.olha) * Math.min(1, dt * 1.8);
     cam.x += (alvoX(h) - cam.x) * Math.min(1, dt * 7);
@@ -608,10 +671,12 @@
     g.translate(-ox, -oy);
     const A = F.atual;
     for (const d of A.decor) if (d.c === 0) prop(d.n, d.x, d.y, d);
+    fundoGruta(); desenhaLugares();
+    { const yv = Math.round(F.chao(cam.x + D.VW / 2) - 150); g.globalAlpha = 0.5; g.drawImage(guarda('faixa' + R.nevoa, 2, 180, (q, w, hh) => { const gr = q.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, 'rgba(' + R.nevoa + ',0)'); gr.addColorStop(0.7, 'rgba(' + R.nevoa + ',0.34)'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',0.2)'); q.fillStyle = gr; q.fillRect(0, 0, w, hh); }), ox, yv, D.VW, 200); g.globalAlpha = 1; }
     for (const p of A.portas) desenhaPorta(p);
     for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) if (i >= 0 && i * PED < F.W) g.drawImage(pedaco(i), 0, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8), i * PED * T, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8));
     for (const d of A.decor) if (d.c === 1) { prop(d.n, d.x, d.y, d); if (d.n === 'cogumelos' && Math.abs(d.x - h.x) < D.VW) brilhos.push([d.x, d.y - 18, 54, '90,220,230', 0.5 + 0.15 * Math.sin(tempo * 2 + d.x)]); }
-    desenhaLar(false); desenhaCerco();
+    desenhaLar(false); desenhaCerco(); desenhaBaus();
     for (const c of A.circulos) desenhaCirculo(c);
     for (const c of A.coleta) desenhaColeta(c);
     for (const f of A.fogos) { if (Math.abs(f.x - ox - D.VW / 2) > D.VW) continue; prop('fogo', f.x, f.y + 4); if (J.save.fogos[f.id] && (A.id !== 'lar' || !J.save.lar || J.save.lar.lenha > 0)) chama(f.x, f.y, h.estado === 'dorme' ? 0.95 : 1.1); else if (J.save.fogos[f.id]) brilhos.push([f.x, f.y - 8, 40, '255,120,60', 0.5]); }
@@ -634,13 +699,21 @@
 
     // luz
     gl.setTransform(1, 0, 0, 1, 0, 0); gl.globalCompositeOperation = 'source-over';
-    const cl0 = J.claridade ? J.claridade() : 1, dusk = Math.sin(Math.PI * Math.min(1, Math.max(0, cl0))) , k = (D.escuro == null ? 1 : D.escuro) * (0.5 + 0.5 * cl0);
+    const cl0 = J.claridade ? J.claridade() : 1, dusk = Math.sin(Math.PI * Math.min(1, Math.max(0, cl0))) , k = (D.escuro == null ? 1 : D.escuro) * (0.56 + 0.44 * cl0);
+    // a luz muda de trecho para trecho da mesma área
+    const zx = cam.x + D.VW / 2, zl = A.zonas; let zt = [1, 1, 1]; for (let i = 0; i < zl.length; i++) { const kz = Math.max(0, Math.min(1, (zx - zl[i].tx * T + 160) / 320)); zt = zt.map((v, j) => v + (zl[i].luz[j] - v) * kz); }
     const tom = [1 - (1 - cl0) * 0.18 + dusk * 0.14, 1 - (1 - cl0) * 0.08, 1 + (1 - cl0) * 0.16 - dusk * 0.1];
-    gl.fillStyle = 'rgb(' + R.luz.map((v, i) => Math.min(255, Math.round(v * k * tom[i]))).join(',') + ')'; gl.fillRect(0, 0, D.VW, D.VH);
+    gl.fillStyle = 'rgb(' + R.luz.map((v, i) => Math.min(255, Math.round(v * k * tom[i] * zt[i]))).join(',') + ')'; gl.fillRect(0, 0, D.VW, D.VH);
+    const escuros = A.escuros.filter((q) => q.x1 > ox - 60 && q.x0 < ox + D.VW + 60);
     gl.globalCompositeOperation = 'lighter';
     // claridade que desce da copa
     gl.globalAlpha = k; gl.drawImage(guarda('copa' + R.nevoa, 2, 160, (q, w, h) => { const cl = q.createLinearGradient(0, 0, 0, h); cl.addColorStop(0, 'rgba(' + R.nevoa + ',0.42)'); cl.addColorStop(0.6, 'rgba(' + R.nevoa + ',0.2)'); cl.addColorStop(1, 'rgba(' + R.nevoa + ',0)'); q.fillStyle = cl; q.fillRect(0, 0, w, h); }), 0, 0, D.VW, D.VH); gl.globalAlpha = 1;
+    // dentro da terra não entra o dia
+    gl.globalCompositeOperation = 'source-over';
+    for (const q of escuros) { if (!aberto(q)) continue; for (let i = 0; i < 5; i++) { gl.fillStyle = 'rgba(6,8,12,' + [0.3, 0.3, 0.3, 0.28, 0.24][i] + ')'; gl.fillRect(q.x0 - ox + i * 14 - 10, q.y0 - oy - 10, q.x1 - q.x0 - i * 28 + 20, q.y1 - q.y0 + 22); } }
+    gl.globalCompositeOperation = 'lighter';
     brilhos.push([h.x, h.y - 32, 104, '255,206,150', 0.5]);
+    if (J.save.tochaAcesa) { const tr2 = Math.sin(tempo * 13) * 4 + Math.sin(tempo * 7.3) * 4; brilhos.push([h.x - h.dir * 6, h.y - 52, 190 + tr2, '255,176,96', 0.9], [h.x, h.y - 40, 300, '255,150,80', 0.28]); }
     for (const b of brilhos) { const x = b[0] - ox, y = b[1] - oy; if (x < -b[2] || x > D.VW + b[2]) continue; gl.globalAlpha = Math.max(0, Math.min(1, b[4])); gl.drawImage(mancha(b[3]), x - b[2], y - b[2], b[2] * 2, b[2] * 2); }
     gl.globalAlpha = 1;
     g.globalCompositeOperation = 'multiply'; g.drawImage(luz, 0, 0); g.globalCompositeOperation = 'source-over';

@@ -6,7 +6,7 @@
   // ---------- materiais ----------
   C.MAT = {
     galho: 'Galho', pedra: 'Pedra lascada', fibra: 'Fibra', folha: 'Folha grande', fruta: 'Fruta do mato', erva: 'Erva de cura', carne: 'Carne', osso: 'Osso',
-    couro: 'Couro de lobo', pele: 'Pele de cobra', presa: 'Presa', trapo: 'Trapo', ferro: 'Ferro velho', orelha: 'Orelha de goblin', flecha: 'Flecha', madeira: 'Tora', seca: 'Carne seca', prata: 'Escama de prata',
+    couro: 'Couro de lobo', pele: 'Pele de cobra', presa: 'Presa', trapo: 'Trapo', ferro: 'Ferro velho', orelha: 'Orelha de goblin', flecha: 'Flecha', madeira: 'Tora', seca: 'Carne seca', prata: 'Escama de prata', tocha: 'Tocha',
   };
   C.COMER = { fruta: { fome: 14, vida: 4 }, erva: { fome: 2, vida: 26, cura: true }, carne: { fome: 30, vida: 8 }, seca: { fome: 42, vida: 14 } };
 
@@ -22,6 +22,8 @@
     osso_clava: { nome: 'Clava de osso', dano: 22, alcance: 46, altura: 50, tempo: 0.4, custo: 13, quebra: 2, per: 'porrete', desc: 'O osso de um bate no outro.' },
     adaga: { nome: 'Adaga de ferro', dano: 18, alcance: 34, altura: 34, tempo: 0.2, custo: 6, quebra: 0.7, per: 'lamina', critico: 0.28, desc: 'Ferro achado, fio novo.' },
     espada: { nome: 'Espada rude', dano: 26, alcance: 50, altura: 52, tempo: 0.34, custo: 11, quebra: 1.4, per: 'espada', critico: 0.1, desc: 'A primeira espada do mundo.' },
+    adaga_presa: { nome: 'Adaga de presa', dano: 17, alcance: 34, altura: 34, tempo: 0.2, custo: 6, quebra: 0.7, per: 'lamina', critico: 0.2, veneno: 4, desc: 'A presa ainda pinga. Quem leva fica envenenado.' },
+    lanca_prata: { nome: 'Lança de prata', dano: 27, alcance: 66, altura: 24, tempo: 0.35, custo: 12, quebra: 1.3, per: 'lanca', estoca: true, critico: 0.08, desc: 'Atravessa casca e armadura.' , fura: true },
     machado_ferro: { nome: 'Machado de ferro', dano: 36, alcance: 48, altura: 54, tempo: 0.46, custo: 16, quebra: 3, per: 'machado', desc: 'Derruba árvore e chefe.' },
   };
   C.ORDEM_ARMAS = Object.keys(C.ARMAS);
@@ -29,6 +31,9 @@
     barro: { nome: 'Nu, de barro', def: 0, desc: 'Nada entre você e o mundo.' },
     folhas: { nome: 'Roupa de folhas', def: 0.12, vigor: 10, desc: 'Esconde o cheiro: os bichos demoram mais a ver você.' },
     couro: { nome: 'Roupa de couro de lobo', def: 0.26, vigor: 20, vida: 20, desc: 'Costurada com fibra. Segura mordida.' },
+    pele: { nome: 'Roupa de pele de cobra', def: 0.2, vigor: 30, vida: 10, rola: 0.72, veneno: 0.5, desc: 'Leve e escorregadia: a esquiva gasta menos e o veneno dura metade.' },
+    osso: { nome: 'Armadura de osso', def: 0.36, vigor: 0, vida: 40, firme: true, desc: 'Pesada. Golpes não interrompem o seu ataque forte e a dor passa rápido.' },
+    prata: { nome: 'Couraça de prata', def: 0.46, vigor: 15, vida: 45, volta: 0.2, desc: 'Quem bate em você de perto leva de volta um quinto do golpe.' },
   };
 
   // ---------- receitas ----------
@@ -45,9 +50,30 @@
     { id: 'machado_ferro', tipo: 'arma', custo: { ferro: 6, galho: 3, couro: 2 }, oficio: 5 },
     { id: 'folhas', tipo: 'roupa', custo: { folha: 8, fibra: 4 } },
     { id: 'couro', tipo: 'roupa', custo: { couro: 6, fibra: 5, presa: 1 }, oficio: 2 },
+    { id: 'pele', tipo: 'roupa', custo: { pele: 10, fibra: 6, presa: 3 }, oficio: 3 },
+    { id: 'osso', tipo: 'roupa', custo: { osso: 16, couro: 4, fibra: 8 }, oficio: 4 },
+    { id: 'prata', tipo: 'roupa', custo: { prata: 6, couro: 5, ferro: 4 }, oficio: 6 },
+    { id: 'adaga_presa', tipo: 'arma', custo: { presa: 6, pele: 3, osso: 2 }, oficio: 3 },
+    { id: 'lanca_prata', tipo: 'arma', custo: { prata: 4, galho: 3, couro: 2 }, oficio: 5 },
+    { id: 'orelhas', tipo: 'amuleto', custo: { orelha: 10, fibra: 4 } },
+    { id: 'presas', tipo: 'amuleto', custo: { presa: 8, fibra: 4 } },
+    { id: 'escama', tipo: 'amuleto', custo: { prata: 3, pele: 4 } },
+    { id: 'apito', tipo: 'amuleto', custo: { osso: 10, trapo: 3 } },
+    { id: 'tocha', tipo: 'item', nome: 'Tocha', qtd: 1, custo: { galho: 2, fibra: 2, trapo: 1 }, desc: 'Cinco minutos de luz (tecla V). Lobos e cobras hesitam; mortos e goblins veem de longe.' },
     { id: 'curativo', tipo: 'item', nome: 'Curativo', qtd: 1, custo: { erva: 2, trapo: 1 }, vai: 'curativo', desc: 'Cura mais e tira veneno.' },
     { id: 'isca', tipo: 'item', nome: 'Fio mais afiado', vai: 'afiar', custo: { pedra: 3, osso: 2 }, desc: 'A arma na mão ganha +4% de dano (até 5 vezes).' },
   ];
+  // ---------- amuletos: dois de cada vez ----------
+  C.AMULETOS = {
+    orelhas: { nome: 'Colar de orelhas', desc: '+20% de dano em goblins, e nenhum deles rouba você.' },
+    presas: { nome: 'Colar de presas', desc: '+10% de chance de golpe crítico.' },
+    escama: { nome: 'Escama no peito', desc: 'Cobras causam 25% menos, e o veneno dura menos.' },
+    apito: { nome: 'Apito de osso', desc: 'Acertar golpes enche a Sina 50% mais rápido.' },
+    brasa: { nome: 'Brasa do primeiro fogo', desc: 'Fora de luta, devolve 1 de vida a cada 2 segundos. Só se acha.', achado: true },
+    pena: { nome: 'Pena do xamã', desc: 'Pula mais alto e o avanço no ar vai mais longe. Só se acha.', achado: true },
+    olho: { nome: 'Olho de pedra', desc: 'Chão oco e baús brilham quando você chega perto. Só se acha.', achado: true },
+    raiz: { nome: 'Nó de raiz', desc: 'A fome cai 40% mais devagar. Só se acha.', achado: true },
+  };
   C.MAT.curativo = 'Curativo';
   C.COMER.curativo = { vida: 55, fome: 0, cura: true };
 
@@ -119,7 +145,7 @@
     lobos: { nome: 'Serra dos Uivos', fundo: 'f_lobos', p: 'lobos', nevoa: '120,146,184', luz: [112, 124, 152], amb: 'noite', ar: ['neve', 'neve', 'nevoa'], terra: [22, 24, 30] },
     cobras: { nome: 'Alagado das Presas', fundo: 'f_cobras', p: 'cobras', nevoa: '150,166,86', luz: [146, 146, 104], amb: 'rio', ar: ['esporo', 'vagalume', 'nevoa'], terra: [30, 27, 14] },
     zumbis: { nome: 'Chão dos Enterrados', fundo: 'f_zumbis', p: 'zumbis', nevoa: '160,146,176', luz: [136, 124, 144], amb: 'cripta', ar: ['cinza', 'nevoa', 'cinza'], terra: [28, 23, 28] },
-    goblins: { nome: 'Barrancos do Fortim', fundo: 'f_goblins', p: 'goblins', nevoa: '190,128,84', luz: [158, 130, 104], amb: 'cinzas', ar: ['brasinha', 'cinza', 'brasinha'], terra: [36, 22, 14] },
+    goblins: { nome: 'Barrancos do Fortim', fundo: 'f_goblins', p: 'goblins', nevoa: '200,142,100', luz: [178, 154, 132], amb: 'cinzas', ar: ['brasinha', 'cinza', 'brasinha'], terra: [36, 22, 14] },
     vale: { nome: 'Vale do Rio Manso', fundo: 'f_vale', p: 'vale', nevoa: '150,166,140', luz: [160, 160, 138], amb: 'rio', ar: ['vagalume', 'folha', 'esporo', 'vagalume'], terra: [32, 25, 17] },
   };
 

@@ -27,6 +27,10 @@ Um deus molda o primeiro homem do barro e vai embora. O jogador dá o nome. Ele 
 - **Bando (`js/bando.js`):** reagem ao golpe (saltam para trás, pulam por cima, aparam), fintam, revidam no meio da sequência, vão às suas costas e castigam quem come, carrega ou fica sem fôlego. A esperteza e a força crescem com o caminho e com as mortes da espécie. `node tools/lateral-luta.js` mede a dificuldade.
 - **Donos (`js/donos.js`):** três fases cada, com golpes próprios. Atrasam o golpe de quem esquiva cedo, devolvem quem só bate, castigam quem come ou carrega. Golpes fortes quebram a postura e abrem brecha. `node tools/lateral-donos.js` simula os duelos.
 - **Variedades:** lobos cinzento, negro e vermelho; cobras comum, cuspideira, coral e de prata; mortos, a que grita, do machado, caçadora e inchado; goblins da faca, da funda, arqueiro, xamã, guerreiro e bruto.
+- **Espólio:** roupas de pele de cobra, osso e prata, adaga de presa, lança de prata e oito amuletos (dois por vez; quatro só se acham em baús).
+- **Lugares:** zonas com luz própria, grutas escuras, ruínas com baú no alto, acampamentos, chão rachado que esconde câmara (quebre com golpe para baixo ou forte) e lugares com história. Aba **Mapa** (M) desenha o que você já andou.
+- **Tocha (V):** cinco minutos de luz; lobos e cobras hesitam, mortos e goblins veem de longe.
+- **Formação:** quem persegue faz fila dos dois lados e não sobe em cima do outro.
 - **Dia e noite:** um dia dura 12 minutos; de noite eles enxergam mais e batem mais forte. Deitar no fogo mostra o herói dormindo e passa as horas.
 - **Humana (`js/lar.js`):** segue, atira pedra, usa lança, cura, colhe, tem fome e laço. Caída por 25 s, é levada para um dos caminhos e precisa ser resgatada. Com laço 60, cabana e berço, vêm os filhos.
 - Golpe em quem não viu você causa 60% a mais; esquivar no último instante desacelera o tempo.

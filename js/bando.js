@@ -35,7 +35,7 @@
   };
   function veAlvo(e, a) {
     if (!a) return false;
-    const v = e.T.visao * (1 + noite() * 0.25) * (J.save.roupa === 'folhas' && e.estado === 'vaga' && !noite() ? 0.68 : 1) * (e.raid ? 6 : 1);
+    const v = e.T.visao * (1 + noite() * 0.25) * (J.save.tochaAcesa && (e.T.esp === 'zumbi' || e.T.esp === 'goblin') ? 1.3 : 1) * (J.save.roupa === 'folhas' && e.estado === 'vaga' && !noite() ? 0.68 : 1) * (e.raid ? 6 : 1);
     return Math.abs(a.x - e.x) < v && Math.abs(a.y - e.y) < (e.raid ? 400 : 130);
   }
   function chaoAFrente(e, d) {
@@ -97,6 +97,23 @@
     else if (tp.atira && e.noChao) { e.estado = 'esquiva'; e.t = 0; e.vx = -e.dir * 230; e.vy = -150; e.durE = 0.32; e.contra = 0; }
   };
 
+  // ---------- formação: ninguém em cima de ninguém ----------
+  // quem persegue forma duas filas, uma de cada lado do alvo; a fila maior manda gente para o outro lado
+  const ANDA = ['persegue', 'recua', 'vaga', 'volta', 'prep', 'uiva', 'bloqueia'];
+  J.formacao = function (dt) {
+    const l = J.inimigos.filter((e) => e.vivo && !e.sob && Math.abs(e.x - J.heroi.x) < 640);
+    for (let i = 0; i < l.length; i++) for (let k = i + 1; k < l.length; k++) {
+      const a = l[i], b = l[k]; if (Math.abs(a.y - b.y) > 34) continue;
+      const quer = (a.w + b.w) * (a.T.chefe || b.T.chefe ? 0.4 : 0.62) + 4, dx = b.x - a.x || (a.ox < b.ox ? 0.5 : -0.5), falta = quer - Math.abs(dx); if (falta <= 0) continue;
+      const s = Math.sign(dx), f = Math.min(70, falta * 5) * dt;
+      for (const [e, d] of [[a, -s], [b, s]]) if (!e.T.chefe && e.noChao && ANDA.includes(e.estado) && chaoAFrente(e, d)) e.x += d * f * (e.T.bruto ? 0.35 : 1);
+    }
+    for (const alvo of [J.heroi, J.hum]) {
+      if (!alvo) continue;
+      for (const s of [-1, 1]) l.filter((e) => e.alvo === alvo && !e.T.chefe && !e.T.atira && e.estado !== 'vaga' && e.estado !== 'volta' && Math.sign(e.x - alvo.x || 1) === s && Math.abs(e.x - alvo.x) < 300).sort((a, b) => Math.abs(a.x - alvo.x) - Math.abs(b.x - alvo.x)).forEach((e, i, f) => { e.posto = i; e.fila = f.length; });
+    }
+  };
+
   // ---------- começa um ataque ----------
   function arma(e, mult) { e.estado = 'prep'; e.t = 0; e.prepM = mult || 1; e.finta = !e.T.chefe && !e.T.atira && mult !== 0.6 && Math.random() < (e.T.finta || 0) * e.manha; }
 
@@ -153,24 +170,28 @@
         }
         const atacando = outros(e, (o) => o.alvo === a && (o.estado === 'prep' || o.estado === 'golpe') && Math.abs(o.x - a.x) < 140).length;
         const limite = 2 + (m01 > 0.7 ? 1 : 0), castiga = aberto(a) && a === h && m01 > 0.3;
-        const ronda = !tp.chefe && atacando >= limite && !castiga;
+        const posto = e.posto || 0, ronda = !tp.chefe && !castiga && (atacando >= limite || posto >= 2);
         // ninguém nas suas costas? alguém dá a volta
         if (!tp.chefe && tp.flanco && e.noChao && a === h && dist < 120 && e.t > 0.7 && (e.cdF || 0) <= J.relogio && Math.sign(e.x - h.x) === h.dir) {
           e.cdF = J.relogio + rnd(2.2, 4);
           const temCostas = outros(e, (o) => o.estado !== 'vaga' && Math.sign(o.x - h.x) === -h.dir && Math.abs(o.x - h.x) < 150).length;
           const juntos = outros(e, (o) => o.estado !== 'vaga' && Math.abs(o.x - h.x) < 200).length;
-          if (!temCostas && (juntos || tp.sorrateiro) && Math.random() < tp.flanco * (0.4 + m01 * 0.6) && pousoEm(e, e.x + lado * (dist + 70))) { e.estado = 'porcima'; e.t = 0; e.vy = -390; e.vx = lado * clamp((dist + 70) / 0.48, 180, 340); e.dir = lado; break; }
+          if ((!temCostas || (e.fila || 0) - temCostas > 1) && (juntos || tp.sorrateiro) && Math.random() < tp.flanco * (0.4 + m01 * 0.6) && pousoEm(e, e.x + lado * (dist + 70))) { e.estado = 'porcima'; e.t = 0; e.vy = -390; e.vx = lado * clamp((dist + 70) / 0.48, 180, 340); e.dir = lado; break; }
         }
-        const quero = ronda ? 84 + (e.ox % 40) : tp.alcance * 0.72;
+        const quero = ronda ? 78 + Math.max(0, posto - 1) * 34 + (e.ox % 14) : tp.alcance * 0.72 + posto * 10;
         let m = 0; if (dist > quero + 6) m = lado; else if (ronda && dist < quero - 14) m = -lado; else if (ronda) m = Math.sin(J.relogio * 1.7 + e.ox) > 0 ? lado : -lado;
         // entra e sai do alcance, para você errar o golpe
         if (!ronda && !tp.chefe && tp.reflexo > 0.3 && dist < tp.alcance + 46 && e.t < 0.35 * (1 - m01 * 0.5)) m = Math.sin(J.relogio * 3 + e.ox) > 0.2 ? -lado : lado;
-        const passa = m && chaoAFrente(e, m);
+        // tem um dos seus logo à frente? espera a vez em vez de subir nele
+        const trava = m && !tp.chefe && outros(e, (o) => (o.x - e.x) * m > 0 && Math.abs(o.x - e.x) < (o.w + e.w) * 0.62 + 5 && Math.abs(o.y - e.y) < 30 && o.estado !== 'caido' && Math.sign(a.x - o.x) === m).length > 0;
+        const passa = m && !trava && chaoAFrente(e, m);
         e.vx = passa ? m * vel * (ronda ? 0.55 : 1) : 0;
-        const espera = castiga ? 0.04 : tp.chefe ? 0.2 : 0.34 - m01 * 0.24;
+        // fogo na mão: lobo e cobra hesitam
+        const teme = J.save.tochaAcesa && (tp.esp === 'lobo' || tp.esp === 'cobra') && !tp.bruto;
+        const espera = (castiga ? 0.04 : tp.chefe ? 0.2 : 0.34 - m01 * 0.24) + (teme ? 0.45 : 0);
         if (!ronda && dist < tp.alcance + 4 && Math.abs(a.y - e.y) < 62 && e.t > espera && e.noChao) { arma(e, castiga ? 0.6 : 1); break; }
         // pula degraus altos e vãos para alcançar você
-        if (m && !passa && e.noChao && (tp.esp === 'lobo' || tp.esp === 'goblin' || tp.salta2) && dist > 40 && e.t > 0.4 && !tp.chefe && !tp.bruto && pousoSeguro(e, m)) { e.vy = -530; e.dir = m; e.vx = m * 178; e.pulaVx = 178; e.estado = 'pula'; e.t = 0; }
+        if (m && !passa && !trava && e.noChao && (tp.esp === 'lobo' || tp.esp === 'goblin' || tp.salta2) && dist > 40 && e.t > 0.4 && !tp.chefe && !tp.bruto && pousoSeguro(e, m)) { e.vy = -530; e.dir = m; e.vx = m * 178; e.pulaVx = 178; e.estado = 'pula'; e.t = 0; }
         // ferido e sozinho: chama mais
         if (tp.uiva && !e.uivou && e.hp < e.hpMax * 0.5 && dist > 60 && !e.raid && Math.random() < dt * 0.5 * m01) { e.uivou = true; e.estado = 'uiva'; e.t = 0; e.vx = 0; }
         break;
@@ -301,7 +322,7 @@
     const tp = e.T, h = J.heroi, s = J.save;
     if (tp.agarra) h.lerdo = 1.1;
     // o goblin da faca leva o que puder e corre
-    if (tp.rouba && !e.roubo && Math.random() < 0.28) {
+    if (tp.rouba && !e.roubo && !J.amu('orelhas') && Math.random() < 0.28) {
       const l = Object.keys(s.inv).filter((m) => s.inv[m] > 0 && m !== 'flecha'); if (l.length) { const m = l[Math.floor(Math.random() * l.length)], q = Math.min(s.inv[m], 2); s.inv[m] -= q; e.roubo = [m, q]; texto(h.x, h.y - 78, 'roubou ' + C.MAT[m].toLowerCase(), '#ffb070', true); e.estado = 'foge'; e.t = -2.2; }
     }
   }

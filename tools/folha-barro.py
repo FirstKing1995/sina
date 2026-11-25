@@ -214,7 +214,7 @@ def tiras():
             from PIL import ImageEnhance
             for i, f in enumerate(fs):
                 al = f.getchannel("A")
-                o = ImageEnhance.Sharpness(ImageEnhance.Brightness(f.convert("RGB")).enhance(1.42 if r == "couro" else 1.18)).enhance(1.3).convert("RGBA")
+                o = ImageEnhance.Sharpness(ImageEnhance.Brightness(f.convert("RGB")).enhance({"couro": 1.42, "pele": 1.28, "osso": 1.2, "prata": 1.0}.get(r, 1.18))).enhance(1.3).convert("RGBA")
                 o.putalpha(al)
                 fs[i] = o
         fs = fs + nasc

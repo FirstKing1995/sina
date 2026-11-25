@@ -39,7 +39,7 @@
   C.NOMES_F = ['Iara', 'Aira', 'Moema', 'Naiá', 'Jaci', 'Inaê', 'Potira', 'Ceci'];
   C.DICAS.grito = ['Um grito. Alguém está cercado logo à frente.', 'Um grito. Alguém está cercado logo à frente.'];
   C.DICAS.lar = ['Aqui dá para levantar uma casa. Abra a mochila (I) e veja a aba Lar.', 'Aqui dá para levantar uma casa. Abra a Mochila e veja a aba Lar.'];
-  C.DICAS.noite = ['De noite eles enxergam mais longe e batem mais forte. Procure um fogo.', 'De noite eles enxergam mais longe e batem mais forte. Procure um fogo.'];
+  C.DICAS.noite = ['De noite eles enxergam mais longe e batem mais forte. Procure um fogo, ou faça uma tocha e acenda com V.', 'De noite eles enxergam mais longe e batem mais forte. Procure um fogo, ou faça uma tocha.'];
   C.MORTES.noite = 'A noite veio até a porta, e a porta não segurou.';
 
   // ---------- dia e noite ----------

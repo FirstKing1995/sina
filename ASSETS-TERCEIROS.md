@@ -45,6 +45,7 @@ Lista para saber o que trocar caso o jogo vá à venda. Nesta fase, é só regis
 | O quê | Origem |
 |---|---|
 | `assets/barro/barro.png` (herói de barro, 14 movimentos) | PixelLab, personagem próprio |
+| `assets/barro/pele.png`, `osso.png`, `prata.png`, `assets/floresta/marcos.webp` | Gemini, pedidos próprios (`tools/sono-armaduras.py`, `tools/lateral-arsenal.py`) |
 | `assets/barro/folhas.png`, `couro.png` | Gemini, a partir da folha de poses do herói |
 | `assets/floresta/f_*.webp`, `nasce.webp`, `p_*.webp`, `m_*.webp` | Gemini, pedidos próprios |
 | `som/musica/sina-*.mp3` | Suno, criadas pelo usuário (Loop da Floresta, Floresta Calma, Loop de Batalha, Loop do Chefão); laço e volume por `tools/musica-laco.py` |

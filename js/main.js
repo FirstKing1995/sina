@@ -83,9 +83,9 @@
     if (a.t > 6.6 || quer) { acorda = null; D.escuro = null; h.estado = 'livre'; h.t = 0; J.mostraArea('Floresta Antiga', 'Eu sou ' + J.save.nome); if (window.Som) Som.ambiente('brisa'); }
   }
   function continuar(s) {
-    telaCheia(); const velho = (s.v || 1) < 2; J.save = Object.assign(J.novoSave(s.nome), s); J.heroi = null; J.colhidos = {};
+    telaCheia(); const velho = (s.v || 1) < 3; J.save = Object.assign(J.novoSave(s.nome), s); J.heroi = null; J.colhidos = {};
     // save de antes do mapa crescer: volta para a última fogueira
-    if (velho) { J.save.v = 2; J.save.prole = []; const f = s.fogo && F.area(s.fogo.area).fogos.find((o) => o.id === s.fogo.id); if (f) { J.save.area = s.fogo.area; J.save.x = f.x; J.save.y = f.y; } else { J.save.area = 'floresta'; J.save.x = null; } }
+    if (velho) { J.save.v = 3; J.save.prole = J.save.prole || []; J.save.emb = {}; const f = s.fogo && F.area(s.fogo.area).fogos.find((o) => o.id === s.fogo.id); if (f) { J.save.area = s.fogo.area; J.save.x = f.x; J.save.y = f.y; } else { J.save.area = 'floresta'; J.save.x = null; } }
     J.entrarArea(J.save.area); D.centrar(); D.escuro = null; modo = 'jogo'; mostra(null); areaVista = null; vesteRetrato();
   }
 
@@ -100,7 +100,7 @@
   J.aviso = function (tipo, x) {
     const s = J.save;
     if (tipo === 'ganhou') { if (!s.dicas.criar && (s.inv.galho || 0) >= 3) dica('criar'); atualizaMochila(); }
-    else if (tipo === 'criou') { const n = x.tipo === 'arma' ? C.ARMAS[x.id].nome : x.tipo === 'roupa' ? C.ROUPAS[x.id].nome : x.nome; if (x.tipo) conquista(x.tipo === 'arma' ? 'Nova arma' : x.tipo === 'roupa' ? 'Nova roupa' : 'Feito', n); }
+    else if (tipo === 'criou') { const n = x.tipo === 'arma' ? C.ARMAS[x.id].nome : x.tipo === 'roupa' ? C.ROUPAS[x.id].nome : x.tipo === 'amuleto' ? C.AMULETOS[x.id].nome : x.nome; if (x.tipo) conquista(x.tipo === 'arma' ? 'Nova arma' : x.tipo === 'roupa' ? 'Nova roupa' : x.tipo === 'amuleto' ? 'Novo amuleto' : 'Feito', n); }
     else if (tipo === 'roupa') vesteRetrato();
     else if (tipo === 'titulo') conquista(x[1], x[2], '#e9c47a');
     else if (tipo === 'magia') { const m = C.MAGIAS[x]; conquista('A Sina ensinou: ' + m.nome, m.desc, m.cor); if (x === 'brasa') setTimeout(() => dica('magia'), 5200); }
@@ -127,6 +127,10 @@
     else if (tipo === 'construiu') conquista('Você levantou', x.nome + (x.n > 1 && !C.CASAS.some((c) => c && c.nome === x.nome) ? ' (nível ' + x.n + ')' : ''), '#c8a878');
     else if (tipo === 'gravida') conquista(s.hum.nome + ' espera um filho', 'Daqui a três noites. Até lá, ela precisa de você inteiro.', '#e8b0a0');
     else if (tipo === 'nasceu') batizar = true;
+    else if (tipo === 'zona') { if (areaT <= 0) J.mostraArea(x.nome); }
+    else if (tipo === 'marco') { J.mostraArea(x.nome); sussurra(x.texto, 6.5); som('livro', 0.5); }
+    else if (tipo === 'oco') sussurra('O chão era oco.', 3);
+    else if (tipo === 'amuleto') { const A = C.AMULETOS[x]; conquista('Achou: ' + A.nome, A.desc, '#7ff0ff'); }
     else if (tipo === 'cresceu') conquista(x.nome + ' já é crescido', 'Se você cair, é nele que você continua.', '#8fe0c8');
   };
 
@@ -156,6 +160,7 @@
     if (modo !== 'jogo' || !J.heroi || J.heroi.estado !== 'livre') return;
     const p = J.perto(); if (!p) return;
     if (['levanta', 'solta', 'varal', 'horta'].includes(p.tipo)) { J.usaLar(p); return; }
+    if (p.tipo === 'bau') { J.abreBau(p.o); return; }
     if (p.tipo === 'casa') { abreMenu('lar'); return; }
     if (p.tipo === 'fala') { abreFala(); return; }
     if (p.tipo === 'coleta') J.colher(p.o);
@@ -194,7 +199,7 @@
     const v = $('veu'); v.classList.add('ver'); solta();
     setTimeout(() => { J.entrarArea(p.para[0], p.para[1]); D.centrar(); areaVista = null; D.quadro(0.016); setTimeout(() => { v.classList.remove('ver'); viajando = false; }, 220); }, 420);
   }
-  const rotulo = (p) => (p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
+  const rotulo = (p) => (p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
 
   // ---------- fogueira ----------
   function abreFogo(f) {
@@ -233,14 +238,15 @@
 
   // ---------- menu: criar, mochila, perícias, títulos, opções ----------
   let aba = 'criar';
-  const ABAS = [['lar', 'Lar'], ['criar', 'Criar'], ['mochila', 'Mochila'], ['pericias', 'Perícias'], ['titulos', 'Títulos'], ['opcoes', 'Opções']];
+  const ABAS = [['lar', 'Lar'], ['criar', 'Criar'], ['mochila', 'Mochila'], ['mapa', 'Mapa'], ['pericias', 'Perícias'], ['titulos', 'Títulos'], ['opcoes', 'Opções']];
   function abreMenu(qual) { if (qual) aba = qual; modo = 'menu'; mostra('menu'); som('livro', 0.5); pintaMenu(); }
-  const ic = (m, t) => { const c = D.icone({ seca: 'carne', madeira: 'porrete', prata: 'pele' }[m] || m, t || 34); c.className = 'ic'; return c; };
+  const ic = (m, t) => { const c = D.icone(m, t || 34); c.className = 'ic'; return c; };
   function pintaMenu() {
     const ab = $('m-abas'); ab.innerHTML = '';
     for (const [id, n] of ABAS) { if (id === 'lar' && !J.save.lar) continue; const b = el('button', id === aba ? 'ativa' : '', n); b.onclick = () => { aba = id; pintaMenu(); }; ab.append(b); }
     const c = $('m-corpo'); c.innerHTML = ''; const s = J.save, h = J.heroi;
     if (aba === 'lar' && !s.lar) aba = 'criar';
+    if (aba === 'mapa') { pintaMapa(c); return; }
     if (aba === 'lar') {
       const L = s.lar, aqui = s.area === 'lar';
       c.append(el('p', 'nota', (L.casa.n ? C.CASAS[L.casa.n].nome + ', ' + Math.ceil(L.casa.hp) + ' de ' + C.CASAS[L.casa.n].hp : 'Ainda não há casa. Só chão.') + ' · fogo: ' + (L.lenha > 0 ? Math.round(L.lenha) + ' h de lenha' : 'apagado') + ' · dia ' + s.dia));
@@ -264,10 +270,10 @@
     } else if (aba === 'criar') {
       c.append(el('p', 'nota', 'Ofício ' + J.nivel('oficio') + '. Quanto mais você faz, melhor o que consegue fazer.'));
       for (const r of C.RECEITAS) {
-        const nome = r.tipo === 'arma' ? C.ARMAS[r.id].nome : r.tipo === 'roupa' ? C.ROUPAS[r.id].nome : r.nome, desc = r.desc || (r.tipo === 'arma' ? C.ARMAS[r.id].desc : r.tipo === 'roupa' ? C.ROUPAS[r.id].desc : '');
+        const nome = r.tipo === 'arma' ? C.ARMAS[r.id].nome : r.tipo === 'roupa' ? C.ROUPAS[r.id].nome : r.tipo === 'amuleto' ? C.AMULETOS[r.id].nome : r.nome, desc = r.desc || (r.tipo === 'amuleto' ? C.AMULETOS[r.id].desc : '') || (r.tipo === 'arma' ? C.ARMAS[r.id].desc : r.tipo === 'roupa' ? C.ROUPAS[r.id].desc : '');
         const trava = J.nivel('oficio') < (r.oficio || 0);
         const l = el('div', 'linha' + (J.pode(r) && !J.jaTem(r) ? ' pode' : '')), t = el('div', 'l-txt');
-        t.append(ic(r.id === 'isca' ? 'pedra' : r.id === 'curativo' ? 'trapo' : r.id === 'folhas' ? 'folha' : r.id === 'couro' ? 'couro' : r.id));
+        t.append(ic(r.tipo === 'amuleto' ? 'a_' + r.id : r.tipo === 'roupa' && ['pele', 'osso', 'prata'].includes(r.id) ? 'r_' + r.id : r.id === 'isca' ? 'pedra' : r.id === 'curativo' ? 'trapo' : r.id === 'folhas' ? 'folha' : r.id === 'couro' ? 'couro' : r.id));
         const d = el('div'); d.append(el('b', '', nome + (r.tipo === 'arma' ? ' · dano ' + C.ARMAS[r.id].dano : r.tipo === 'roupa' ? ' · defesa ' + Math.round(C.ROUPAS[r.id].def * 100) + '%' : '')), el('small', '', trava ? 'Precisa de Ofício ' + r.oficio : desc));
         const cu = el('div', 'custos'); for (const m in r.custo) { const k = el('span', (s.inv[m] || 0) >= r.custo[m] ? 'tem' : 'falta', (s.inv[m] || 0) + '/' + r.custo[m]); k.prepend(ic(m, 20)); k.title = C.MAT[m]; cu.append(k); }
         d.append(cu); t.append(d);
@@ -283,6 +289,8 @@
       }
       c.append(el('h3', '', 'Roupas'));
       for (const r of s.roupas) { const R = C.ROUPAS[r], l = el('div', 'linha' + (s.roupa === r ? ' atual' : '')), d = el('div', 'l-txt'), q0 = el('div'); q0.append(el('b', '', R.nome), el('small', '', R.desc)); d.append(q0); l.append(d); if (s.roupa !== r) l.append(botao('Vestir', () => { J.vestir(r); pintaMenu(); })); c.append(l); }
+      if (s.amuletos.length) { c.append(el('h3', '', 'Amuletos (' + s.amu.length + ' de 2)')); for (const a of s.amuletos) { const A = C.AMULETOS[a], usa = s.amu.includes(a), l = el('div', 'linha' + (usa ? ' atual' : '')), t = el('div', 'l-txt'), d = el('div'); t.append(ic('a_' + a)); d.append(el('b', '', A.nome), el('small', '', A.desc)); t.append(d); l.append(t, botao(usa ? 'Tirar' : 'Pendurar', () => { J.poeAmuleto(a); pintaMenu(); })); c.append(l); } }
+      if (s.tocha > 0 || s.inv.tocha > 0) { c.append(el('h3', '', 'Tocha')); c.append(botao(s.tochaAcesa ? 'Apagar a tocha (restam ' + Math.ceil(s.tocha / 60) + ' min)' : s.tocha > 0 ? 'Acender a tocha (restam ' + Math.ceil(s.tocha / 60) + ' min)' : 'Acender uma tocha', () => { J.tocha(); pintaMenu(); })); }
       if (s.magias.length > 1) { c.append(el('h3', '', 'Magia do segundo botão')); for (const m of s.magias.slice(1)) { const l = el('div', 'linha' + (s.magia2 === m ? ' atual' : '')), d = el('div', 'l-txt'), q = el('div'); q.append(el('b', '', C.MAGIAS[m].nome), el('small', '', C.MAGIAS[m].desc)); d.append(q); l.append(d); if (s.magia2 !== m) l.append(botao('Usar esta', () => { s.magia2 = m; J.salvar(); pintaMenu(); montaMagias(); })); c.append(l); } }
       c.append(el('h3', '', 'Materiais'));
       const g = el('div', 'grade'); let n = 0;
@@ -302,9 +310,40 @@
     } else {
       for (const [k, n] of [['efeitos', 'Efeitos'], ['ambiente', 'Ambiente'], ['musica', 'Música']]) { const l = el('label', 'vol'), r = el('input'); r.type = 'range'; r.min = 0; r.max = 1; r.step = 0.05; r.value = Som.vol[k]; r.oninput = () => Som.mudaVolume(k, +r.value); l.append(el('span', '', n), r); c.append(l); }
       c.append(el('h3', '', 'Controles'));
-      const t = toque ? ['Arraste o lado esquerdo: andar, mirar para cima e para baixo', 'Segure Forte: golpe carregado', 'Com o arco, segure Golpe para puxar mais'] : ['A/D andar · Espaço pular · J ou clique: golpe (W ou S muda a direção)', 'K ou botão direito: golpe forte, segure · Shift ou L: esquiva', 'R e F magias · Q comer · E usar · T trocar arma · I ou Esc menu', 'Com o arco, segure o golpe para puxar mais', 'Controle: A pula, X golpe, B esquiva, Y usar, RB/LB magias, RT forte, LT comer, Select arma'];
+      const t = toque ? ['Arraste o lado esquerdo: andar, mirar para cima e para baixo', 'Segure Forte: golpe carregado', 'Com o arco, segure Golpe para puxar mais'] : ['A/D andar · Espaço pular · J ou clique: golpe (W ou S muda a direção)', 'K ou botão direito: golpe forte, segure · Shift ou L: esquiva', 'R e F magias · Q comer · E usar · T trocar arma · V tocha · M mapa · I ou Esc menu', 'Com o arco, segure o golpe para puxar mais', 'Controle: A pula, X golpe, B esquiva, Y usar, RB/LB magias, RT forte, LT comer, Select arma'];
       for (const q of t) c.append(el('p', 'nota', q));
       c.append(botao('Guardar e sair para o título', () => { J.salvar(); titulo(); }));
+    }
+  }
+
+  // ---------- mapa: o perfil de cada área, só do que você já andou ----------
+  const CORES = { fogo: '#ffb050', apagado: '#6a6a60', porta: '#9fd8ff', bau: '#ffe2a0', marco: '#c8b890', emb: '#d0483a', circulo: '#7ff0ff', voce: '#ffffff', covil: '#d0483a' };
+  function pintaMapa(c) {
+    const s = J.save, atual = F.atual;
+    const leg = el('div', 'legenda'); for (const [k, n] of [['voce', 'você'], ['fogo', 'fogueira'], ['porta', 'passagem'], ['marco', 'lugar'], ['bau', 'baú visto'], ['emb', 'emboscada'], ['circulo', 'círculo']]) { const i = el('span', '', n), b = el('i'); b.style.background = CORES[k]; i.prepend(b); leg.append(i); }
+    c.append(leg);
+    const ordem = [atual.id, ...F.IDS.filter((id) => id !== atual.id && s.visitas[id] && s.mapa[id])];
+    for (const id of ordem) {
+      const A = F.area(id), m = s.mapa[id] || '', bloco = el('div', 'mapa' + (id === atual.id ? ' aqui' : '')), tot = A.marcos.length, vi = A.marcos.filter((q) => s.marcos[q.id]).length, bt = A.baus.length, bv = A.baus.filter((q) => s.baus[q.id]).length;
+      const pct = Math.round((m.split('1').length - 1) / Math.max(1, Math.ceil(A.W / 20)) * 100);
+      bloco.append(el('b', '', nomeArea(id)), el('small', '', Math.min(100, pct) + '% andado' + (tot ? ' · lugares ' + vi + '/' + tot : '') + (bt ? ' · baús ' + bv + '/' + bt : '')));
+      const cv2 = el('canvas'), W = Math.max(220, Math.min(1400, Math.round(A.W * 0.62))), H2 = 74; cv2.width = W; cv2.height = H2; const q = cv2.getContext('2d'), kx = W / A.W, ky = H2 / 40, Y = (ty) => (ty - 6) * ky, R = C.REGIOES[A.regiao];
+      q.fillStyle = '#0a1011'; q.fillRect(0, 0, W, H2);
+      for (let k = 0; k < m.length; k++) if (m[k] === '1') { const x0 = k * 20, x1 = Math.min(A.W, x0 + 20); const gr = q.createLinearGradient(0, 0, 0, H2); gr.addColorStop(0, 'rgba(' + R.nevoa + ',0.10)'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',0.30)'); q.fillStyle = gr; q.fillRect(x0 * kx, 0, (x1 - x0) * kx + 1, H2); for (let tx = x0; tx < x1; tx++) { q.fillStyle = 'rgb(' + R.terra.map((v) => v + 16).join(',') + ')'; q.fillRect(tx * kx, Y(A.topo[tx]), kx + 1, H2); q.fillStyle = 'rgba(' + R.nevoa + ',0.9)'; q.fillRect(tx * kx, Y(A.topo[tx]), kx + 1, 1.5); } for (const e of A.escuros) if (!e.oco && e.x0 / 16 < x1 && e.x1 / 16 > x0) { q.fillStyle = 'rgb(' + R.terra.map((v) => v + 16).join(',') + ')'; const a = Math.max(x0, e.x0 / 16), b = Math.min(x1, e.x1 / 16); q.fillRect(a * kx, Y(e.y0 / 16 - 6), (b - a) * kx, 6 * ky); } }
+      const visto = (x) => m[Math.floor(x / 16 / 20)] === '1';
+      const ponto = (x, y, cor, r, forma) => { const px = x / 16 * kx, py = Math.max(6, Math.min(H2 - 6, Y(y / 16) - 5)); q.fillStyle = '#05080a'; q.strokeStyle = cor; q.beginPath(); if (forma === 'q') q.rect(px - r - 1, py - r - 1, r * 2 + 2, r * 2 + 2); else if (forma === 'l') { q.moveTo(px, py - r - 2); q.lineTo(px + r + 2, py); q.lineTo(px, py + r + 2); q.lineTo(px - r - 2, py); } else q.arc(px, py, r + 1.5, 0, 7); q.fill(); q.fillStyle = cor; q.beginPath(); if (forma === 'q') q.rect(px - r, py - r, r * 2, r * 2); else if (forma === 'l') { q.moveTo(px, py - r); q.lineTo(px + r, py); q.lineTo(px, py + r); q.lineTo(px - r, py); } else q.arc(px, py, r, 0, 7); q.fill(); };
+      for (const e of A.emboscadas) if (s.emb[e.id]) ponto((e.x0 + e.x1) / 2, e.piso, CORES.emb, 2.5, 'l');
+      for (const p of A.marcos) if (s.marcos[p.id]) ponto(p.x, p.y, CORES.marco, 3, 'l');
+      for (const b of A.baus) if (!s.baus[b.id] && visto(b.x) && (s.amu.includes('olho') || !A.escuros.some((e) => e.oco && b.x > e.x0 && b.x < e.x1 && !A.fracas.some((f) => s.fracas[f.id] && f.c0 * 16 >= e.x0 && f.c1 * 16 <= e.x1)))) ponto(b.x, b.y, CORES.bau, 2.5, 'q');
+      for (const p of A.circulos) if (visto(p.x)) ponto(p.x, p.y, CORES.circulo, 3);
+      for (const p of A.portas) if (visto(p.x)) ponto(p.x, p.y, p.id === 'covil' ? CORES.covil : CORES.porta, 3.5, 'q');
+      for (const f of A.fogos) if (visto(f.x)) ponto(f.x, f.y, s.fogos[f.id] ? CORES.fogo : CORES.apagado, 3.5);
+      if (id === atual.id) { const h = J.heroi, px = h.x / 16 * kx, py = Y(h.y / 16) - 14; q.fillStyle = '#05080a'; q.beginPath(); q.moveTo(px - 6, py - 5); q.lineTo(px + 6, py - 5); q.lineTo(px, py + 6); q.fill(); q.fillStyle = CORES.voce; q.beginPath(); q.moveTo(px - 4.5, py - 4); q.lineTo(px + 4.5, py - 4); q.lineTo(px, py + 4); q.fill(); }
+      const rol = el('div', 'mapa-rola'); rol.append(cv2); bloco.append(rol);
+      const ls = A.marcos.filter((p) => s.marcos[p.id]); if (ls.length) bloco.append(el('small', 'lugares', ls.map((p) => p.nome).join(' · ')));
+      const pt = A.portas.filter((p) => visto(p.x)); if (pt.length) bloco.append(el('small', 'lugares', 'Passagens: ' + pt.map((p) => p.nome).join(' · ')));
+      c.append(bloco);
+      if (id === atual.id) requestAnimationFrame(() => { rol.scrollLeft = J.heroi.x / 16 * kx - rol.clientWidth / 2; });
     }
   }
 
@@ -323,9 +362,10 @@
     if (chave !== vistas) {
       vistas = chave;
       const a = $('h-arma'); a.innerHTML = ''; if (s.arma !== 'punho') a.append(ic(s.arma, 34)); a.append(el('span', '', C.ARMAS[s.arma].nome + (s.afiado[s.arma] ? ' +' + s.afiado[s.arma] : '') + (C.ARMAS[s.arma].tiro ? ' · ' + (s.inv.flecha || 0) : '')));
-      const q = $('h-comida'); q.innerHTML = ''; for (const m of ['fruta', 'carne', 'seca', 'erva', 'curativo']) if (s.inv[m] > 0) { const k = el('span'); k.append(ic(m === 'curativo' ? 'trapo' : m === 'seca' ? 'carne' : m, 22), document.createTextNode(s.inv[m])); q.append(k); }
+      const q = $('h-comida'); q.innerHTML = ''; for (const m of ['fruta', 'carne', 'seca', 'erva', 'curativo']) if (s.inv[m] > 0) { const k = el('span'); k.append(ic(m === 'curativo' ? 'trapo' : m, 22), document.createTextNode(s.inv[m])); q.append(k); }
       $('h-titulo').textContent = s.nome + (s.titulo ? ', ' + s.titulo : ''); montaMagias();
     }
+    const tc = $('h-tocha'); tc.hidden = !(s.tocha > 0); if (s.tocha > 0) { tc.classList.toggle('acesa', !!s.tochaAcesa); tc.style.setProperty('--k', s.tocha / 300); } const bt = document.querySelector('#botoes [data-a=tocha]'); if (bt) { bt.hidden = !(s.tocha > 0 || s.inv.tocha > 0); bt.classList.toggle('ativa', !!s.tochaAcesa); }
     const tdia = 'Dia ' + s.dia + ' · ' + J.nomeHora() + (J.raid ? ' · onda ' + Math.max(1, J.raid.n + 1) + ' de ' + J.raid.total : ''); if ($('h-dia').textContent !== tdia) { $('h-dia').textContent = tdia; $('h-dia').classList.toggle('noite', J.ehNoite()); }
     const H = s.hum, hv = H && J.hum && !J.hum.perdida; $('h-hum').hidden = !hv; if (hv) { $('h-hum').firstElementChild.textContent = H.nome + (J.hum.caida ? ' caiu!' : ''); $('b-hum').children[0].style.width = pc(J.hum.hp, J.hum.hpMax); $('b-hfome').children[0].style.width = pc(H.fome, 100); $('b-laco').children[0].style.width = pc(H.laco, 100); }
     for (const d of $('h-magias').children) { const M = C.MAGIAS[d.dataset.id]; d.classList.toggle('falta', h.sina < M.custo); d.lastChild.style.transform = 'scaleY(' + Math.min(1, (h.espera[d.dataset.id] || 0) / M.espera) + ')'; }
@@ -349,6 +389,8 @@
       if (APERTA[ev.code]) J.aperta(APERTA[ev.code]);
       if (ev.code === 'KeyE') usar();
       if (ev.code === 'KeyT') J.proximaArma();
+      if (ev.code === 'KeyV') J.tocha();
+      if (ev.code === 'KeyM') abreMenu('mapa');
       if (/^Digit[1-9]$/.test(ev.code)) { const l = C.ORDEM_ARMAS.filter((a) => J.save.armas.includes(a)); if (l[+ev.code[5] - 1]) J.empunhar(l[+ev.code[5] - 1]); }
     }
     if (['Space', 'ArrowUp', 'ArrowDown'].includes(ev.code)) ev.preventDefault();
@@ -387,6 +429,7 @@
         ev.preventDefault(); Som.ligar(); b.classList.add('ativa');
         if (a === 'menu') { if (modo === 'jogo' && !acorda) abreMenu(); return; }
         if (a === 'arma') { J.proximaArma(); return; }
+        if (a === 'tocha') { J.tocha(); return; }
         if (a === 'usa') { usar(); return; }
         if (a === 'pula') J.ent.pula = 1;
         if (a === 'golpe') J.ent.golpe = 1;
