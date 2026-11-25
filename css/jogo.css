@@ -172,3 +172,4 @@ body.toque #guardou { left: 50%; bottom: auto; top: 10px; transform: translateX(
 .mapa-rola { overflow-x: auto; margin: 6px 0 4px; border: 1px solid #2c3a36; touch-action: pan-x; } .mapa-rola canvas { display: block; image-rendering: pixelated; }
 .jeito { display: block; color: #a8c0a0; font-style: italic; }
 canvas.ic.bicho { width: 54px; height: 46px; image-rendering: pixelated; flex: none; }
+.nomevila { font: 600 18px 'Crimson Pro', serif; color: #ffe9c8; background: #0b1010; border: 1px solid #7a6a48; padding: 7px 10px; width: min(100%, 320px); user-select: text; -webkit-user-select: text; }

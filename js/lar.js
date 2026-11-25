@@ -74,6 +74,7 @@
     if (L && L.horta) { L.horta.fruta = Math.min(8, (L.horta.fruta || 0) + 2); L.horta.erva = Math.min(4, (L.horta.erva || 0) + 1); }
     const traz = (m, n) => { L.trouxe = L.trouxe || {}; L.trouxe[m] = (L.trouxe[m] || 0) + n; };
     for (const p of s.prole || []) { const id = s.dia - p.dia; if (id >= 3 && L) { if ((p.tarefa || 'juntar') === 'juntar') for (let i = 0; i < 2; i++) traz(um(['galho', 'fruta', 'fibra', 'pedra', 'folha']), 1); if (p.tarefa === 'treinar') p.treino = (p.treino || 0) + 1; } if (id === 5) avisa('cresceu', p); }
+    J.vilaAmanhece(traz);
     const H = s.hum;
     // ela também trabalha quando fica
     if (L && H && H.onde === 'lar' && H.laco >= 25 && H.fome > 15) { traz(um(['erva', 'fibra', 'fruta']), 2); if (H.laco >= 55) traz(Math.random() < 0.5 ? 'flecha' : 'curativo', Math.random() < 0.5 ? 2 : 1); }
@@ -87,7 +88,7 @@
     if (s.area === 'lar' && J.heroi && J.heroi.estado !== 'morto') { J.raidEm = 3; return; }
     const H = s.hum, emCasa = (H && H.onde === 'lar') || (s.prole && s.prole.length) || s.mae;
     if (!emCasa && Math.random() < 0.5) return;
-    const def = L.casa.n * 22 + ['cercaE', 'cercaD'].reduce((t, k) => t + (L[k] && L[k].hp > 0 ? L[k].n * 16 : 0), 0) + ['estacasE', 'estacasD'].reduce((t, k) => t + (L[k] && L[k].hp > 0 ? 8 : 0), 0) + (H && H.onde === 'lar' ? 10 + (H.lanca ? 12 : 0) : 0) + (L.lenha > 0 ? 14 : 0);
+    const def = L.casa.n * 22 + ['cercaE', 'cercaD'].reduce((t, k) => t + (L[k] && L[k].hp > 0 ? L[k].n * 16 : 0), 0) + ['estacasE', 'estacasD'].reduce((t, k) => t + (L[k] && L[k].hp > 0 ? 8 : 0), 0) + (H && H.onde === 'lar' ? 10 + (H.lanca ? 12 : 0) : 0) + J.moradores().length * 7 + (L.lenha > 0 ? 14 : 0);
     const atq = (34 + Math.min(90, s.dia * 4)) * rnd(0.65, 1.25);
     const falta = atq - def;
     for (const k of ['cercaE', 'cercaD']) if (L[k] && L[k].hp > 0) L[k].hp = Math.max(0, L[k].hp - atq * 0.35);
@@ -194,7 +195,7 @@
   }
   // quem está com você ao entrar numa área
   J.trazGente = function () {
-    const s = J.save, h = J.heroi, H = s.hum; J.hum = null; J.gente = []; J.barreiras = null; J.casaAlvo = null; J.raid = null;
+    const s = J.save, h = J.heroi, H = s.hum; J.hum = null; J.gente = []; J.barreiras = null; J.casaAlvo = null; J.raid = null; J.poePresos();
     if (H && (H.onde === 'segue' || (H.onde === 'lar' && s.area === 'lar'))) { const x = H.onde === 'lar' ? F.atual.lugar.casa + 20 : h.x - h.dir * 26; J.hum = cria(x, F.chao(x), { hp: H.hp, hpMax: H.hpMax, estado: H.onde === 'segue' ? 'segue' : 'lar' }); }
     if (H && H.onde === 'levada' && H.cativeiro === s.area) J.cativeiro = { x: cativeiroX(), y: 0 }; else J.cativeiro = null;
     if (J.cativeiro) { J.cativeiro.y = F.chao(J.cativeiro.x); J.poeGuardas(); }
@@ -305,7 +306,7 @@
   }
   function ondaRaid() {
     const s = J.save, r = J.raid, k = clamp(0.2 + s.dia * 0.04 + Object.keys(s.chefes).length * 0.1, 0.2, 1);
-    const esp = um(['lobo', 'lobo', 'goblin', 'goblin', 'zumbi', 'cobra']), q = 3 + Math.floor(r.n * 0.8) + Math.floor(s.dia / 8);
+    const esp = um(['lobo', 'lobo', 'goblin', 'goblin', 'zumbi', 'cobra']), q = 3 + Math.floor(r.n * 0.8) + Math.floor(s.dia / 8) + Math.floor(J.moradores().length / 2);
     const vigia = (s.prole || []).some((p) => p.tarefa === 'vigiar' && s.dia - p.dia >= 3) ? 1 : 0;
     for (let i = 0; i < Math.max(2, Math.min(8, q) - vigia); i++) { const lado = i % 2 ? 1 : -1, x = lado > 0 ? (F.W - 7) * T - i * 10 : 8 * T + i * 10; J.inimigos.push(nasce(F.varia(esp, k, Math.random), x, F.chao(x), { estado: 'persegue', raid: true, chamado: true, t: -i * 0.25, dir: -lado })); }
     avisa('ondaRaid', [r.n + 1, r.total, esp]);
@@ -352,10 +353,11 @@
 
   // ---------- o que dá para usar por perto ----------
   J.pertoLar = function (h) {
+    const vz = J.pertoVila(h); if (vz) return vz;
     const H = J.hum, s = J.save, A = F.atual;
     if (H && H.caida && Math.abs(H.x - h.x) < 34 && Math.abs(H.y - h.y) < 50) return { tipo: 'levanta', o: H };
     if (J.cativeiro && Math.abs(J.cativeiro.x - h.x) < 34 && !J.inimigos.some((e) => e.vivo && e.guarda && e.estado !== 'vaga' && Math.abs(e.x - h.x) < 260)) return { tipo: 'solta', o: J.cativeiro };
-    if (s.area === 'lar' && s.lar && !J.raid) {
+    if (A.lugar && s.lar && !J.raid) {
       const L = s.lar, lug = A.lugar, p = (k, d) => Math.abs(lug[k] - h.x) < (d || 26);
       if (L.varal && L.varal.n && p('varal') && ((L.varal.secas || 0) > 0 || ((s.inv.carne || 0) > 0 && (L.varal.carnes || 0) < 4))) return { tipo: 'varal' };
       if (L.horta && L.horta.n && p('horta') && ((L.horta.fruta || 0) > 0 || (L.horta.erva || 0) > 0)) return { tipo: 'horta' };
@@ -406,6 +408,6 @@
     if (h.estado !== 'dorme') avanca(dt * HORA);
     if (J.ehNoite() && s.hora > 20) avisa('noite');
     passoEmboscada(dt); passoHum(dt); J.passoPesca();
-    if (s.area === 'lar') { passoGente(dt); passoRaid(dt); }
+    if (F.atual.lugar) { passoGente(dt); J.passoVila(dt); passoRaid(dt); }
   };
 })();

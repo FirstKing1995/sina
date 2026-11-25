@@ -33,7 +33,7 @@
     const mem = J.memorias(), l = $('memorias'); l.innerHTML = '';
     if (mem.length) { l.append(el('h3', '', 'Os que vieram antes')); for (const x of mem.slice(0, 4)) l.append(el('p', '', x.nome + (x.titulo ? ', ' + x.titulo : '') + ' · ' + Math.max(1, Math.round(x.tempo / 60)) + ' min · ' + x.mortes + ' mortes')); }
   }
-  const nomeArea = (id) => (id === 'lar' ? 'Clareira do Rio' : F.IDS.includes(id) ? (id.startsWith('covil_') ? { covil_lobos: 'Toca do Alfa', covil_cobras: 'Ninho da Rainha', covil_zumbis: 'A Cripta Fechada', covil_goblins: 'O Fortim' }[id] : C.REGIOES[id].nome) : '');
+  const nomeArea = (id) => (id === 'lar' ? (J.save && J.save.nomeVila) || 'Clareira do Rio' : F.IDS.includes(id) ? (id.startsWith('covil_') ? { covil_lobos: 'Toca do Alfa', covil_cobras: 'Ninho da Rainha', covil_zumbis: 'A Cripta Fechada', covil_goblins: 'O Fortim' }[id] : C.REGIOES[id].nome) : '');
 
   // ---------- nascimento ----------
   let nas = null;
@@ -128,6 +128,7 @@
     else if (tipo === 'gravida') conquista(s.hum.nome + ' espera um filho', 'Daqui a três noites. Até lá, ela precisa de você inteiro.', '#e8b0a0');
     else if (tipo === 'nasceu') batizar = true;
     else if (tipo === 'caderno') { const B = C.BICHOS[x[0]]; if (B) conquista(x[1] === 1 ? 'Caderno: ' + C.TIPOS[x[0]].nome : x[1] === 4 ? C.TIPOS[x[0]].nome + ': hábitos' : C.TIPOS[x[0]].nome + ': fraqueza', x[1] === 1 ? B[0] : x[1] === 4 ? B[1] : B[2] + ' (+8% de dano)', C.ESPECIES[C.TIPOS[x[0]].esp].cor); }
+    else if (tipo === 'morador') { const V = C.VILA[x], v = s.vila[x]; J.mostraArea(v.nome + ' está livre', V.oficio + ' · foi para ' + nomeArea('lar')); setTimeout(() => sussurra('“' + V.chega + '”', 6), 3200); const n = J.moradores().length; if (n === 2) setTimeout(() => conquista('Já dá para chamar de vila', 'Dê um nome a ela na aba Lar.', '#8fe0c8'), 7000); if (n === 4) setTimeout(() => conquista('Fundador', 'Quatro vidas devolvidas. A clareira nunca mais ficou em silêncio.', '#e9c47a'), 7000); }
     else if (tipo === 'zona') { if (areaT <= 0) J.mostraArea(x.nome); }
     else if (tipo === 'marco') { J.mostraArea(x.nome); sussurra(x.texto, 6.5); som('livro', 0.5); }
     else if (tipo === 'oco') sussurra('O chão era oco.', 3);
@@ -165,6 +166,8 @@
     if (p.tipo === 'bau') { J.abreBau(p.o); return; }
     if (p.tipo === 'casa') { abreMenu('lar'); return; }
     if (p.tipo === 'fala') { abreFala(); return; }
+    if (p.tipo === 'preso') { J.soltaPreso(); return; }
+    if (p.tipo === 'morador') { abreMorador(p.o.id); return; }
     if (p.tipo === 'pesca') { J.pesca(); return; }
     if (p.tipo === 'crianca') { abreFilho(p.o.p); return; }
     if (p.tipo === 'coleta') J.colher(p.o);
@@ -203,7 +206,7 @@
     const v = $('veu'); v.classList.add('ver'); solta();
     setTimeout(() => { J.entrarArea(p.para[0], p.para[1]); D.centrar(); areaVista = null; D.quadro(0.016); setTimeout(() => { v.classList.remove('ver'); viajando = false; }, 220); }, 420);
   }
-  const rotulo = (p) => (p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
+  const rotulo = (p) => (p.tipo === 'preso' ? 'Quebrar a jaula' : p.tipo === 'morador' ? 'Falar com ' + J.save.vila[p.o.id].nome : p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
 
   // ---------- fogueira ----------
   function abreFogo(f) {
@@ -235,6 +238,16 @@
       if (H.gravida) c.append(el('p', 'nota', 'Ela não vai viajar assim. Proteja o lar.'));
     }
     if (!H.lanca && s.armas.includes('lanca')) c.append(botao('Fazer uma lança para ela (3 galhos, 1 pedra, 2 fibras)', () => { if ((s.inv.galho || 0) >= 3 && (s.inv.pedra || 0) >= 1 && (s.inv.fibra || 0) >= 2) { s.inv.galho -= 3; s.inv.pedra--; s.inv.fibra -= 2; H.lanca = true; H.laco = Math.min(100, H.laco + 5); som('raro', 0.6); J.salvar(); abreFala(); } else sussurra('Faltam materiais.', 2); }));
+  }
+  function abreMorador(id) {
+    modo = 'fogo'; mostra('fogo'); const s = J.save, V = C.VILA[id], v = s.vila[id], c = $('fg-corpo'); c.innerHTML = '';
+    $('fg-nome').textContent = v.nome + ', ' + V.oficio.toLowerCase(); $('fg-sair').textContent = 'Até logo'; $('fg-nota').textContent = '“' + V.falas[Math.floor(Math.random() * V.falas.length)] + '”';
+    const op = (txt, qual, ok) => { const b = botao(txt, () => { if (J.servico(id, qual)) abreMorador(id); else sussurra('Agora não dá.', 2); }); b.disabled = !ok; c.append(b); };
+    if (id === 'ferreiro') { const n = s.afiado[s.arma] || 0; op(s.arma === 'punho' ? 'Afiar: empunhe uma arma' : n >= 9 ? C.ARMAS[s.arma].nome + ' já está no máximo' : 'Afiar ' + C.ARMAS[s.arma].nome + ' +' + (n + 1) + ' (2 ferros)', 'afiar', s.arma !== 'punho' && n < 9 && (s.inv.ferro || 0) >= 2); op('Doze flechas (1 ferro, 2 galhos)', 'pontas', (s.inv.ferro || 0) >= 1 && (s.inv.galho || 0) >= 2); }
+    if (id === 'curandeira') { op('Cuidar das feridas', 'cura', true); op(v.deu === s.dia ? 'O chá de hoje já foi' : 'Chá forte: +20 de vida até amanhã (2 ervas)', 'cha', v.deu !== s.dia && (s.inv.erva || 0) >= 2); }
+    if (id === 'cacador') op(v.deu === s.dia ? 'A lição de hoje já foi' : 'Treinar com ele: perícia da arma e das pernas', 'ensina', v.deu !== s.dia);
+    if (id === 'vigia') op('Remendar as cercas (1 galho cada)', 'remenda', (s.inv.galho || 0) > 0 && ['cercaE', 'cercaD'].some((k) => s.lar[k] && s.lar[k].n && s.lar[k].hp < J.cheioObra(k)));
+    c.append(el('p', 'nota', { ferreiro: 'Afia até +9 e às vezes deixa um ferro pela manhã.', curandeira: 'Deixa um curativo por manhã.', cacador: 'Traz carne e couro. Na noite de ataque, atira.', vigia: 'Conserta a cerca de madrugada e luta na noite de ataque.' }[id]));
   }
   function abreFilho(p) {
     modo = 'fogo'; mostra('fogo'); const s = J.save, id = s.dia - p.dia, c = $('fg-corpo'); c.innerHTML = '';
@@ -285,6 +298,7 @@
       c.append(el('p', 'nota', H ? H.nome + ': ' + J.lacoNome(H.laco).toLowerCase() + (H.onde === 'levada' ? ', levada para ' + nomeArea(H.cativeiro) : H.onde === 'segue' ? ', com você' : ', no lar') + (H.gravida ? ', espera um filho' : '') : 'Ninguém ainda. No vale, alguém gritou.'));
       if (s.mae) c.append(el('p', 'nota', s.mae.nome + ', sua mãe, cuida do lar.'));
       for (const p of s.prole) { const id = s.dia - p.dia; c.append(el('p', 'nota', p.nome + ': ' + (id < 2 ? 'bebê de colo' : id < 5 ? 'criança, faltam ' + (5 - id) + ' dias para poder continuar você' : 'crescido, pode continuar você'))); }
+      { const ms = J.moradores(); c.append(el('h3', '', 'Vila')); if (!ms.length) c.append(el('p', 'nota', 'Há gente presa nos quatro caminhos, nos acampamentos do fundo.')); for (const m of ms) c.append(el('p', 'nota', s.vila[m].nome + ', ' + C.VILA[m].oficio.toLowerCase() + ', desde o dia ' + s.vila[m].dia)); if (ms.length >= 2) { const i = el('input', 'nomevila'); i.maxLength = 22; i.placeholder = 'Nome da vila'; i.value = s.nomeVila || ''; i.onchange = () => { s.nomeVila = i.value.trim(); J.salvar(); }; c.append(i); } }
       c.append(el('p', 'nota', 'Filhos: laço de Companhia (60), cabana trançada, berço e uma noite dormida no lar.'));
     } else if (aba === 'criar') {
       c.append(el('p', 'nota', 'Ofício ' + J.nivel('oficio') + '. Quanto mais você faz, melhor o que consegue fazer.'));
@@ -398,7 +412,7 @@
   const TECLAS = { KeyA: 'esq', ArrowLeft: 'esq', KeyD: 'dir', ArrowRight: 'dir', KeyW: 'cima', ArrowUp: 'cima', KeyS: 'baixo', ArrowDown: 'baixo', Space: 'pula', KeyZ: 'pula', KeyK: 'forte', KeyJ: 'golpe', KeyX: 'golpe' };
   const APERTA = { Space: 'pula', KeyZ: 'pula', KeyJ: 'golpe', KeyX: 'golpe', KeyL: 'rola', KeyC: 'rola', ShiftLeft: 'rola', ShiftRight: 'rola', KeyR: 'magia1', KeyF: 'magia2', KeyQ: 'come' };
   addEventListener('keydown', (ev) => {
-    if (ev.target.tagName === 'INPUT' && ev.target.type !== 'range') { if (ev.code === 'Enter') { if (modo === 'batiza') batiza(); else daNome(); } return; }
+    if (ev.target.tagName === 'INPUT' && ev.target.type !== 'range') { if (ev.code === 'Enter') { if (modo === 'batiza') batiza(); else if (modo === 'nasce') daNome(); else ev.target.blur(); } return; }
     if (sono) { if (!ev.repeat) pulaSono = true; ev.preventDefault(); return; }
     if (window.Som) Som.ligar();
     if (modo === 'nasce') { if (!ev.repeat && ['Space', 'Enter', 'KeyE'].includes(ev.code)) { ev.preventDefault(); proximaLinha(); } return; }
