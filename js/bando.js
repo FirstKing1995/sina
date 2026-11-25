@@ -20,6 +20,7 @@
 
   // ---------- quem ele quer pegar ----------
   function alvos() { const l = []; const h = J.heroi; if (h && h.estado !== 'morto' && h.estado !== 'nasce' && h.estado !== 'dorme') l.push(h); if (J.hum && J.hum.viva && !J.hum.caida && !J.hum.dentro) l.push(J.hum); return l; }
+  J.alvos = alvos;
   function escolhe(e) {
     const l = alvos(); if (!l.length) return null;
     let m = null, md = 1e9;
@@ -101,6 +102,7 @@
 
   function passo(e, dt) {
     const tp = e.T, h = J.heroi;
+    if (tp.chefe) { J.passoDono(e, dt); return; }
     e.t += dt; e.flash = Math.max(0, e.flash - dt); e.pisca = Math.max(0, e.pisca - dt); e.ferido = Math.max(0, (e.ferido || 0) - dt); e.semCamb = Math.max(0, (e.semCamb || 0) - dt);
     e.cdR = Math.max(0, (e.cdR || 0) - dt); e.esq = Math.max(0, (e.esq || 0) - dt); e.tLevou = Math.max(0, (e.tLevou || 0) - dt); e.furia = Math.max(0, (e.furia || 0) - dt);
     if (e.estado === 'morto') { e.vy = Math.min(K.QUEDA, e.vy + K.G * dt); e.vx *= Math.pow(0.05, dt); mover(e, dt); return; }

@@ -182,6 +182,7 @@
     sangue(h.x, h.y - 32, lado, 12, '#b0502a');
     J.faiscas(h.x, h.y - 32, 8, '#ff9a50', 0.8, 'brasa');
     som('dor', 0.8);
+    if (o.prende) h.lerdo = Math.max(h.lerdo || 0, 1.2);
     if (o.veneno && !tem('cobra', 2)) h.veneno = Math.max(h.veneno, o.veneno);
     J.treina('corpo', 2 + d * 0.12);
     if (h.hp <= 0) { h.hp = 0; J.morrer(J.ultimoDano); return true; }
@@ -192,6 +193,9 @@
     if (!e.vivo || e.estado === 'morto' || e.estado === 'caido') return false;
     o = o || {};
     const h = J.heroi, esp = e.T.esp;
+    if (e.sob) return false;
+    // dono só luta dentro da arena: de fora, nada pega
+    if (e.T.chefe && !J.chefeAtivo && F.atual.arena && (J.heroi.x < F.atual.arena.x0 + 50 || J.heroi.x > F.atual.arena.x1 - 30)) return false;
     if (e.esq > 0 && !o.magia && !o.deLonge) { texto(e.x, e.y - e.h - 8, 'esquivou', '#b8c8d8'); return false; }
     // escudo: de frente não passa, a não ser golpe forte carregado
     if (e.T.escudo && (e.estado === 'bloqueia' || (e.estado === 'persegue' && Math.random() < 0.35 * e.manha)) && Math.sign(dir) === -e.dir && !o.magia) {
@@ -225,13 +229,13 @@
     e.firmeza -= (o.quebra || 1) * (o.forte ? 1 : 0.55);
     const peso = e.T.chefe ? 0.12 : e.T.bruto ? 0.25 : 1;
     // o atordoamento tem limite, e quem está revidando não para
-    if (e.firmeza <= 0 && (e.semCamb || 0) <= 0 && !e.couraca && e.estado !== 'golpe' && !(e.estado === 'prep' && e.t > (e.prepDur || 0.3) * 0.55 && !o.carregado)) {
-      e.estado = 'cambaleia'; e.t = 0; e.dur = e.T.chefe ? 1.1 : 0.34; e.firmeza = e.T.firme; e.semCamb = e.T.chefe ? 5 : 2.4;
+    if (e.firmeza <= 0 && (e.semCamb || 0) <= 0 && !e.couraca && e.estado !== 'golpe' && e.estado !== 'virada' && !(e.estado === 'prep' && e.t > (e.prepDur || 0.3) * 0.55 && !o.carregado)) {
+      e.estado = 'cambaleia'; e.t = 0; e.dur = e.T.chefe ? 1.7 : 0.34; e.firmeza = e.T.firme; e.semCamb = e.T.chefe ? 7 : 2.4; if (e.T.chefe) { texto(e.x, e.y - e.h - 14, 'postura quebrada', '#ffd27a', true); som('quebra', 0.8, 1.1); J.anel(e.x, e.y - e.h / 2, 60, '#ffd27a', 0.5, 3); }
       e.vx = dir * 150 * peso * (o.empurra || 1); if (!e.T.chefe && !e.T.bruto) e.vy = -90;
     } else {
       if (!e.T.chefe && e.estado !== 'golpe') e.vx += dir * 34 * peso * (o.empurra || 1);
       if (e.estado === 'vaga') { e.estado = 'persegue'; e.t = 0.2; J.alerta(e, 300); if (e.T.chefe) J.acordaChefe(e); }
-      J.apanhou(e, o.forte, aberto);
+      if (e.T.chefe) J.apanhouDono(e); else J.apanhou(e, o.forte, aberto);
     }
     if (e.estado === 'vaga') { e.estado = 'persegue'; e.t = 0; J.alerta(e, 300); if (e.T.chefe) J.acordaChefe(e); }
     if (e.T.foge && e.hp < e.hpMax * e.T.foge && !e.fugiu && Math.random() < 0.5) { e.fugiu = true; e.estado = 'foge'; e.t = 0.5; }
@@ -485,7 +489,7 @@
       if (!b.flecha && b.tipo !== 'pedra' && Math.random() < 0.8) fx({ tipo: 'brasa', x: b.x + rnd(-3, 3), y: b.y + rnd(-3, 3), vx: -b.vx * 0.12 + rnd(-14, 14), vy: rnd(-30, 14), vida: 0.4, max: 0.4, cor: b.cor, tam: rnd(1.2, 2.8) });
       if (solido(b.x, b.y)) {
         b.vida = 0;
-        if (b.flecha) { if (Math.random() < (b.inimiga ? 0.25 : 0.55)) J.restos.push({ m: 'flecha', x: b.x - Math.sign(b.vx) * 8, y: b.y - 4, vx: 0, vy: 0, w: 6, h: 8, t: 0 }); J.faiscas(b.x, b.y, 4, '#c8b08a', 0.5); } else estoura(b);
+        if (b.flecha) { if (Math.random() < (b.inimiga ? 0.25 : 0.55)) J.restos.push({ m: 'flecha', x: b.x - Math.sign(b.vx) * 8, y: b.y - 4, vx: 0, vy: 0, w: 6, h: 8, t: 0 }); J.faiscas(b.x, b.y, 4, '#c8b08a', 0.5); } else { if (b.estoura || b.poca) J.caiuBala(b); estoura(b); }
         continue;
       }
       const bx = { x0: b.x - b.r, x1: b.x + b.r, y0: b.y - b.r, y1: b.y + b.r };
@@ -495,7 +499,7 @@
           feriInimigo(e, b.dano, Math.sign(b.vx) || 1, b.deHum ? { magia: true, deHum: true, quebra: 0.6, y: b.y } : b.flecha ? { deLonge: true, forte: b.forte, quebra: 0.8, y: b.y } : { magia: true, forte: true, quebra: 2, y: b.y });
           if (b.fura) b.ja.add(e); else { b.vida = 0; if (!b.flecha) estoura(b); break; }
         }
-      } else if (cruza(bx, caixa(h)) && h.estado !== 'dorme' && J.feriHeroi(b.dano, b.x, b.quem, { veneno: b.veneno })) { b.vida = 0; if (!b.flecha) estoura(b); }
+      } else if (cruza(bx, caixa(h)) && h.estado !== 'dorme' && J.feriHeroi(b.dano, b.x, b.quem, { veneno: b.veneno })) { b.vida = 0; if (b.estoura) J.caiuBala(b); if (!b.flecha) estoura(b); }
       else if (J.hum && J.hum.viva && !J.hum.caida && !J.hum.dentro && b.dono === 'i' && cruza(bx, caixa(J.hum)) && J.feriHum(b.dano, b)) b.vida = 0;
     }
     J.balas = J.balas.filter((b) => b.vida > 0);
@@ -513,6 +517,7 @@
     const h = J.heroi;
     for (const m of J.magias) {
       m.t += dt;
+      if (J.passoMagiaDono) J.passoMagiaDono(m);
       if (m.tipo === 'onda') {
         const k = m.t / m.dur, px = m.x + m.d * k * (m.alc || 210); m.px = px;
         if (Math.random() < 0.8) fx({ tipo: 'pedra', x: px + rnd(-4, 4), y: m.y - 2, vx: m.d * rnd(0, 40), vy: rnd(-220, -90), grav: 700, vida: 0.5, max: 0.5, cor: m.inimiga ? '#8a6a50' : '#8a7458', tam: rnd(1.5, 4) });
@@ -523,7 +528,7 @@
       } else if (m.tipo === 'gas') {
         if (Math.random() < 0.6) fx({ tipo: 'nuvem', x: m.x + rnd(-m.raio, m.raio), y: m.y - rnd(0, 34), vx: rnd(-8, 8), vy: rnd(-12, -2), vida: 0.9, max: 0.9, cor: '140,170,60', tam: rnd(9, 18) });
         m.tic = (m.tic || 0) - dt;
-        if (m.tic <= 0) { m.tic = 0.5; if (Math.abs(h.x - m.x) < m.raio && Math.abs(h.y - m.y) < 60 && h.inv <= 0 && h.estado !== 'rola') { h.veneno = Math.max(h.veneno, 2.5); h.hp -= m.dano * 0.5; texto(h.x, h.y - 62, Math.ceil(m.dano * 0.5), '#b8e060'); if (h.hp <= 0) { h.hp = 0; J.morrer('zumbi'); } } }
+        if (m.tic <= 0) { m.tic = 0.5; if (Math.abs(h.x - m.x) < m.raio && Math.abs(h.y - m.y) < 60 && h.inv <= 0 && h.estado !== 'rola') { h.veneno = Math.max(h.veneno, 2.5); h.hp -= m.dano * 0.5; texto(h.x, h.y - 62, Math.ceil(m.dano * 0.5), '#b8e060'); if (h.hp <= 0) { h.hp = 0; J.morrer(m.quem || 'zumbi'); } } }
       } else if (m.tipo === 'maos') {
         if (m.t < 0) { if (Math.random() < 0.4) fx({ tipo: 'pedra', x: m.x + rnd(-10, 10), y: m.y - 1, vy: rnd(-70, -20), grav: 500, vida: 0.4, max: 0.4, cor: '#5a4a58', tam: 2 }); }
         else if (m.t < m.dur * 0.6 && !m.ja.has('h') && cruza({ x0: m.x - 14, x1: m.x + 14, y0: m.y - 46, y1: m.y }, caixa(h))) { m.ja.add('h'); J.feriHeroi(m.dano, m.x, 'carcereiro'); }

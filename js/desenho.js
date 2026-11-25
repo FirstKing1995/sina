@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { console.warn('faltou', src); ok(null); }; i.src = src + '?v=4'; });
+  const carregaImg = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { console.warn('faltou', src); ok(null); }; i.src = src + '?v=5'; });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -316,6 +316,15 @@
     else if (e.estado === 'bloqueia') q = tp.escudo ? 3 : 4;
     else if (Math.abs(e.vx) > 5) { q = [1, 2, 3, 2][Math.floor(e.andou / (tp.passo || 8)) % 4]; if (tp.spr.startsWith('goblin_') || tp.spr.startsWith('zumbi_')) { q = q === 3 && !tp.spr.startsWith('zumbi_') ? 1 : q; oy = -Math.abs(Math.sin(e.andou / (tp.passo || 8) * 1.57)) * 1.6; } }
     else sy = 1 + Math.sin(tempo * 2.4 + e.ox) * 0.018;
+    if (tp.chefe && e.vivo) {
+      if (e.qf != null) q = e.qf; if (e.estado === 'cambaleia') { q = 6; oy = Math.sin(tempo * 20) * 0.6; }
+      if (e.aviso > 0) { sx = 1 + e.aviso * 0.05; sy = 1 - e.aviso * 0.06; }
+      if (e.some != null) al = e.some;
+      if (e.olhos > 0) { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = '#ff4a30'; g.globalAlpha = e.olhos; for (const d of [0, 9]) { g.fillRect(e.x + e.dir * (34 + d) - 2, e.y - 42, 4, 3); } g.restore(); brilhos.push([e.x + e.dir * 38, e.y - 42, 50, '255,70,40', e.olhos * 0.8]); }
+      if (e.montinho != null) { g.fillStyle = 'rgb(' + regiao().terra.map((v) => v + 20).join(',') + ')'; g.beginPath(); g.ellipse(e.x, e.y + 2, 26, 9 + Math.sin(tempo * 24) * 2, 0, Math.PI, 0); g.fill(); g.fillStyle = 'rgba(255,60,40,0.35)'; g.fillRect(e.x - 24, e.y - 1, 48, 2); }
+      if (e.cx != null) { g.save(); g.fillStyle = '#b8b0a8'; for (let x = 10; x < e.cx; x += 7) { const yy = e.cy + Math.sin(x * 0.08 + tempo * 20) * 2; g.fillStyle = '#15120f'; g.fillRect(Math.round(e.x + e.dir * x) - 3, Math.round(yy) - 2, 6, 4); g.fillStyle = '#a8a098'; g.fillRect(Math.round(e.x + e.dir * x) - 2, Math.round(yy) - 1, 4, 2); } g.fillStyle = '#d8d0c0'; g.fillRect(e.x + e.dir * e.cx - 4, e.cy - 5, 8, 10); g.restore(); }
+      if (al <= 0.02) return;
+    }
     const es = e.esc || 1;
     if (tp.escondida && e.estado === 'vaga' && e.vivo) al = tp.escondida;
     if (e.estado !== 'morto' && al > 0.3) sombra(e.x, e.y, e.w * 0.6);
@@ -323,12 +332,14 @@
     g.save(); g.translate(Math.round(e.x), Math.round(e.y + 1 + oy)); g.scale(e.dir * sx * es, sy * es);
     pinta(im, al);
     if (tp.tinta) pinta(silhueta(im, tp.tinta, tp.spr), al);
-    if (e.estado === 'prep' || e.estado === 'cuspe' || e.estado === 'cova') pinta(silhueta(im, '#ff2a1a', tp.spr), (0.08 + 0.3 * Math.min(1, e.t / prep)) * (0.6 + 0.4 * Math.sin(tempo * 30)));
+    if (e.estado === 'prep' || e.aviso > 0) pinta(silhueta(im, '#ff2a1a', tp.spr), (0.08 + 0.3 * Math.min(1, tp.chefe ? e.aviso : e.t / prep)) * (0.6 + 0.4 * Math.sin(tempo * 30)) * al);
     if (e.veneno > 0) pinta(silhueta(im, '#8ac030', tp.spr), 0.22);
     if (e.furia > 0) pinta(silhueta(im, '#ff4a2a', tp.spr), 0.12 + 0.08 * Math.sin(tempo * 12));
     if (e.estado === 'cura') pinta(silhueta(im, '#7aff8a', tp.spr), 0.25);
     if (e.flash > 0) pinta(silhueta(im, '#ffffff', tp.spr), (e.flash / 0.13) * 0.85);
     g.restore(); g.globalAlpha = 1;
+    if (tp.chefe && e.fase > 1 && e.vivo && Math.random() < e.fase * 0.12) J.poe({ tipo: 'alma', x: e.x + (Math.random() - 0.5) * e.w, y: e.y - Math.random() * e.h, vy: -26, vida: 0.8, max: 0.8, cor: J.DONOS[e.tipo].cor, tam: 1.8 });
+    if (tp.chefe && e.estado === 'acao' && e.qf === 5 && e.aviso === 0 && e.tipo !== 'alfa' && e.tipo !== 'rainha') { const k = e.rast = Math.min(1, (e.rast || 0) + 0.09); garra({ t: k * 0.3, x: e.x, y: e.y, dir: e.dir, w: e.w }, { salta: 0, alcance: 70, h: e.h, esp: tp.esp }); } else e.rast = 0;
     if (e.estado === 'golpe' && !tp.atira && e.t < 0.3) garra(e, tp);
     if (e.estado === 'bloqueia') { g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = '#ffe9b0'; g.globalAlpha = 0.5 + 0.2 * Math.sin(tempo * 14); g.beginPath(); g.arc(e.x + e.dir * 8, e.y - e.h * 0.5, 22, e.dir > 0 ? -1 : Math.PI - 1, e.dir > 0 ? 1 : Math.PI + 1); g.stroke(); g.restore(); }
     if (tp.spr === 'goblin_xama' && e.vivo) brilhos.push([e.x + e.dir * 16, e.y - 44, 34, '120,255,140', 0.45]);
@@ -348,6 +359,7 @@
   // ---------- balas, magias e efeitos ----------
   function desenhaBala(b) {
     if (b.flecha) { flecha(b.x, b.y, Math.atan2(b.vy, b.vx)); if (b.forte) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5; g.fillStyle = '#ffe2a0'; g.fillRect(b.x - b.vx * 0.06, b.y - 1, b.vx * 0.05, 2); g.restore(); } return; }
+    if (b.tipo === 'barril') { g.save(); g.translate(b.x, b.y); g.rotate(tempo * 9); g.fillStyle = '#120c08'; g.fillRect(-9, -8, 18, 16); g.fillStyle = '#6a4326'; g.fillRect(-8, -7, 16, 14); g.fillStyle = '#3a2716'; g.fillRect(-8, -4, 16, 2); g.fillRect(-8, 3, 16, 2); g.fillStyle = '#ffb040'; g.fillRect(-2, -11, 3, 4); g.restore(); brilhos.push([b.x, b.y - 8, 40, '255,150,60', 0.6]); return; }
     if (b.tipo === 'pedra') { g.fillStyle = '#1a1612'; g.fillRect(b.x - 4, b.y - 3, 8, 7); g.fillStyle = b.cor; g.fillRect(b.x - 3, b.y - 3, 6, 5); return; }
     g.save(); g.globalCompositeOperation = 'lighter';
     if (b.tipo === 'espinho') { g.translate(b.x, b.y); g.rotate(Math.atan2(b.vy, b.vx)); g.fillStyle = b.cor; g.globalAlpha = 0.5; g.fillRect(-26, -1, 26, 2); g.globalAlpha = 1; g.beginPath(); g.moveTo(10, 0); g.lineTo(-8, -4); g.lineTo(-4, 0); g.lineTo(-8, 4); g.fill(); }
@@ -364,6 +376,9 @@
     if (m.tipo === 'onda') {
       const k = m.t / m.dur, px = m.px == null ? m.x : m.px;
       g.globalAlpha = 1 - k; for (let i = 0; i < 6; i++) { const hh = (22 - i * 3.4) * (1 - k * 0.5); g.fillStyle = i === 0 ? '#e8c890' : m.cor; g.fillRect(px - m.d * i * 7 - 4, m.y - hh, 7, hh); g.fillStyle = 'rgba(0,0,0,0.4)'; g.fillRect(px - m.d * i * 7 - 4, m.y - hh, 2, hh); } g.globalAlpha = 1;
+    } else if (m.tipo === 'queda') {
+      if (m.t < 0) return; const k = Math.min(1, m.t / 0.75); g.fillStyle = 'rgba(10,6,4,' + 0.5 * k + ')'; g.beginPath(); g.ellipse(m.x, m.y + 1, 8 + 10 * k, 3 + k * 2, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,90,50,' + 0.5 * k + ')'; g.lineWidth = 1; g.beginPath(); g.ellipse(m.x, m.y + 1, 20, 5, 0, 0, 7); g.stroke(); if (m.t < 0.75 && Math.random() < 0.5) J.poe({ tipo: 'pedra', x: m.x + (Math.random() - 0.5) * 20, y: m.y - 250, vy: 120, grav: 500, vida: 0.5, max: 0.5, cor: '#8a7c66', tam: 2 });
+      if (m.alt != null) { const y = m.y - m.alt; const pol = (cor, pts) => { g.fillStyle = cor; g.beginPath(); for (const [px, py] of pts) g.lineTo(Math.round(m.x + px), Math.round(y + py)); g.fill(); }; pol('#0e0a08', [[-16, -14], [-12, -28], [-2, -36], [10, -32], [17, -20], [15, -6], [4, 1], [-9, -1]]); pol('#5c4e40', [[-14, -14], [-10, -26], [-2, -33], [9, -30], [15, -19], [13, -7], [4, -1], [-8, -3]]); pol('#86755f', [[-10, -25], [-2, -33], [9, -30], [3, -24], [-6, -18], [-13, -15]]); pol('#3a3026', [[15, -19], [13, -7], [4, -1], [2, -9], [8, -16]]); g.fillStyle = '#2a221a'; g.fillRect(m.x - 5, y - 16, 6, 1); g.fillRect(m.x - 1, y - 12, 1, 5); g.fillStyle = 'rgba(255,220,180,0.16)'; g.fillRect(m.x - 6, y - 70, 1, 30); g.fillRect(m.x + 6, y - 64, 1, 26); }
     } else if (m.tipo === 'gas') { g.globalAlpha = 0.22 * Math.max(0, 1 - m.t / m.dur); g.drawImage(mancha('150,190,60'), m.x - m.raio, m.y - 44, m.raio * 2, 60); g.globalAlpha = 1;
     } else if (m.tipo === 'maos') {
       if (m.t < 0) { g.fillStyle = 'rgba(184,160,200,' + (0.25 + 0.2 * Math.sin(tempo * 30)) + ')'; g.fillRect(m.x - 14, m.y - 2, 28, 2); return; }
