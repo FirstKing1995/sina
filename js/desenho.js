@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=26' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=27' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -113,7 +113,7 @@
   function camadaArvores(par, forca, passo, esc, sem) {
     const R = regiao(), off = cam.x * par, i0 = Math.floor(off / passo) - 2;
     for (let i = i0; i < i0 + Math.ceil(D.VW / passo) + 4; i++) {
-      const r1 = hash(i * 7 + sem), r2 = hash(i * 13 + sem), seca = ['zumbis', 'goblins', 'lobos'].includes(F.atual.regiao); if (R.semArvores) { if (r1 < 0.45) continue; const t2 = r2 < 0.55 ? escora(R, forca, r1 < 0.75) : tingida('pedrao', F.atual.regiao, R.nevoa, forca); if (!t2) continue; const e2 = esc * 2.2 * (0.8 + r1 * 0.5), w2 = Math.round(t2.width * e2), h2 = Math.round(t2.height * e2), x2 = Math.round(i * passo - off + r2 * 90), y2 = Math.round(D.VH * 0.94 - (cam.y - 190) * par * 0.3); g.drawImage(t2, x2 - w2 / 2, y2 - h2, w2, h2); continue; }
+      const r1 = hash(i * 7 + sem), r2 = hash(i * 13 + sem), seca = ['zumbis', 'goblins', 'lobos'].includes(F.atual.regiao); if (R.semArvores) { if (r1 < 0.45) continue; const t2 = F.atual.regiao === 'minas' ? (r2 < 0.55 ? escora(R, forca, r1 < 0.75) : tingida('pedrao', F.atual.regiao, R.nevoa, forca)) : tingida(r2 < 0.55 ? 'pilar' : 'arco', F.atual.regiao, R.nevoa, forca); if (!t2) continue; const e2 = esc * 2.2 * (0.8 + r1 * 0.5), w2 = Math.round(t2.width * e2), h2 = Math.round(t2.height * e2), x2 = Math.round(i * passo - off + r2 * 90), y2 = Math.round(D.VH * 0.94 - (cam.y - 190) * par * 0.3); g.drawImage(t2, x2 - w2 / 2, y2 - h2, w2, h2); continue; }
       if (r1 < (seca ? 0.5 : 0.12)) continue;
       const nome = r2 < 0.5 && !seca ? 'arvorao' : 'arvore';
       const t = tingida(nome, F.atual.regiao, R.nevoa, forca); if (!t) continue;
@@ -156,6 +156,24 @@
       g.fillStyle = 'rgba(20,40,36,0.22)'; g.fillRect(x, y + ond + 8, T, tp - y - ond + 4);
       g.fillStyle = 'rgba(176,220,204,0.6)'; g.fillRect(x, y + ond, T, 1);
       if (hash(tx * 7 + Math.floor(tempo * 1.5)) < 0.18) { g.fillStyle = 'rgba(220,240,232,0.7)'; g.fillRect(x + Math.floor(hash(tx) * 12), y + ond + 2, 3, 1); }
+    }
+  }
+  // forno de colmeia das Ruínas: tijolo, boca acesa e, na hora, a labareda
+  function fornoImg() {
+    return guarda('forno', 40, 34, (q, w, h) => {
+      for (let y = 0; y < h; y++) { const r = Math.round(Math.sqrt(Math.max(0, 1 - Math.pow((h - y) / h, 2))) * (w / 2 - 1)); for (let x = w / 2 - r; x < w / 2 + r; x++) { const tij = ((Math.floor(y / 4) % 2 ? 3 : 0) + x) % 6 === 0 || y % 4 === 0; q.fillStyle = tij ? '#4a2a1c' : (y < 8 ? '#9a5a3a' : '#7a4630'); q.fillRect(x, y, 1, 1); } }
+      q.fillStyle = '#1a0c08'; q.fillRect(w / 2 - 6, h - 12, 12, 12); q.fillRect(w / 2 - 4, h - 14, 8, 2);
+    });
+  }
+  function fornos(A) {
+    if (!J.fornosDe) return; const l = J.fornosDe(A); if (!l.length) return; const im = fornoImg();
+    for (const v of l) {
+      if (v.x < cam.x - 60 || v.x > cam.x + D.VW + 60) continue; const f = J.fornoFase(v);
+      g.drawImage(im, Math.round(v.x - im.width / 2), Math.round(v.y - im.height + 2));
+      const boca = f.fogo ? 1 : f.aviso ? 0.5 + 0.5 * Math.sin(tempo * 30) : 0.25 + 0.1 * Math.sin(tempo * 3 + v.x);
+      g.fillStyle = 'rgba(255,' + Math.round(120 + boca * 80) + ',60,' + (0.35 + boca * 0.6) + ')'; g.fillRect(Math.round(v.x - 5), Math.round(v.y - 10), 10, 10);
+      brilhos.push([v.x, v.y - 8, 40 + boca * 60, '255,150,70', 0.3 + boca * 0.6]);
+      if (f.fogo) { const alt = 40 + 50 * Math.sin(f.k * Math.PI); for (let i = 0; i < 7; i++) { const yy = v.y - 30 - (i / 7) * alt, ww = 12 - i * 1.2 + Math.sin(tempo * 40 + i) * 2; g.fillStyle = i < 2 ? 'rgba(255,240,180,0.9)' : i < 5 ? 'rgba(255,170,70,0.85)' : 'rgba(220,80,40,0.7)'; g.fillRect(Math.round(v.x - ww / 2 + Math.sin(tempo * 25 + i) * 2), Math.round(yy - alt / 7), Math.round(ww), Math.ceil(alt / 7) + 1); } brilhos.push([v.x, v.y - 50, 110, '255,160,70', 0.9]); }
     }
   }
   function nevoa(R, a) {
@@ -222,7 +240,7 @@
     for (const [lx, tp, d] of ladeiras) for (let i = 0; i < L; i++) { const px = d > 0 ? lx * T + T - 1 - i : lx * T + i, k = i / L, yy = Math.round((tp - 1) * T + T * (k * k * (3 - 2 * k))); q.drawImage(at, p[0] + (((x0 + lx) * T + px) % LARG + LARG) % LARG, p[1], 1, 40, px, yy - SUP + 1, 1, 40); }
     // o chão de cada caminho tem a sua marca: neve, cinza, osso, lama, cascalho
     const marca = F.atual.regiao;
-    if (['lobos', 'goblins', 'zumbis', 'cobras', 'minas', 'mangue'].includes(marca)) for (let lx = 0; lx < PED; lx++) {
+    if (['lobos', 'goblins', 'zumbis', 'cobras', 'minas', 'mangue', 'ruinas'].includes(marca)) for (let lx = 0; lx < PED; lx++) {
       const tx = x0 + lx; if (tx >= F.W) break;
       for (let ty = 1; ty < F.H; ty++) {
         if (!(solido(tx, ty) && !solido(tx, ty - 1) && F.tile(tx, ty - 1) !== 3)) continue;
@@ -231,6 +249,7 @@
           const r = hash(tx * T + px + ty * 977), r2 = hash(tx * 131 + px * 7 + ty), x = lx * T + px;
           if (marca === 'lobos') { const gx = tx * T + px, hh = 1 + Math.floor(r * 1.6) + Math.max(0, Math.round(2.6 * Math.sin(gx * 0.09) + 1.4 * Math.sin(gx * 0.23 + 1.3))); q.fillStyle = 'rgba(214,224,238,0.92)'; q.fillRect(x, y0 - 3 - hh, 1, hh); q.fillStyle = 'rgba(150,164,190,0.7)'; q.fillRect(x, y0 - 3, 1, 1); if (r2 < 0.12) { q.fillStyle = 'rgba(226,234,246,0.85)'; q.fillRect(x, y0 - 6 - Math.floor(r2 * 60), 1, 1); } }
           else if (marca === 'goblins') { if (r < 0.3) { q.fillStyle = r < 0.12 ? 'rgba(46,40,38,0.85)' : 'rgba(96,88,82,0.7)'; q.fillRect(x, y0 - 3 + Math.floor(r2 * 3), 1, 1); } if (r2 < 0.015) { q.fillStyle = 'rgba(255,140,60,0.9)'; q.fillRect(x, y0 - 3, 1, 1); } }
+          else if (marca === 'ruinas') { if (r < 0.06) { q.fillStyle = r < 0.03 ? 'rgba(196,110,70,0.95)' : 'rgba(160,84,52,0.95)'; q.fillRect(x, y0 - 3, 2 + Math.floor(r2 * 3), 2); q.fillStyle = 'rgba(70,36,24,0.8)'; q.fillRect(x, y0 - 1, 2, 1); } else if (r < 0.3) { q.fillStyle = 'rgba(120,80,60,0.5)'; q.fillRect(x, y0 - 3, 1, 1); } }
           else if (marca === 'zumbis') { if (r < 0.035) { q.fillStyle = 'rgba(206,200,184,0.9)'; q.fillRect(x, y0 - 3, 2 + Math.floor(r2 * 2), 1); q.fillStyle = 'rgba(120,114,104,0.8)'; q.fillRect(x, y0 - 2, 2, 1); } else if (r < 0.22) { q.fillStyle = 'rgba(150,140,156,0.35)'; q.fillRect(x, y0 - 3, 1, 1); } }
           else if (marca === 'cobras' || marca === 'mangue') { q.fillStyle = 'rgba(14,22,8,0.3)'; q.fillRect(x, y0 - 3, 1, 4); if (r < 0.09) { q.fillStyle = 'rgba(190,220,150,0.32)'; q.fillRect(x, y0 - 3, 1 + Math.floor(r2 * 3), 1); } }
           else if (marca === 'minas') { if (r < 0.16) { q.fillStyle = r < 0.06 ? 'rgba(112,104,108,0.9)' : 'rgba(70,64,68,0.9)'; q.fillRect(x, y0 - 3, 2, 2); } if (r2 < 0.02) { q.fillStyle = 'rgba(230,130,60,0.9)'; q.fillRect(x, y0 - 2, 1, 1); } }
@@ -893,7 +912,7 @@
     for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) if (i >= 0 && i * PED < F.W) g.drawImage(pedaco(i), 0, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8), i * PED * T, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8));
     for (const d of A.decor) if (d.c === 1) { if (Math.abs(d.x - ox - D.VW / 2) < D.VW * 0.6 && A2.props[d.n]) contato(d.x, d.y - 1, A2.props[d.n][2] * d.e * 0.42); prop(d.n, d.x, d.y, d); if (d.n === 'cogumelos' && Math.abs(d.x - h.x) < D.VW) brilhos.push([d.x, d.y - 18, 54, '90,220,230', 0.5 + 0.15 * Math.sin(tempo * 2 + d.x)]); }
     if (D.vivo) { D.vivo.tapeteAtras(g); D.vivo.atras(g, brilhos); for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) { const pd = pedacos.get(i); if (pd && pd.luzes) for (const l of pd.luzes) brilhos.push([l[0], l[1], l[2] + Math.sin(tempo * 1.8 + l[0]) * 4, l[3], l[4]]); } }
-    desenhaMundo(); desenhaLar(false); desenhaCerco(); desenhaBaus(); if (D.vivo) D.vivo.bichos(g, dt);
+    fornos(F.atual); desenhaMundo(); desenhaLar(false); desenhaCerco(); desenhaBaus(); if (D.vivo) D.vivo.bichos(g, dt);
     for (const c of A.circulos) desenhaCirculo(c);
     for (const c of A.coleta) desenhaColeta(c);
     for (const f of A.fogos) { if (Math.abs(f.x - ox - D.VW / 2) > D.VW) continue; prop('fogo', f.x, f.y + 4); if (J.save.fogos[f.id] && (A.id !== 'lar' || !J.save.lar || J.save.lar.lenha > 0)) chama(f.x, f.y, h.estado === 'dorme' ? 0.95 : 1.1); else if (J.save.fogos[f.id]) brilhos.push([f.x, f.y - 8, 40, '255,120,60', 0.5]); }

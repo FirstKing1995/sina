@@ -171,7 +171,7 @@
     function titulos(c) {
       const s = J.save, g = el('div', 'cartoes largos');
       for (const e in C.ESPECIES) {
-        const n = s.mortes[e] || 0, q = el('div', 'cartao alto'), t = el('div', 'c-cab'); t.append(retratoBicho({ lobo: 'lobo', cobra: 'cobra', zumbi: 'zumbi', goblin: 'goblin', pedra: 'golem', mare: 'caranguejo' }[e], true), el('b', '', C.ESPECIES[e].nome), el('em', '', n)); q.append(t);
+        const n = s.mortes[e] || 0, q = el('div', 'cartao alto'), t = el('div', 'c-cab'); t.append(retratoBicho({ lobo: 'lobo', cobra: 'cobra', zumbi: 'zumbi', goblin: 'goblin', pedra: 'golem', mare: 'caranguejo', barro: 'boneco' }[e], true), el('b', '', C.ESPECIES[e].nome), el('em', '', n)); q.append(t);
         const tr = el('div', 'trilha'); for (const x of C.TITULOS[e]) { const m = el('div', 'medalha' + (n >= x[0] ? ' ganha' : '')); m.append(UI.ico(n >= x[0] ? 'taca' : 'cadeado')); const y = el('div'); y.append(el('b', '', x[1]), el('small', '', x[2])); m.append(y, el('em', '', n >= x[0] ? 'seu' : n + '/' + x[0])); if (n < x[0]) m.append(barra(n, x[0])); tr.append(m); }
         q.append(tr); g.append(q);
       }

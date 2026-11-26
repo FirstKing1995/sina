@@ -101,9 +101,10 @@
 
   // ---------- espécies e títulos ----------
   C.ESPECIES = {
-    mare: { nome: 'Gente da maré', um: 'caranguejo', cor: '#7fc0b0' }, pedra: { nome: 'Gente de pedra', um: 'golem', cor: '#d0a070' }, lobo: { nome: 'Lobos', um: 'lobo', cor: '#9fb4d0' }, cobra: { nome: 'Cobras', um: 'cobra', cor: '#b8c060' }, zumbi: { nome: 'Zumbis', um: 'zumbi', cor: '#b8a0c8' }, goblin: { nome: 'Goblins', um: 'goblin', cor: '#d8a060' },
+    barro: { nome: 'Gente de barro', um: 'boneco', cor: '#d08a5a' }, mare: { nome: 'Gente da maré', um: 'caranguejo', cor: '#7fc0b0' }, pedra: { nome: 'Gente de pedra', um: 'golem', cor: '#d0a070' }, lobo: { nome: 'Lobos', um: 'lobo', cor: '#9fb4d0' }, cobra: { nome: 'Cobras', um: 'cobra', cor: '#b8c060' }, zumbi: { nome: 'Zumbis', um: 'zumbi', cor: '#b8a0c8' }, goblin: { nome: 'Goblins', um: 'goblin', cor: '#d8a060' },
   };
   C.TITULOS = {
+    barro: [[25, 'Quebra-potes', '+12% de dano na gente de barro'], [100, 'Ceramista', '+30% de dano neles'], [250, 'Irmão de Barro', 'a casca deles não segura mais os seus golpes']],
     mare: [[25, 'Catador', '+12% de dano na gente da maré'], [100, 'Pescador', '+30% de dano neles, e a maré alta não te deixa lento'], [250, 'Filho da Maré', 'a casca deles não segura mais os seus golpes']],
     pedra: [[25, 'Quebra-pedra', '+12% de dano na gente de pedra'], [100, 'Mineiro', 'Pele de Pedra: os golpes deles tiram 20% menos de você'], [250, 'Coração de Ferro', 'a casca deles não segura mais os seus golpes']],
     lobo: [[25, 'Perseguidor de Lobos', '+12% de dano em lobos'], [100, 'Caçador de Lobos', 'Faro do Lobo: você corre 12% mais, e a esquiva gasta metade do vigor'], [250, 'Flagelo da Matilha', 'lobos fogem feridos e o bote deles não derruba você']],
@@ -118,6 +119,7 @@
     vento: { nome: 'Passo do Vento', custo: 30, espera: 8, cor: '#9fd8ff', desc: 'Por 6 segundos, corra e esquive sem gastar vigor.' },
     espinhos: { nome: 'Espinhos da Mata', custo: 34, espera: 2, cor: '#a8d060', desc: 'Três espinhos que atravessam a fila toda.' },
     folego: { nome: 'Fôlego da Terra', custo: 48, espera: 16, cor: '#ffe39a', desc: 'A terra devolve um terço da sua vida.' },
+    cacos: { nome: 'Cacos', custo: 30, espera: 6, cor: '#e09060', desc: 'Joga um leque de cacos quentes para a frente.' },
     mare: { nome: 'Maré', custo: 34, espera: 16, cor: '#7fd0c0', desc: 'A água lava: cura 30, tira o veneno e empurra quem estiver perto.' },
     ferro: { nome: 'Pele de Ferro', custo: 36, espera: 14, cor: '#d8a070', desc: 'Por 6 segundos, os golpes tiram metade e não derrubam você.' },
     tremor: { nome: 'Tremor', custo: 38, espera: 4, cor: '#d8b070', desc: 'Soca o chão: duas ondas de pedra.' },
@@ -125,6 +127,10 @@
 
   // ---------- caderno do caçador: [o que é, o que faz, como cair em cima] ----------
   C.BICHOS = {
+    boneco: ['Um homem que o Oleiro começou e largou.', 'Lento, bate com o braço comprido e levanta depois de cair.', 'Termine com golpe forte, senão ele se junta de novo.'],
+    pote: ['Uma ânfora velha que aprendeu a andar.', 'Salta mordendo com a boca quebrada.', 'Um golpe bem dado e ela vira caco.'],
+    guardiao: ['Guardava a oficina. Ainda guarda.', 'Escudo na frente e estocada longa de lança.', 'Gaste o escudo com golpe pesado ou pegue por trás.'],
+    molde: ['A primeira tentativa. Grande demais, quente demais.', 'Salta, chama os rejeitados e solta fogo do peito.', 'Depois do fogo ele esfria: é a hora de bater.'],
     caranguejo: ['Do tamanho de um cachorro, e com mais raiva.', 'Anda de lado, rápido, e belisca duas vezes. A casca segura golpe fraco.', 'Golpe forte ou machado: a casca racha.'],
     afogado: ['Saiu para pescar e a maré não deixou voltar.', 'Joga o arpão de longe e recua.', 'Feche a distância: de perto ele só tem as mãos.'],
     guaiamum: ['O avô de todos os caranguejos do mangue.', 'Pinça pesada, duas vezes seguidas, e não recua.', 'Espere a segunda pinçada e bata nas costas.'],
@@ -162,6 +168,11 @@
   // vel px/s, alcance do golpe, prep: aviso, golpe: duração, recua: descanso, firme: golpes até cambalear
   // reflexo: chance de reagir ao seu golpe; flanco: vontade de ir às suas costas; finta: golpe falso; bruto: não recua
   C.TIPOS = {
+    // a gente de barro das Ruínas do Oleiro: os que não deram certo
+    boneco: { nome: 'Boneco rejeitado', esp: 'barro', spr: 'boneco', hp: 66, dano: 17, vel: 58, visao: 260, alcance: 54, prep: 0.46, golpe: 0.24, recua: 0.45, firme: 4, levanta: 0.35, avanco: 110, w: 22, h: 58, cai: { pedra: 0.6, fibra: 0.4, osso: 0.2 }, passo: 9 },
+    pote: { nome: 'Pote que anda', esp: 'barro', spr: 'pote', hp: 30, dano: 12, vel: 96, visao: 230, alcance: 58, prep: 0.3, golpe: 0.24, recua: 0.5, firme: 2, reflexo: 0.4, salta: 240, w: 22, h: 26, cai: { pedra: 0.5, prata: 0.08 }, passo: 6 },
+    guardiao: { nome: 'Guardião de louça', esp: 'barro', spr: 'guardiao', hp: 140, dano: 21, vel: 62, visao: 290, alcance: 78, prep: 0.42, golpe: 0.24, recua: 0.4, firme: 9, reflexo: 0.7, escudo: true, seguidos: 2, avanco: 140, w: 24, h: 60, cai: { ferro: 1, pedra: 1, prata: 0.3 }, passo: 9 },
+    molde: { nome: 'O Primeiro Molde', esp: 'barro', spr: 'molde', hp: 1040, dano: 25, vel: 64, visao: 520, alcance: 66, prep: 0.56, golpe: 0.28, recua: 0.6, firme: 12, w: 50, h: 98, chefe: true, seguidos: 2, poder: 'salto', chama: 'barro', chamaL: ['boneco', 'pote', 'boneco'], cai: { pedra: 6, prata: 4, ferro: 4 }, passo: 10, magia: 'cacos' },
     // a gente da maré do Mangue
     caranguejo: { nome: 'Caranguejo do mangue', esp: 'mare', spr: 'caranguejo', hp: 46, dano: 13, vel: 104, visao: 230, alcance: 52, prep: 0.3, golpe: 0.22, recua: 0.45, firme: 3, reflexo: 0.45, casca: true, seguidos: 2, w: 30, h: 22, cai: { carne: 0.7, presa: 0.25 }, passo: 6 },
     afogado: { nome: 'Pescador afogado', esp: 'mare', spr: 'afogado', hp: 58, dano: 15, vel: 60, visao: 340, alcance: 260, prep: 0.6, golpe: 0.2, recua: 0.7, firme: 3, reflexo: 0.3, atira: 'flechaI', distancia: 170, levanta: 0.2, w: 20, h: 56, cai: { trapo: 0.6, fibra: 0.6, osso: 0.3, flecha: 0.8 }, passo: 9 },
@@ -204,6 +215,7 @@
 
   // ---------- regiões ----------
   C.REGIOES = {
+    ruinas: { frase: 'Aqui ele aprendeu a fazer você. Aqui ficaram os erros.', nome: 'Ruínas do Oleiro', fundo: 'f_ruinas', p: 'ruinas', nevoa: '170,134,108', luz: [124, 106, 94], amb: 'cinzas', mus: 'ruinas', ar: ['cinza', 'brasinha', 'cinza'], terra: [40, 26, 18], semArvores: true },
     mangue: { frase: 'A água sobe duas vezes por dia. Os mortos, uma vez só.', nome: 'Mangue das Marés', fundo: 'f_mangue', p: 'mangue', nevoa: '104,132,124', luz: [104, 122, 116], amb: 'rio', mus: 'mangue', ar: ['vagalume', 'nevoa', 'esporo'], terra: [26, 30, 24] },
     minas: { frase: 'Ninguém subiu de volta.', nome: 'Minas de Ferro', fundo: 'f_minas', p: 'minas', nevoa: '92,84,96', luz: [96, 90, 104], amb: 'mina', mus: 'minas', ar: ['cinza', 'cinza', 'brasinha'], terra: [24, 20, 22], semArvores: true, fundo0: 0.3 },
     floresta: { frase: 'Onde o barro acordou.', nome: 'Floresta Antiga', fundo: 'f_floresta', p: 'floresta', nevoa: '96,168,156', luz: [150, 172, 166], amb: 'brisa', ar: ['vagalume', 'vagalume', 'folha', 'esporo'], terra: [30, 22, 16] },

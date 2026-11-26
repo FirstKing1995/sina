@@ -17,7 +17,7 @@
   const LIMITE = { pa: 1, picareta: 1 }; const jaTem0 = J.jaTem; J.jaTem = (r) => jaTem0(r) || (LIMITE[r.id] && (J.save.inv[r.id] || 0) >= LIMITE[r.id]);
   // o que cada lugar guarda lá em cima e debaixo da terra
   const NINHO = { floresta: ['ovo', 'ovo', 'mel', 'fruta', 'erva', 'fibra'], vale: ['ovo', 'mel', 'mel', 'fruta', 'erva'], lobos: ['ovo', 'presa', 'osso', 'couro'], cobras: ['ovo', 'pele', 'mel', 'erva'], zumbis: ['ovo', 'trapo', 'osso', 'ferro'], goblins: ['ovo', 'ferro', 'trapo', 'orelha'] };
-  const ENTERRADO = { mangue: ['osso', 'prata', 'ferro', 'presa', 'trapo'], minas: ['ferro', 'ferro', 'prata', 'osso', 'pedra'], floresta: ['osso', 'ferro', 'pedra', 'trapo', 'prata'], vale: ['pedra', 'ferro', 'osso', 'trapo', 'prata'], lobos: ['osso', 'osso', 'ferro', 'presa', 'prata'], cobras: ['pele', 'prata', 'osso', 'ferro'], zumbis: ['osso', 'trapo', 'ferro', 'ferro', 'prata'], goblins: ['ferro', 'ferro', 'orelha', 'trapo', 'prata'] };
+  const ENTERRADO = { ruinas: ['pedra', 'prata', 'ferro', 'osso', 'pedra'], mangue: ['osso', 'prata', 'ferro', 'presa', 'trapo'], minas: ['ferro', 'ferro', 'prata', 'osso', 'pedra'], floresta: ['osso', 'ferro', 'pedra', 'trapo', 'prata'], vale: ['pedra', 'ferro', 'osso', 'trapo', 'prata'], lobos: ['osso', 'osso', 'ferro', 'presa', 'prata'], cobras: ['pele', 'prata', 'osso', 'ferro'], zumbis: ['osso', 'trapo', 'ferro', 'ferro', 'prata'], goblins: ['ferro', 'ferro', 'orelha', 'trapo', 'prata'] };
 
   // ---------- monta os extras da área (uma vez) ----------
   J.extras = function (A) {
@@ -29,7 +29,7 @@
     const ant = F.grade; F.grade = A.grade; const antW = F.W; F.W = W;
     // árvores altas: tronco com cipó, galhos lá em cima com um ninho
     for (let tx = 24; tx < W - 24; tx += 30 + Math.floor(hash(sem + tx) * 30)) {
-      const x = tx * T + 8; if (hash(sem + tx * 3) > (A.id.startsWith('covil') || reg === 'minas' ? 0 : reg === 'goblins' || reg === 'zumbis' ? 0.45 : 0.62) || !livre(tx, 3) || proibido(x)) continue;
+      const x = tx * T + 8; if (hash(sem + tx * 3) > (A.id.startsWith('covil') || reg === 'minas' || reg === 'ruinas' ? 0 : reg === 'goblins' || reg === 'zumbis' ? 0.45 : 0.62) || !livre(tx, 3) || proibido(x)) continue;
       const g = A.topo[tx], alt = 9 + Math.floor(hash(tx * 7 + sem) * 4), top = g - alt; if (top < 6 || !vazio(tx, top - 3, g - 1, 3)) continue;
       for (let k = -2; k <= 2; k++) F.poe(tx + k, top, 2);
       E.arvores.push({ x, tx, y0: g * T, y1: top * T, id: A.id + '_a' + tx });

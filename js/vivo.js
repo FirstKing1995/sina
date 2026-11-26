@@ -25,7 +25,7 @@
   };
 
   // ---------- peças tingidas com a cor do lugar ----------
-  const TINTA = { minas: ['60,52,58', 0.5], floresta: ['54,112,104', 0.34], vale: ['96,120,84', 0.22], lobos: ['58,74,104', 0.55], mangue: ['92,104,52', 0.3], cobras: ['92,104,52', 0.3], zumbis: ['86,74,98', 0.55], goblins: ['112,74,50', 0.5] };
+  const TINTA = { minas: ['60,52,58', 0.5], floresta: ['54,112,104', 0.34], vale: ['96,120,84', 0.22], lobos: ['58,74,104', 0.55], mangue: ['92,104,52', 0.3], cobras: ['92,104,52', 0.3], zumbis: ['86,74,98', 0.55], ruinas: ['112,74,50', 0.5] , goblins: ['112,74,50', 0.5] };
   const prontas = new Map();
   function peca(n, reg, modo) {
     const k = n + reg + (modo || ''); let c = prontas.get(k); if (c) return c; const p = DET[n], im = img.detalhes; if (!p || !im) return null;
@@ -45,7 +45,7 @@
     minas: [['seco', 0.05], ['estaca', 0.02], ['pote', 0.012], ['cogu1', 0.02]],
     floresta: [['capim1', 0.3], ['capim2', 0.2], ['flor2', 0.07], ['flor1', 0.05], ['cogu1', 0.016], ['folhas', 0.03], ['galho', 0.015]], vale: [['capim1', 0.3], ['capim2', 0.2], ['flor1', 0.12], ['flor2', 0.08], ['cogu2', 0.02], ['galho', 0.014]],
     lobos: [['seco', 0.16], ['capim1', 0.1], ['folhas', 0.02], ['galho', 0.02]], mangue: [['capim2', 0.24], ['junco', 0.15], ['capim1', 0.18], ['cogu1', 0.02], ['cogu2', 0.02]], cobras: [['capim2', 0.24], ['junco', 0.15], ['capim1', 0.18], ['cogu1', 0.02], ['cogu2', 0.02]],
-    zumbis: [['seco', 0.2], ['capim1', 0.06], ['estaca', 0.018], ['pote', 0.012], ['cogu1', 0.012]], goblins: [['seco', 0.2], ['folhas', 0.04], ['pote', 0.02], ['estaca', 0.02], ['galho', 0.02]],
+    zumbis: [['seco', 0.2], ['capim1', 0.06], ['estaca', 0.018], ['pote', 0.012], ['cogu1', 0.012]], ruinas: [['seco', 0.2], ['folhas', 0.04], ['pote', 0.02], ['estaca', 0.02], ['galho', 0.02]], goblins: [['seco', 0.2], ['folhas', 0.04], ['pote', 0.02], ['estaca', 0.02], ['galho', 0.02]],
   };
   let areaV = null, brotos = [], penduras = [];
   // monta uma vez por área: o que brota do chão e o que pende das bordas
@@ -80,7 +80,7 @@
   };
   // a lâmina corta o capim: folhas voam e o tufo fica baixo por um tempo
   let ultCorte = 0;
-  const VERDE = { floresta: ['#3e7a5c', '#2c5a4a', '#6aa07a'], vale: ['#5c8a4a', '#7aa05a', '#46703c'], lobos: ['#4a5a6a', '#6a7a86'], mangue: ['#7a8a3a', '#5c6c2a'], cobras: ['#7a8a3a', '#5c6c2a'], zumbis: ['#6a5c72', '#4a4052'], goblins: ['#8a5a3a', '#6a4228'] };
+  const VERDE = { floresta: ['#3e7a5c', '#2c5a4a', '#6aa07a'], vale: ['#5c8a4a', '#7aa05a', '#46703c'], lobos: ['#4a5a6a', '#6a7a86'], mangue: ['#7a8a3a', '#5c6c2a'], cobras: ['#7a8a3a', '#5c6c2a'], zumbis: ['#6a5c72', '#4a4052'], ruinas: ['#8a5a3a', '#6a4228'] , goblins: ['#8a5a3a', '#6a4228'] };
   function folhas(x, y, n, dir) { const c = VERDE[F.atual.regiao] || VERDE.floresta; for (let i = 0; i < n; i++) { const vida = rnd(0.5, 1.2); J.poe({ tipo: 'folha', x: x + rnd(-5, 5), y: y - rnd(2, 14), vx: dir * rnd(10, 90) + rnd(-30, 30), vy: rnd(-130, -20), grav: 190, vida, max: vida, cor: um(c), tam: 2 }); } }
   V.corta = function (h) {
     if (ultCorte === J.golpeId) return; const cx = J.golpeCaixa(h); let n = 0;
@@ -93,7 +93,7 @@
   let antesChao = true;
   V.rastros = function (dt) { const h = J.heroi; if (!h) return; if (h.noChao && Math.abs(h.vx) > 110 && Math.random() < dt * 5 && brotos.some((b) => Math.abs(b.x - h.x) < 10 && MOLE[b.n] > 0.1)) folhas(h.x, h.y, 1, -Math.sign(h.vx)); if (h.noChao && !antesChao && h.amassa > 0.5) folhas(h.x, h.y, 4, 0); antesChao = h.noChao; };
   // ---------- tapete de capim: folha por folha, com vento, gente passando e lâmina cortando ----------
-  const GRAMA = { minas: [['#2a2420', '#3a302a', '#4a3a30'], 0.22, 3], floresta: [['#1f4a3c', '#2f6a52', '#4f8f6a'], 1, 6], vale: [['#3a5a2c', '#5a7e3a', '#86a85a'], 1, 7], lobos: [['#2c3a48', '#4a5a6a', '#7a8a96'], 0.55, 4], mangue: [['#3a4a1c', '#5c6a2a', '#8a9a46'], 1, 7], cobras: [['#3a4a1c', '#5c6a2a', '#8a9a46'], 1, 7], zumbis: [['#3a3040', '#564a5c', '#7a6a7a'], 0.5, 4], goblins: [['#4a2c18', '#6a4426', '#9a6a3a'], 0.5, 4] };
+  const GRAMA = { minas: [['#2a2420', '#3a302a', '#4a3a30'], 0.22, 3], floresta: [['#1f4a3c', '#2f6a52', '#4f8f6a'], 1, 6], vale: [['#3a5a2c', '#5a7e3a', '#86a85a'], 1, 7], lobos: [['#2c3a48', '#4a5a6a', '#7a8a96'], 0.55, 4], mangue: [['#3a4a1c', '#5c6a2a', '#8a9a46'], 1, 7], cobras: [['#3a4a1c', '#5c6a2a', '#8a9a46'], 1, 7], zumbis: [['#3a3040', '#564a5c', '#7a6a7a'], 0.5, 4], ruinas: [['#4a2c18', '#6a4426', '#9a6a3a'], 0.5, 4] , goblins: [['#4a2c18', '#6a4426', '#9a6a3a'], 0.5, 4] };
   const cortes = new Map();
   function tapete(g, frente) {
     const A = F.atual, G = GRAMA[A.regiao] || GRAMA.floresta, dens = A.id.startsWith('covil') ? G[1] * 0.4 : G[1], x0 = Math.max(2, Math.floor((cam.x - 8) / T)), x1 = Math.min(A.W - 3, Math.ceil((cam.x + D.VW + 8) / T));
@@ -115,7 +115,7 @@
 
   // ---------- dentro da terra: pedras, ossos, cristais (pintados nos pedaços guardados) ----------
   V.enterra = function (q, tx0, n, solido, luzes) {
-    const A = F.atual, reg = A.regiao, OB = { minas: ['seixo', 'seixos', 'cristal', 'brasa', 'brasa', 'cranio'], floresta: ['seixo', 'seixos', 'seixo', 'cranio', 'cristal'], vale: ['seixo', 'seixos', 'seixos', 'costela'], lobos: ['seixo', 'seixos', 'costela', 'cranio', 'cristal'], mangue: ['seixos', 'cranio', 'costela', 'cristal'], cobras: ['seixos', 'cranio', 'costela', 'cristal'], zumbis: ['cranio', 'costela', 'cranio', 'seixo'], goblins: ['seixo', 'brasa', 'seixos', 'brasa', 'cranio'] }[reg] || ['seixo'];
+    const A = F.atual, reg = A.regiao, OB = { minas: ['seixo', 'seixos', 'cristal', 'brasa', 'brasa', 'cranio'], floresta: ['seixo', 'seixos', 'seixo', 'cranio', 'cristal'], vale: ['seixo', 'seixos', 'seixos', 'costela'], lobos: ['seixo', 'seixos', 'costela', 'cranio', 'cristal'], mangue: ['seixos', 'cranio', 'costela', 'cristal'], cobras: ['seixos', 'cranio', 'costela', 'cristal'], zumbis: ['cranio', 'costela', 'cranio', 'seixo'], ruinas: ['seixo', 'brasa', 'seixos', 'brasa', 'cranio'] , goblins: ['seixo', 'brasa', 'seixos', 'brasa', 'cranio'] }[reg] || ['seixo'];
     for (let ty = 8; ty < F.H - 2; ty += 2) for (let tx = tx0; tx < tx0 + n; tx += 3) {
       if (hash(tx * 131 + ty * 57) > 0.13) continue; let ok = true; for (let dx = -1; dx <= 2 && ok; dx++) for (let dy = -2; dy <= 1; dy++) if (!solido(tx + dx, ty + dy)) { ok = false; break; } if (!ok) continue;
       const m = OB[Math.floor(hash(tx * 7 + ty) * OB.length)], c = peca(m, reg); if (!c) continue; let prof = 0; while (prof < 14 && solido(tx, ty - prof)) prof++;
@@ -141,12 +141,12 @@
   };
   // cipós pretos bem perto da câmera, no alto
   V.moldura = function (g) {
-    const A = F.atual; if (A.id.startsWith('covil') || A.regiao === 'minas') { alto(g, ['estala'], 260, 1.6); return; } const L = { floresta: ['cipo1', 'raiz2', 'cipo2'], mangue: ['cipo1', 'cipo2', 'raiz1'], cobras: ['cipo1', 'cipo2', 'raiz1'], vale: ['cipo2'], zumbis: ['raiz1', 'raiz2'], goblins: ['raiz1'], lobos: null }[A.regiao]; if (L) alto(g, L, A.regiao === 'vale' || A.regiao === 'goblins' ? 520 : 300, 1.9);
+    const A = F.atual; if (A.id.startsWith('covil') || A.regiao === 'minas') { alto(g, ['estala'], 260, 1.6); return; } const L = { floresta: ['cipo1', 'raiz2', 'cipo2'], mangue: ['cipo1', 'cipo2', 'raiz1'], cobras: ['cipo1', 'cipo2', 'raiz1'], vale: ['cipo2'], zumbis: ['raiz1', 'raiz2'], ruinas: ['raiz1'], goblins: ['raiz1'], lobos: null }[A.regiao]; if (L) alto(g, L, A.regiao === 'vale' || A.regiao === 'goblins' ? 520 : 300, 1.9);
   };
   function alto(g, l, p, e) { const off = cam.x * 1.28, i0 = Math.floor(off / p) - 1; for (let i = i0; i < i0 + Math.ceil(D.VW / p) + 2; i++) { const r = hash(i * 41 + 9); if (r < 0.42) continue; const n = l[Math.floor(hash(i * 3 + 1) * l.length)], c = peca(n, F.atual.regiao, 'sombra'); if (!c) continue; const es = e * (0.8 + r * 0.6), x = Math.round(i * p - off + r * 140), y = Math.round(-8 - r * 14 - (cam.y - 190) * 0.12); g.save(); g.translate(x, y); g.transform(1, 0, Math.sin(t * 0.9 + i) * 0.03 + V.vento(cam.x + x) * 0.03, 1, 0, 0); g.drawImage(c, Math.round(-c.width * es / 2), 0, Math.round(c.width * es), Math.round(c.height * es)); g.restore(); } }
 
   // ---------- bichinhos ----------
-  const QUEM = { minas: ['morcego', 'rato', 'rato'], floresta: ['corvo', 'coelho', 'coelho', 'borboleta', 'borboleta', 'sapo'], vale: ['coelho', 'borboleta', 'borboleta', 'corvo', 'sapo'], lobos: ['corvo', 'corvo', 'coelho'], mangue: ['sapo', 'sapo', 'borboleta', 'rato'], cobras: ['sapo', 'sapo', 'borboleta', 'rato'], zumbis: ['corvo', 'corvo', 'rato', 'morcego'], goblins: ['rato', 'corvo', 'rato'] };
+  const QUEM = { minas: ['morcego', 'rato', 'rato'], floresta: ['corvo', 'coelho', 'coelho', 'borboleta', 'borboleta', 'sapo'], vale: ['coelho', 'borboleta', 'borboleta', 'corvo', 'sapo'], lobos: ['corvo', 'corvo', 'coelho'], mangue: ['sapo', 'sapo', 'borboleta', 'rato'], cobras: ['sapo', 'sapo', 'borboleta', 'rato'], zumbis: ['corvo', 'corvo', 'rato', 'morcego'], ruinas: ['rato', 'corvo', 'rato'] , goblins: ['rato', 'corvo', 'rato'] };
   let bichos = [], nasceT = 1, areaB = null;
   function brota() {
     const A = F.atual, covil = A.id.startsWith('covil'), noite = J.ehNoite && J.ehNoite(); let l = covil ? ['morcego', 'morcego', 'rato'] : QUEM[A.regiao] || []; if (noite) l = l.map((n) => (n === 'borboleta' || n === 'corvo' ? 'morcego' : n)); if (J.cl && J.cl('chuva', 'tempestade') > 0.4) l = l.map((n) => (n === 'borboleta' ? 'sapo' : n)); if (!l.length) return;
@@ -194,7 +194,7 @@
     const S = window.Som, h = J.heroi; if (!S || !S.bicho || !h) return; const A = F.atual, covil = A.id.startsWith('covil') || (J.abrigado && J.abrigado()), noite = J.ehNoite(), mau = J.cl('chuva', 'tempestade') > 0.4;
     somT -= dt; if (somT <= 0) {
       somT = rnd(1.8, 5.5); const pan = rnd(-0.8, 0.8), v = rnd(0.25, 0.8); let l;
-      if (covil || A.regiao === 'minas') l = ['gota', 'gota', 'gota', 'morcego', 'sopro']; else if (mau) l = A.regiao === 'cobras' ? ['sapo', 'sapo'] : []; else l = { floresta: noite ? ['grilo', 'grilo', 'coruja', 'grilo'] : ['pio', 'pio', 'pio2', 'pio2', 'corvo'], vale: noite ? ['grilo', 'grilo', 'sapo', 'coruja'] : ['pio', 'pio2', 'pio', 'pio2'], lobos: noite ? ['coruja', 'sopro', 'uivo', 'sopro'] : ['corvo', 'sopro', 'sopro'], mangue: noite ? ['sapo', 'sapo', 'grilo'] : ['sapo', 'pio2', 'grilo', 'gota'], cobras: noite ? ['sapo', 'sapo', 'grilo'] : ['sapo', 'pio2', 'grilo', 'gota'], zumbis: ['corvo', 'coruja', 'sopro', 'gota'], goblins: noite ? ['grilo', 'coruja', 'sopro'] : ['corvo', 'sopro'] }[A.regiao] || [];
+      if (covil || A.regiao === 'minas') l = ['gota', 'gota', 'gota', 'morcego', 'sopro']; else if (mau) l = A.regiao === 'cobras' ? ['sapo', 'sapo'] : []; else l = { floresta: noite ? ['grilo', 'grilo', 'coruja', 'grilo'] : ['pio', 'pio', 'pio2', 'pio2', 'corvo'], vale: noite ? ['grilo', 'grilo', 'sapo', 'coruja'] : ['pio', 'pio2', 'pio', 'pio2'], lobos: noite ? ['coruja', 'sopro', 'uivo', 'sopro'] : ['corvo', 'sopro', 'sopro'], mangue: noite ? ['sapo', 'sapo', 'grilo'] : ['sapo', 'pio2', 'grilo', 'gota'], cobras: noite ? ['sapo', 'sapo', 'grilo'] : ['sapo', 'pio2', 'grilo', 'gota'], zumbis: ['corvo', 'coruja', 'sopro', 'gota'], ruinas: noite ? ['grilo', 'coruja', 'sopro'] : ['corvo', 'sopro'] , goblins: noite ? ['grilo', 'coruja', 'sopro'] : ['corvo', 'sopro'] }[A.regiao] || [];
       if (l.length && !J.chefeAtivo) S.bicho(um(l), v, pan);
     }
     // o coração, quando a vida está por um fio
