@@ -10,7 +10,7 @@
 
   const nivelPet = () => { const p = J.save.pet; return p ? Math.min(3, 1 + Math.floor((p.xp || 0) / 60)) : 1; };
   J.nivelPet = nivelPet;
-  J.escPet = () => [0, 0.55, 0.66, 0.78][nivelPet()];
+  J.escPet = () => [0, 0.58, 0.72, 0.86][nivelPet()];
 
   // o filhote espera na Toca do Alfa
   J.filhote = function () {

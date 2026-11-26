@@ -111,6 +111,13 @@
     return true;
   }
   J.cena = cena;
+  // o chefe que tem vídeo mostra ele na primeira vez que acorda; a luta começa quando o vídeo acaba
+  const acordaChefe0 = J.acordaChefe;
+  J.acordaChefe = function (e) {
+    const cn = 'chefe_' + e.tipo, s0 = J.save; s0.cenas = s0.cenas || {};
+    if (!J.chefeAtivo && CENAS[cn] && !s0.cenas[cn] && modo === 'jogo') { s0.cenas[cn] = 1; J.salvar(); modo = 'cena'; mostra(null); cena(cn, e.T.nome, CENAS[cn].frase || '', () => { modo = 'jogo'; mostra(null); acordaChefe0(e); }); return; }
+    acordaChefe0(e);
+  };
 
   // ---------- avisos na tela ----------
   let sussT = 0, areaT = 0, areaVista = null;

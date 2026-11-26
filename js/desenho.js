@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=21' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=22' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -645,7 +645,9 @@
     if (!P) return;
     let q = 0; const es = J.escPet();
     if (P.estado === 'dorme') q = 7; else if (P.tMorde > 0) q = 5; else if (P.tDor > 0.6) q = 6; else if (!P.noChao) q = 4; else if (Math.abs(P.vx) > 8) q = [1, 2, 3, 2][Math.floor(P.andou / 9) % 4];
-    sombra(P.x, P.y, 10 * es / 0.6); pinta(P.x, P.y, P.dir, q, es, q === 0 ? 1 + Math.sin(tempo * 3) * 0.02 : 1);
+    sombra(P.x, P.y, 10 * es / 0.6);
+    const an = mt.anda; if (an && img.m_guara_anda && q >= 1 && q <= 3) { const n = Math.floor(P.andou / an.passo) % an.n; g.save(); g.translate(Math.round(P.x), Math.round(P.y + 1)); g.scale(P.dir * es, es); g.drawImage(img.m_guara_anda, n * an.w, 0, an.w, an.h, -Math.round(an.w / 2), -an.h + 1, an.w, an.h); g.restore(); return; }
+    pinta(P.x, P.y, P.dir, q, es, q === 0 ? 1 + Math.sin(tempo * 3) * 0.02 : 1);
   }
   function desenhaHum() {
     const H = J.hum; if (!H || H.dentro) return;
