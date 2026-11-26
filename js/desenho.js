@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=24' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=25' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -133,6 +133,19 @@
       if (luz) { q.fillStyle = mix([30, 26, 24]); q.fillRect(w / 2, 9, 1, 13); q.fillRect(w / 2 - 3, 22, 7, 8); q.fillStyle = 'rgba(255,176,90,' + (0.95 - forca * 0.5) + ')'; q.fillRect(w / 2 - 1, 24, 3, 4); q.fillStyle = 'rgba(255,150,70,' + (0.25 - forca * 0.15) + ')'; q.fillRect(w / 2 - 6, 19, 13, 14); }
     });
   }
+  // neblina rasteira: uma faixa fina que respira na altura dos pés (cemitério, alagado, vale, serra)
+  const NEB = { zumbis: 0.32, cobras: 0.26, vale: 0.16, lobos: 0.14, minas: 0.12 };
+  function neblinaChao(A, ox) {
+    const R = regiao(), k = NEB[A.regiao]; if (!k) return;
+    const t = guarda('nch' + R.nevoa, 2, 32, (q, w, h) => { const gr = q.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(' + R.nevoa + ',0)'); gr.addColorStop(0.7, 'rgba(' + R.nevoa + ',1)'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',0.5)'); q.fillStyle = gr; q.fillRect(0, 0, w, h); });
+    const noite = 0.6 + 0.4 * noiteK; g.save();
+    for (let tx = Math.max(0, Math.floor(ox / T) - 1); tx <= Math.min(A.W - 1, Math.floor((ox + D.VW) / T) + 1); tx++) {
+      const tp = A.topo[tx]; if (tp >= F.H) continue;
+      const a = k * noite * (0.55 + 0.45 * Math.sin(tempo * 0.45 + tx * 0.23) * Math.sin(tempo * 0.21 + tx * 0.071));
+      if (a <= 0.01) continue; g.globalAlpha = a; g.drawImage(t, tx * T, tp * T - 26, T, 30);
+    }
+    g.restore();
+  }
   function nevoa(R, a) {
     g.drawImage(guarda('nev' + R.nevoa + a, 2, 128, (q, w, h) => { const gr = q.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(' + R.nevoa + ',0)'); gr.addColorStop(0.7, 'rgba(' + R.nevoa + ',' + a + ')'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',' + a * 0.7 + ')'); q.fillStyle = gr; q.fillRect(0, 0, w, h); }), 0, D.VH * 0.3, D.VW, D.VH * 0.7);
   }
@@ -195,6 +208,23 @@
       }
     }
     for (const [lx, tp, d] of ladeiras) for (let i = 0; i < L; i++) { const px = d > 0 ? lx * T + T - 1 - i : lx * T + i, k = i / L, yy = Math.round((tp - 1) * T + T * (k * k * (3 - 2 * k))); q.drawImage(at, p[0] + (((x0 + lx) * T + px) % LARG + LARG) % LARG, p[1], 1, 40, px, yy - SUP + 1, 1, 40); }
+    // o chão de cada caminho tem a sua marca: neve, cinza, osso, lama, cascalho
+    const marca = F.atual.regiao;
+    if (['lobos', 'goblins', 'zumbis', 'cobras', 'minas'].includes(marca)) for (let lx = 0; lx < PED; lx++) {
+      const tx = x0 + lx; if (tx >= F.W) break;
+      for (let ty = 1; ty < F.H; ty++) {
+        if (!(solido(tx, ty) && !solido(tx, ty - 1) && F.tile(tx, ty - 1) !== 3)) continue;
+        const y0 = ty * T;
+        for (let px = 0; px < T; px++) {
+          const r = hash(tx * T + px + ty * 977), r2 = hash(tx * 131 + px * 7 + ty), x = lx * T + px;
+          if (marca === 'lobos') { const gx = tx * T + px, hh = 1 + Math.floor(r * 1.6) + Math.max(0, Math.round(2.6 * Math.sin(gx * 0.09) + 1.4 * Math.sin(gx * 0.23 + 1.3))); q.fillStyle = 'rgba(214,224,238,0.92)'; q.fillRect(x, y0 - 3 - hh, 1, hh); q.fillStyle = 'rgba(150,164,190,0.7)'; q.fillRect(x, y0 - 3, 1, 1); if (r2 < 0.12) { q.fillStyle = 'rgba(226,234,246,0.85)'; q.fillRect(x, y0 - 6 - Math.floor(r2 * 60), 1, 1); } }
+          else if (marca === 'goblins') { if (r < 0.3) { q.fillStyle = r < 0.12 ? 'rgba(46,40,38,0.85)' : 'rgba(96,88,82,0.7)'; q.fillRect(x, y0 - 3 + Math.floor(r2 * 3), 1, 1); } if (r2 < 0.015) { q.fillStyle = 'rgba(255,140,60,0.9)'; q.fillRect(x, y0 - 3, 1, 1); } }
+          else if (marca === 'zumbis') { if (r < 0.035) { q.fillStyle = 'rgba(206,200,184,0.9)'; q.fillRect(x, y0 - 3, 2 + Math.floor(r2 * 2), 1); q.fillStyle = 'rgba(120,114,104,0.8)'; q.fillRect(x, y0 - 2, 2, 1); } else if (r < 0.22) { q.fillStyle = 'rgba(150,140,156,0.35)'; q.fillRect(x, y0 - 3, 1, 1); } }
+          else if (marca === 'cobras') { q.fillStyle = 'rgba(14,22,8,0.3)'; q.fillRect(x, y0 - 3, 1, 4); if (r < 0.09) { q.fillStyle = 'rgba(190,220,150,0.32)'; q.fillRect(x, y0 - 3, 1 + Math.floor(r2 * 3), 1); } }
+          else if (marca === 'minas') { if (r < 0.16) { q.fillStyle = r < 0.06 ? 'rgba(112,104,108,0.9)' : 'rgba(70,64,68,0.9)'; q.fillRect(x, y0 - 3, 2, 2); } if (r2 < 0.02) { q.fillStyle = 'rgba(230,130,60,0.9)'; q.fillRect(x, y0 - 2, 1, 1); } }
+        }
+      }
+    }
     // galhos para pisar
     const po = A2.props.ponte;
     for (let ty = 0; ty < F.H; ty++) for (let lx = -8; lx < PED; lx++) {
@@ -866,6 +896,7 @@
     for (const b of J.balas) desenhaBala(b);
     for (const f of J.fx) if (f.tipo !== 'circulo') desenhaFx(f);
     if (D.vivo) D.vivo.frente(g); for (const d of A.decor) if (d.c === 2) prop(d.n, d.x, d.y, d);
+    neblinaChao(A, ox);
     ambiente(dt, ox, oy); desenhaAr();
     g.setTransform(1, 0, 0, 1, 0, 0);
     frente(); if (D.vivo) D.vivo.moldura(g); desenhaClima(dt);
