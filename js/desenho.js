@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=20' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=21' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -629,6 +629,24 @@
     if (H.perdida) return ['dormir', 1];
     const c = (tempo + H.x * 0.01) % 4; return ['parado', c < 1.4 ? 0 : c < 2.1 ? 1 : c < 3.2 ? 3 : 2];
   }
+  // ---------- o companheiro (filhote do Alfa) ----------
+  let guaraIm = null;
+  function guara() {
+    if (guaraIm) return guaraIm; const base = img.m_guara || img.m_lobo; if (!base || !base.width) return null;
+    const c = document.createElement('canvas'); c.width = base.width; c.height = base.height; const q = c.getContext('2d'); q.drawImage(base, 0, 0);
+    if (!img.m_guara) { q.globalCompositeOperation = 'source-atop'; q.fillStyle = 'rgba(206,96,34,0.5)'; q.fillRect(0, 0, c.width, Math.round(c.height * 0.8)); q.fillStyle = 'rgba(20,12,8,0.55)'; q.fillRect(0, Math.round(c.height * 0.8), c.width, c.height); }
+    return (guaraIm = c);
+  }
+  function desenhaPet() {
+    const im = guara(), mt = A2.monstros[img.m_guara ? 'guara' : 'lobo']; if (!im || !mt) return;
+    const f = J.filhote && J.filhote(), P = J.pet;
+    const pinta = (x, y, dir, q, es, sy) => { g.save(); g.translate(Math.round(x), Math.round(y + 1)); g.scale(dir * es, es * (sy || 1)); g.drawImage(im, q * mt.w, 0, mt.w, mt.h, -Math.round(mt.w / 2), -mt.h + 1, mt.w, mt.h); g.restore(); };
+    if (f) { sombra(f.x, f.y, 8); pinta(f.x, f.y, -1, 0, 0.46, 1 + Math.sin(tempo * 2) * 0.03); brilhos.push([f.x, f.y - 10, 60, '255,200,150', 0.45]); }
+    if (!P) return;
+    let q = 0; const es = J.escPet();
+    if (P.estado === 'dorme') q = 7; else if (P.tMorde > 0) q = 5; else if (P.tDor > 0.6) q = 6; else if (!P.noChao) q = 4; else if (Math.abs(P.vx) > 8) q = [1, 2, 3, 2][Math.floor(P.andou / 9) % 4];
+    sombra(P.x, P.y, 10 * es / 0.6); pinta(P.x, P.y, P.dir, q, es, q === 0 ? 1 + Math.sin(tempo * 3) * 0.02 : 1);
+  }
   function desenhaHum() {
     const H = J.hum; if (!H || H.dentro) return;
     const [a, n] = poseGente(H); sombra(H.x, H.y, 13);
@@ -813,7 +831,7 @@
     for (const e of J.inimigos) if (e.vivo && e.estado !== 'caido') desenhaInimigo(e);
     for (const r of J.restos) { itemEm(g, r.m, Math.round(r.x - 8), Math.round(r.y - 14 + Math.sin(tempo * 4 + r.x) * 1.5), 0.5); brilhos.push([r.x, r.y - 6, 22, '255,236,180', 0.3]); }
     for (const r of J.rastro) { g.globalAlpha = (r.vida / r.max) * 0.5; quadroHeroi(g, J.save.roupa, r.anim, r.q, r.x, r.y, { dir: r.dir, sil: r.cor }); g.globalAlpha = 1; }
-    desenhaPovo(); desenhaGente(); desenhaHum(); desenhaHeroi(h); desenhaLar(true);
+    desenhaPovo(); desenhaGente(); desenhaHum(); desenhaPet(); desenhaHeroi(h); desenhaLar(true);
     for (const b of J.balas) desenhaBala(b);
     for (const f of J.fx) if (f.tipo !== 'circulo') desenhaFx(f);
     if (D.vivo) D.vivo.frente(g); for (const d of A.decor) if (d.c === 2) prop(d.n, d.x, d.y, d);

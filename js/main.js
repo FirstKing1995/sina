@@ -198,7 +198,7 @@
     if (modo !== 'jogo' || !J.heroi || J.heroi.estado !== 'livre') return;
     const p = J.perto(); if (!p) return;
     if (['levanta', 'solta', 'varal', 'horta'].includes(p.tipo)) { J.usaLar(p); return; }
-    if (['escalar', 'cavar', 'minerar', 'romper'].includes(p.tipo)) { J.usaMundo(p); return; }
+    if (['escalar', 'cavar', 'minerar', 'romper', 'filhote'].includes(p.tipo)) { J.usaMundo(p); return; }
     if (p.tipo === 'bau') { J.abreBau(p.o); return; }
     if (p.tipo === 'casa') { abreMenu('lar'); return; }
     if (p.tipo === 'fala') { abreFala(); return; }
@@ -354,7 +354,7 @@
   function atualizaMochila() { const s = J.save; $('h-dir').firstElementChild.classList.toggle('novo', C.RECEITAS.some((r) => r.tipo && r.tipo !== 'item' && J.pode(r) && !J.jaTem(r))); void s; }
   function vesteRetrato() { const c = $('retrato-c'), q = c.getContext('2d'); q.imageSmoothingEnabled = false; q.clearRect(0, 0, 34, 34); const im = D.img['h_' + J.save.roupa]; if (im) q.drawImage(im, 26, 12, 44, 44, -2, 0, 44, 44); montaMagias(); atualizaMochila(); }
   function montaMagias() { const m = $('h-magias'); m.innerHTML = ''; const s = J.save; [s.magias[0], s.magia2].forEach((id, i) => { if (!id) return; const d = el('div', 'mg'); d.style.setProperty('--cor', C.MAGIAS[id].cor); d.append(UI.ico(id), el('b', '', i ? 'F' : 'R'), el('s')); d.dataset.id = id; m.append(d); }); UI.zeraToque(); $('b-sina').hidden = !s.magias.length; }
-  const icUsar = (p) => (p.tipo === 'coleta' && p.o.m !== 'madeira' ? UI.item(p.o.m, 34) : UI.ico({ coleta: 'machado', fogo: 'fogueira', porta: 'sair', bau: 'bau', casa: 'casa', circulo: 'olho', pesca: 'gota', preso: 'cadeado', solta: 'cadeado', levanta: 'vida', fala: 'vida', morador: 'familia', crianca: 'familia', escalar: 'pula', cavar: 'cesto', minerar: 'machado', romper: 'machado', poco: 'gota', celeiro: 'fome', mercador: 'troca', varal: 'comer', horta: 'cesto' }[p.tipo] || 'mao'));
+  const icUsar = (p) => (p.tipo === 'coleta' && p.o.m !== 'madeira' ? UI.item(p.o.m, 34) : UI.ico({ coleta: 'machado', fogo: 'fogueira', porta: 'sair', bau: 'bau', casa: 'casa', circulo: 'olho', pesca: 'gota', preso: 'cadeado', solta: 'cadeado', levanta: 'vida', fala: 'vida', morador: 'familia', crianca: 'familia', escalar: 'pula', cavar: 'cesto', minerar: 'machado', romper: 'machado', poco: 'gota', celeiro: 'fome', mercador: 'troca', varal: 'comer', horta: 'cesto', filhote: 'comer' }[p.tipo] || 'mao'));
   let vistas = '';
   function hud(dt) {
     hudT -= dt; if (hudT > 0) return; hudT = 0.06;
@@ -378,7 +378,7 @@
     let p = modo === 'jogo' && h.estado === 'livre' && !acorda ? J.perto() : null; const u = $('usar');
     // colher ao passar: só o que é de mão, e só em paz
     if (p && p.tipo === 'coleta' && p.o.m !== 'madeira' && UI.pref.coleta && Math.abs(p.o.x - h.x) < 20 && h.noChao && !J.emb && !J.raid && !J.inimigos.some((e) => e.vivo && e.estado !== 'vaga' && Math.abs(e.x - h.x) < 260)) { J.colher(p.o, true); p = null; }
-    if (p) { u.hidden = false; u.classList.toggle('chama', ['bau', 'escalar', 'cavar', 'minerar', 'circulo', 'preso', 'solta', 'levanta', 'fogo'].includes(p.tipo)); const t = rotulo(p); if (u.dataset.t !== t) { u.dataset.t = t; u.innerHTML = ''; const i = icUsar(p); u.append(i); if (!toque) u.append(el('b', '', 'E')); u.append(el('span', '', t)); u.classList.remove('surge'); void u.offsetWidth; u.classList.add('surge'); } } else u.hidden = true;
+    if (p) { u.hidden = false; u.classList.toggle('chama', ['bau', 'escalar', 'cavar', 'minerar', 'filhote', 'circulo', 'preso', 'solta', 'levanta', 'fogo'].includes(p.tipo)); const t = rotulo(p); if (u.dataset.t !== t) { u.dataset.t = t; u.innerHTML = ''; const i = icUsar(p); u.append(i); if (!toque) u.append(el('b', '', 'E')); u.append(el('span', '', t)); u.classList.remove('surge'); void u.offsetWidth; u.classList.add('surge'); } } else u.hidden = true;
   }
 
   // ---------- teclado e mouse ----------

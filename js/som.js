@@ -127,7 +127,7 @@
     batalha: { vol: 0.42, laco: [4.209, 136.746], entra: 0.6, sai: 2.4, recomeca: 12 },
     // as novas: uma por caminho, a vila de dia e o cerco à noite (laço no arquivo inteiro, cruzando no fim)
     serra: { vol: 0.34, laco: [1, 190.6], entra: 3, sai: 2.5 }, alagado: { vol: 0.34, laco: [1, 181.4], entra: 3, sai: 2.5 }, enterrados: { vol: 0.36, laco: [1, 172.3], entra: 3, sai: 2.5 },
-    rio: { vol: 0.36, laco: [1, 131.1], entra: 2.5, sai: 2.5 }, minas: { vol: 0.34, laco: [1, 172.3], entra: 3, sai: 2.5, arq: 'enterrados' }, fortim: { vol: 0.36, laco: [1, 190.5], entra: 3, sai: 2.5 }, primeiro: { vol: 0.42, laco: [0, 187.6], entra: 2, sai: 3 }, cerco: { vol: 0.42, laco: [1, 173.3], entra: 0.8, sai: 2.4, recomeca: 12 }, chefao: { vol: 0.5, laco: [3.868, 162.189], entra: 0.4, sai: 2.5, recomeca: 0 },
+    rio: { vol: 0.36, laco: [1, 131.1], entra: 2.5, sai: 2.5 }, minas: { vol: 0.36, laco: [1, 208.3], entra: 3, sai: 2.5 }, fortim: { vol: 0.36, laco: [1, 190.5], entra: 3, sai: 2.5 }, primeiro: { vol: 0.42, laco: [0, 187.6], entra: 2, sai: 3 }, cerco: { vol: 0.42, laco: [1, 173.3], entra: 0.8, sai: 2.4, recomeca: 12 }, chefao: { vol: 0.5, laco: [3.868, 162.189], entra: 0.4, sai: 2.5, recomeca: 0 },
   };
   const CRUZA = 1.1;
   // o arquivo fica na memória (uns 2 MB): os dois aparelhos usam o mesmo, e pular de ponto não depende da rede

@@ -1,6 +1,6 @@
 /* SINA · guarda o jogo no aparelho: abre sem internet e carrega na hora da segunda vez em diante.
    A página sempre tenta a rede primeiro (para pegar versão nova); o resto vem da memória quando já veio uma vez. */
-const VERSAO = 'sina-20';
+const VERSAO = 'sina-21';
 self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(['./', './index.html']).catch(() => {}))); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((l) => Promise.all(l.filter((k) => k !== VERSAO).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {

@@ -1,1 +1,1 @@
-window.CENAS = { abertura: { mus: 'primeiro' }, area_floresta: { titulo: true }, area_lobos: { mus: 'serra' } };
+window.CENAS = { abertura: { mus: 'primeiro' }, area_floresta: { titulo: true }, area_lobos: { mus: 'serra' }, area_minas: { mus: 'minas' }, area_zumbis: { mus: 'enterrados' }, area_goblins: { mus: 'fortim' }, area_cobras: { mus: 'alagado' }, area_vale: { mus: 'rio' } };
