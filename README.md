@@ -69,3 +69,9 @@ Arte: herói do PixelLab, roupas, monstros, fundos e enfeites pintados no Gemini
 - `js/vivo.js`: vento, capim que abre e é cortado, cipós e raízes, coisas enterradas, bichinhos, bandos ao longe, olhos na mata e os sons da natureza (`Som.bicho`).
 - `css/jogo.css`: refeito; molduras em `assets/ui` (geradas por `tools/lateral-ui.py`).
 - Para ver os controles de toque no computador: abrir com `?toque=1`.
+
+## Dificuldade e câmera (26/11/2026)
+
+- Três níveis escolhidos ao nascer (`C.NIVEIS` em `js/bando.js`, guardado em `save.nivel`): Barro mole, Barro duro e Pesadelo (sem mira assistida).
+- Câmera em subpixel: o mundo anda em pixels inteiros e o quadro pronto desliza pela sobra (buffer com uma coluna e uma linha a mais).
+- IA por distância: bicho parado longe pensa a cada três quadros. A arte das outras áreas carrega depois da primeira tela (`D.resto`).

@@ -11,12 +11,19 @@
   J.manhaDe = function (tipo, x) {
     const s = J.save, a = F.atual, tp = C.TIPOS[tipo], k = clamp(x / (F.W * T), 0, 1);
     let m = a.id === 'floresta' ? 0.15 + k * 0.65 : a.id === 'lar' ? 0.8 : a.id === 'vale' ? 0.85 : a.id.startsWith('covil') ? 1 : 0.6 + k * 0.4;
-    m += Math.min(0.25, (s.mortes[tp.esp] || 0) / 400);
+    m += Math.min(0.25, (s.mortes[tp.esp] || 0) / 400) + J.nv().manha;
     return clamp(m, 0.1, 1);
   };
   // a floresta endurece com os dias e com os donos que caíram
   J.dureza = function () { const s = J.save; return 1 + Object.keys(s.chefes).length * 0.1 + Math.min(0.5, Math.max(0, (s.dia || 1) - 3) * 0.015); };
   const noite = () => (J.ehNoite && J.ehNoite() ? 1 : 0);
+  // três jeitos de viver: o normal, o duro e o pesadelo
+  C.NIVEIS = {
+    normal: { nome: 'Barro mole', hp: 1, dano: 1, manha: 0, cura: 1, volta: 1, desc: 'O caminho como foi pensado. Ainda assim, morrer é morrer.' },
+    duro: { nome: 'Barro duro', hp: 1.3, dano: 1.3, manha: 0.15, cura: 0.8, volta: 0.75, desc: 'Bichos mais fortes e espertos, comida cura menos, o bando volta antes.' },
+    pesadelo: { nome: 'Pesadelo', hp: 1.6, dano: 1.65, manha: 0.32, cura: 0.6, volta: 0.55, desc: 'Para quem já conhece tudo. Sem mira assistida, e um erro custa caro.' },
+  };
+  J.nv = () => C.NIVEIS[(J.save && J.save.nivel) || 'normal'] || C.NIVEIS.normal;
 
   // ---------- quem ele quer pegar ----------
   function alvos() { const l = []; const h = J.heroi; if (h && h.estado !== 'morto' && h.estado !== 'nasce' && h.estado !== 'dorme') l.push(h); if (J.hum && J.hum.viva && !J.hum.caida && !J.hum.dentro) l.push(J.hum); return l; }
@@ -252,7 +259,7 @@
           if (e.t > tp.golpe * 0.2 && e.t < tp.golpe + 0.12) {
             for (const q of alvos()) if (!e.acertou.has(q) && cruza(box, caixa(q))) {
               e.acertou.add(q);
-              const d = tp.dano * (fase2 ? 1.15 : 1) * (tp.chefe ? 1.1 : J.dureza() * (0.9 + m01 * 0.8)) * (1 + noite() * 0.1);
+              const d = tp.dano * (fase2 ? 1.15 : 1) * (tp.chefe ? 1.1 : J.dureza() * (0.9 + m01 * 0.8)) * (1 + noite() * 0.1) * J.nv().dano;
               if (J.fereAlvo(q, d, e, { veneno: tp.veneno, forte: tp.chefe || tp.bruto }) && q === h) acertouHeroi(e);
             }
             if (e.barra && !e.acertou.has(e.barra) && Math.abs(e.barra.x - e.x) < tp.alcance + 24) { e.acertou.add(e.barra); J.feriObra(e.barra.o, tp.dano * J.dureza(), e); }
@@ -341,7 +348,7 @@
     const tempo = Math.hypot(a.x - ox, a.y - oy) / v, m01 = e.manha || 0.5;
     const ax = a.x + (a.vx || 0) * tempo * 0.75 * m01, ay = a.y - 34;
     const ang = Math.atan2(ay - oy, ax - ox) + (da || 0), queda = pedra ? 240 : fl ? 190 : feit ? 0 : 60;
-    J.balas.push({ dono: 'i', tipo, quem: e.tipo, x: ox, y: oy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - queda * tempo * 0.5, grav: queda, r: pedra ? 4 : feit ? 6 : fl ? 3 : 5, dano: e.T.dano * J.dureza() * (0.9 + m01 * 0.8), vida: feit ? 3 : 2.4, cor: pedra ? '#a09a90' : feit ? '#7aff8a' : fl ? '#d8c8a0' : '#b8e060', veneno: e.T.veneno, segue: feit ? 1.6 + m01 : 0, flecha: fl, inimiga: true });
+    J.balas.push({ dono: 'i', tipo, quem: e.tipo, x: ox, y: oy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - queda * tempo * 0.5, grav: queda, r: pedra ? 4 : feit ? 6 : fl ? 3 : 5, dano: e.T.dano * J.dureza() * (0.9 + m01 * 0.8) * J.nv().dano, vida: feit ? 3 : 2.4, cor: pedra ? '#a09a90' : feit ? '#7aff8a' : fl ? '#d8c8a0' : '#b8e060', veneno: e.T.veneno, segue: feit ? 1.6 + m01 : 0, flecha: fl, inimiga: true });
   }
   function atira(e, a, da) { const t = e.T.atira; bala(e, a, t, da || 0, t === 'pedra' ? 290 : t === 'flechaI' ? 370 : t === 'feitico' ? 170 : 220); som(t === 'feitico' ? 'magia' : 'golpe', 0.4, 1.4); }
 })();

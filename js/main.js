@@ -54,7 +54,14 @@
     if (nas.i >= C.NASCE.length) { nas.fim = true; nas.tm = setTimeout(pedeNome, 500); return; }
     nas.tm = setTimeout(() => { tx.textContent = C.NASCE[nas.i]; tx.classList.add('ver'); if (nas.i === 2) som('quebra', 0.4, 0.5); if (nas.i === 3) som('magia', 0.7, 0.6); nas.tm = setTimeout(proximaLinha, 4200); }, 600);
   }
-  function pedeNome() { $('n-texto').textContent = ''; $('n-pede').hidden = false; $('n-nome').value = ''; if (!toque) $('n-nome').focus(); }
+  // o nível de dificuldade escolhido no nascimento (fica lembrado para a próxima vida)
+  let nivel = 'normal'; try { nivel = localStorage.getItem('sina_nivel') || 'normal'; } catch (e) { /* nada */ }
+  function montaNiveis() {
+    const c = $('n-niveis'); c.innerHTML = '';
+    for (const k in C.NIVEIS) { const N = C.NIVEIS[k], b = el('button', 'nivel' + (k === nivel ? ' ativa' : '')); b.append(UI.ico(k === 'normal' ? 'vida' : k === 'duro' ? 'escudo' : 'caveira'), el('b', '', N.nome)); b.title = N.desc; b.onclick = () => { nivel = k; try { localStorage.setItem('sina_nivel', k); } catch (e) { /* nada */ } som('abrir', 0.4, k === 'pesadelo' ? 0.7 : 1.2); UI.vibra(8); montaNiveis(); }; c.append(b); }
+    $('n-ndesc').textContent = C.NIVEIS[nivel].desc;
+  }
+  function pedeNome() { montaNiveis(); $('n-texto').textContent = ''; $('n-pede').hidden = false; $('n-nome').value = ''; if (!toque) $('n-nome').focus(); }
   function daNome() {
     const n = $('n-nome').value.trim().slice(0, 16); if (!n) { $('n-nome').classList.add('falta'); $('n-nome').focus(); return; }
     try { localStorage.setItem('sina_intro', '1'); } catch (e) { /* nada */ }
@@ -63,7 +70,7 @@
   // abre os olhos na floresta, sem abertura: quem morre volta por aqui
   function acordaComo(n) {
     telaCheia(); fila.length = 0;
-    J.save = J.novoSave(n); J.heroi = null; J.colhidos = {};
+    J.save = J.novoSave(n); J.save.nivel = nivel; J.heroi = null; J.colhidos = {};
     J.entrarArea('floresta');
     const h = J.heroi; h.estado = 'nasce'; h.t = 0; h.nq = 0; h.x = h.ultimoSeguro.x;
     D.centrar(); D.escuro = 0.15; modo = 'jogo'; mostra(null); areaVista = null;
@@ -341,9 +348,10 @@
     if (chave !== vistas) {
       vistas = chave;
       const q = $('h-comida'); q.innerHTML = ''; if (!toque) for (const m of ['fruta', 'peixe', 'carne', 'seca', 'erva', 'curativo']) if (s.inv[m] > 0) { const k = el('span'); k.append(ic(m === 'curativo' ? 'trapo' : m, 22), document.createTextNode(s.inv[m])); q.append(k); }
-      $('h-titulo').textContent = s.nome + (s.titulo ? ', ' + s.titulo : ''); montaMagias();
+      $('h-titulo').textContent = s.nome + (s.titulo ? ', ' + s.titulo : '') + (s.nivel && s.nivel !== 'normal' ? ' · ' + C.NIVEIS[s.nivel].nome : ''); montaMagias();
     }
     const tc = $('h-tocha'); tc.hidden = !(s.tocha > 0); if (s.tocha > 0) { tc.classList.toggle('acesa', !!s.tochaAcesa); tc.style.setProperty('--k', s.tocha / 300); }
+    { const cb = $('h-combo'), n = J.combo || 0; cb.hidden = n < 3; if (n >= 3 && cb.dataset.n !== '' + n) { cb.dataset.n = n; cb.firstChild.textContent = n; cb.classList.remove('bate'); void cb.offsetWidth; cb.classList.add('bate'); cb.classList.toggle('alto', n >= 10); } }
     UI.passoArmas(); UI.passoTrilho(0.06); UI.passoMeta(0.06); if (toque) UI.passoToque();
     const ve = h.veneno > 0 ? 'veneno' : s.fome < 15 ? 'fome' : ''; if ($('h-estado').className !== ve) $('h-estado').className = ve;
     const tdia = 'Dia ' + s.dia + ' · ' + J.nomeHora() + (J.clima.tipo !== 'limpo' && J.clima.forca > 0.3 ? ' · ' + J.NOMECLIMA[J.clima.tipo] : '') + (J.raid ? ' · onda ' + Math.max(1, J.raid.n + 1) + ' de ' + J.raid.total : ''); if ($('h-dia').lastChild.textContent !== tdia) { $('h-dia').lastChild.textContent = tdia; $('h-dia').classList.toggle('noite', J.ehNoite()); UI.troca($('ic-dia'), J.ehNoite() ? 'lua' : 'sol'); }

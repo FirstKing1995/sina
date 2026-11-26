@@ -97,7 +97,7 @@
 
   // ---------- vida guardada ----------
   J.save = null;
-  J.novoSave = (nome) => ({ v: 3, abates: {}, reforco: {}, vila: {}, nomeVila: '', familias: [], estagio: 0, amuletos: [], amu: [], tocha: 0, marcos: {}, baus: {}, fracas: {}, mapa: {}, hora: 8, dia: 1, emb: {}, lar: null, hum: null, mae: null, prole: [], nome, area: 'floresta', x: null, hp: null, fome: 100, inv: {}, armas: ['punho'], arma: 'punho', afiado: {}, roupas: ['barro'], roupa: 'barro', per: {}, mortes: { lobo: 0, cobra: 0, zumbi: 0, goblin: 0 }, magias: [], magia2: null, sina: 0, chefes: {}, dicas: {}, fogos: {}, fogo: null, filhos: 0, vida: 1, tempo: 0, colhido: 0, visitas: {}, distancia: 0 });
+  J.novoSave = (nome) => ({ v: 3, abates: {}, reforco: {}, vila: {}, nomeVila: '', familias: [], estagio: 0, nivel: 'normal', amuletos: [], amu: [], tocha: 0, marcos: {}, baus: {}, fracas: {}, mapa: {}, hora: 8, dia: 1, emb: {}, lar: null, hum: null, mae: null, prole: [], nome, area: 'floresta', x: null, hp: null, fome: 100, inv: {}, armas: ['punho'], arma: 'punho', afiado: {}, roupas: ['barro'], roupa: 'barro', per: {}, mortes: { lobo: 0, cobra: 0, zumbi: 0, goblin: 0 }, magias: [], magia2: null, sina: 0, chefes: {}, dicas: {}, fogos: {}, fogo: null, filhos: 0, vida: 1, tempo: 0, colhido: 0, visitas: {}, distancia: 0 });
   const nv = (k) => (J.save.per[k] ? J.save.per[k].n : 0);
   J.nivel = nv;
   J.treina = function (k, xp) {
@@ -155,7 +155,7 @@
   // ---------- inimigos ----------
   J.inimigos = [];
   function nasce(t, x, y, extra) {
-    const tp = C.TIPOS[t], manha = tp.chefe ? 1 : extra && extra.manha != null ? extra.manha : J.manhaDe(t, x), hp = Math.round(tp.hp * (tp.chefe ? 1.15 : J.dureza() * (1.1 + manha * 1.75)));
+    const tp = C.TIPOS[t], manha = tp.chefe ? 1 : extra && extra.manha != null ? extra.manha : J.manhaDe(t, x), hp = Math.round(tp.hp * (tp.chefe ? 1.15 : J.dureza() * (1.1 + manha * 1.75)) * (J.nv ? J.nv().hp : 1));
     const e = { tipo: t, T: tp, x, y, ox: x, oy: y, vx: 0, vy: 0, w: tp.w, h: tp.h, dir: Math.random() < 0.5 ? -1 : 1, hp, hpMax: hp, estado: 'vaga', t: rnd(0, 2), firmeza: tp.firme, flash: 0, andou: rnd(0, 50), seguidos: 0, noChao: true, vivo: true, uivos: 0, acertou: new Set(), pisca: 0, veneno: 0, levantou: 0, esc: (tp.esc || 1) * (tp.chefe ? 1 : 0.93 + Math.random() * 0.15), manha, viu: J.golpeId };
     return Object.assign(e, extra || {});
   }
@@ -189,7 +189,7 @@
     const tp = C.TIPOS[quem]; if (tp && tem(tp.esp, 2)) d *= 0.8;
     if (tp && tp.esp === 'cobra' && amu('escama')) d *= 0.75;
     d = Math.max(1, Math.round(d * rnd(0.92, 1.1)));
-    h.hp -= d; h.inv = 0.6; J.pausa = 0.08; treme(6); if (window.UI) UI.vibra(34); J.clarao = 0.3; J.ultimoDano = tp ? tp.esp : quem;
+    h.hp -= d; h.inv = 0.6; J.pausa = 0.08; treme(6); J.combo = 0; J.dorLado = { x: dex == null ? h.x - h.dir : dex, t: 0.9 }; if (window.UI) UI.vibra(34); J.clarao = 0.3; J.ultimoDano = tp ? tp.esp : quem;
     texto(h.x, h.y - 62, d, '#ff6a5a', d > 20);
     const lado = Math.sign(h.x - (dex == null ? h.x - h.dir : dex)) || -h.dir;
     sangue(h.x, h.y - 32, lado, 12, '#b0502a');
@@ -231,7 +231,7 @@
     const crit = !o.magia && Math.random() < h.ficha.critico;
     if (crit) d *= 1.8;
     d = Math.max(1, Math.round(d * rnd(0.9, 1.1)));
-    e.hp -= d; e.flash = 0.13; e.ferido = 0.25;
+    e.hp -= d; e.flash = 0.13; e.ferido = 0.25; if (!o.deHum) { J.combo = (J.combo || 0) + 1; J.comboT = 2.6; if (J.combo >= 5 && J.combo % 5 === 0) { h.sina = Math.min(h.ficha.sina, h.sina + 6); avisa('combo', J.combo); } }
     const forte = o.forte || aberto || crit || nuca;
     texto(e.x + rnd(-6, 6), e.y - e.h - 8, d, crit ? '#ffd24a' : aberto || nuca ? '#ffd27a' : forte ? '#ffe9b0' : '#ffffff', forte);
     const ix = e.x - dir * e.w * 0.28, iy = clamp(o.y || e.y - e.h * 0.55, e.y - e.h * 0.7, e.y - e.h * 0.35);
@@ -283,7 +283,7 @@
     if (n > antes) { const t = C.TITULOS[esp][n - 1]; s.titulo = t[1]; J.recalcular(); avisa('titulo', t); som('raro', 0.9); J.anel(h.x, h.y - 28, 70, '#e9c47a', 0.9, 3); J.faiscas(h.x, h.y - 28, 30, '#e9c47a', 1.4, 'brasa'); }
     if (esp === 'zumbi' && tem('zumbi', 2)) { h.hp = Math.min(h.ficha.vida, h.hp + 6); texto(h.x, h.y - 66, '+6', '#9cff8a'); }
     if (esp === 'zumbi' && tem('zumbi', 3)) { J.anel(e.x, e.y - 24, 44, '#ff9a40', 0.4, 3); J.faiscas(e.x, e.y - 24, 24, '#ff9a40', 1.6, 'brasa'); for (const o of J.inimigos) if (o !== e && o.vivo && Math.abs(o.x - e.x) < 54) feriInimigo(o, 24, Math.sign(o.x - e.x) || 1, { magia: true }); }
-    if (e.T.chefe) J.venceuChefe(e); else if (!e.chamado && !e.raid) J.mortos.push({ t: e.tipo, x: e.ox, y: e.oy, espera: 70 });
+    if (e.T.chefe) J.venceuChefe(e); else if (!e.chamado && !e.raid) J.mortos.push({ t: e.tipo, x: e.ox, y: e.oy, espera: 70 * (J.nv ? J.nv().volta : 1) });
   }
 
   // ---------- golpes do herói ----------
@@ -303,7 +303,7 @@
   // mira assistida: sem direção apertada, o golpe vira para quem está colado
   function viraParaAlvo(h) {
     const m = J.miraDedo; if (m) { if (Math.abs(Math.cos(m.a)) > 0.35) h.dir = Math.cos(m.a) > 0 ? 1 : -1; return; }
-    if (J.ent.esq || J.ent.dir || !J.pref || !J.pref.assist) return; let q = null, md = h.ficha.arma.tiro ? 300 : 78 + h.ficha.arma.alcance; for (const e of J.inimigos) { if (!e.vivo || e.estado === 'caido' || Math.abs(e.y - h.y) > 90) continue; const d = Math.abs(e.x - h.x) * (Math.sign(e.x - h.x) === h.dir ? 0.7 : 1); if (d < md) { md = d; q = e; } } if (q && Math.abs(q.x - h.x) > 4) h.dir = Math.sign(q.x - h.x);
+    if (J.ent.esq || J.ent.dir || !J.pref || !J.pref.assist || J.save.nivel === 'pesadelo') return; let q = null, md = h.ficha.arma.tiro ? 300 : 78 + h.ficha.arma.alcance; for (const e of J.inimigos) { if (!e.vivo || e.estado === 'caido' || Math.abs(e.y - h.y) > 90) continue; const d = Math.abs(e.x - h.x) * (Math.sign(e.x - h.x) === h.dir ? 0.7 : 1); if (d < md) { md = d; q = e; } } if (q && Math.abs(q.x - h.x) > 4) h.dir = Math.sign(q.x - h.x);
   }
   function comecaGolpe(h) {
     viraParaAlvo(h);
@@ -329,7 +329,7 @@
   J.anguloMira = function (h, k) {
     const m = J.miraDedo; if (m) return clamp(Math.atan2(Math.sin(m.a), Math.abs(Math.cos(m.a))), -1.25, 0.9);
     if (J.ent.cima) return -0.55; if (J.ent.baixo) return 0.35;
-    if (J.pref && J.pref.assist) { let q = null, md = 340; for (const e of J.inimigos) { const dx = (e.x - h.x) * h.dir; if (e.vivo && e.estado !== 'caido' && dx > 24 && dx < md && Math.abs(e.y - h.y) < 150) { md = dx; q = e; } } if (q) { const v = 300 + 260 * k, gv = 260 * (1.3 - k), dx = Math.abs(q.x - h.x) - 20, dy = q.y - q.h * 0.55 - (h.y - 41), tt = dx / v; return clamp(Math.atan2(dy - gv * tt * tt / 2, dx), -0.8, 0.6); } }
+    if (J.pref && J.pref.assist && J.save.nivel !== 'pesadelo') { let q = null, md = 340; for (const e of J.inimigos) { const dx = (e.x - h.x) * h.dir; if (e.vivo && e.estado !== 'caido' && dx > 24 && dx < md && Math.abs(e.y - h.y) < 150) { md = dx; q = e; } } if (q) { const v = 300 + 260 * k, gv = 260 * (1.3 - k), dx = Math.abs(q.x - h.x) - 20, dy = q.y - q.h * 0.55 - (h.y - 41), tt = dx / v; return clamp(Math.atan2(dy - gv * tt * tt / 2, dx), -0.8, 0.6); } }
     return -0.05;
   };
   function soltaFlecha(h) {
@@ -640,8 +640,8 @@
     const m = ordem.find((k) => s.inv[k] > 0);
     if (!m) { texto(h.x, h.y - 66, 'nada para comer', '#c9bfa2'); return false; }
     const c = C.COMER[m]; s.inv[m]--;
-    s.fome = Math.min(100, s.fome + c.fome); h.hp = Math.min(h.ficha.vida, h.hp + c.vida); if (c.cura) h.veneno = 0;
-    texto(h.x, h.y - 66, (c.vida ? '+' + c.vida + ' vida ' : '') + (c.fome ? '+' + c.fome + ' fome' : ''), '#9cff8a'); som('beber', 0.6, 1.1);
+    const cu = J.nv ? J.nv().cura : 1; s.fome = Math.min(100, s.fome + c.fome); h.hp = Math.min(h.ficha.vida, h.hp + Math.round(c.vida * cu)); if (c.cura) h.veneno = 0;
+    texto(h.x, h.y - 66, (c.vida ? '+' + Math.round(c.vida * cu) + ' vida ' : '') + (c.fome ? '+' + c.fome + ' fome' : ''), '#9cff8a'); som('beber', 0.6, 1.1);
     if (h.estado === 'livre') { h.estado = 'come'; h.t = 0; }
     return true;
   };
@@ -736,14 +736,15 @@
   let saveT = 8;
   J.passo = function (dt) {
     for (const k in J.ja) J.ja[k] = Math.max(0, J.ja[k] - dt);
-    J.tremor = Math.max(0, J.tremor - dt * 18); J.clarao = Math.max(0, J.clarao - dt * 2.5);
+    J.tremor = Math.max(0, J.tremor - dt * 18); if (J.comboT > 0) { J.comboT -= dt; if (J.comboT <= 0) J.combo = 0; } if (J.dorLado) { J.dorLado.t -= dt; if (J.dorLado.t <= 0) J.dorLado = null; } J.clarao = Math.max(0, J.clarao - dt * 2.5);
     if (J.pausa > 0) { J.pausa -= dt; return; }
     if (J.lento > 0) { J.lento -= dt; dt *= 0.35; }
     const h = J.heroi; J.relogio += dt;
     passoHeroi(dt);
     if (J.passoClima && h.estado !== 'morto') J.passoClima(dt);
     if (J.formacao) J.formacao(dt);
-    for (const e of J.inimigos) { if (Math.abs(e.x - h.x) > 640 && e.estado !== 'morto' && !e.T.chefe && !e.raid) continue; J.passoInimigo(e, dt); }
+    J.quadroN = (J.quadroN || 0) + 1;
+    for (const e of J.inimigos) { const d = Math.abs(e.x - h.x); if (e.T.chefe || e.raid || e.estado === 'morto') { J.passoInimigo(e, dt); continue; } if (d > 640) continue; if (d > 380 && e.estado === 'vaga') { e.acum = (e.acum || 0) + dt; if ((J.quadroN + (e.ox | 0)) % 3) continue; J.passoInimigo(e, e.acum); e.acum = 0; continue; } J.passoInimigo(e, dt); }
     if (J.passoVida) J.passoVida(dt);
     J.inimigos = J.inimigos.filter((e) => e.vivo || e.t < (e.T.chefe ? 3 : 1.8));
     if (h.estado === 'dorme') { for (const k in J.ja) J.ja[k] = 0; }

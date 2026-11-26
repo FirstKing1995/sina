@@ -83,6 +83,7 @@
   function folhas(x, y, n, dir) { const c = VERDE[F.atual.regiao] || VERDE.floresta; for (let i = 0; i < n; i++) { const vida = rnd(0.5, 1.2); J.poe({ tipo: 'folha', x: x + rnd(-5, 5), y: y - rnd(2, 14), vx: dir * rnd(10, 90) + rnd(-30, 30), vy: rnd(-130, -20), grav: 190, vida, max: vida, cor: um(c), tam: 2 }); } }
   V.corta = function (h) {
     if (ultCorte === J.golpeId) return; const cx = J.golpeCaixa(h); let n = 0;
+    for (let tx = Math.floor((cx.x0 - 4) / T); tx <= Math.floor((cx.x1 + 4) / T); tx++) if (Math.abs(F.atual.topo[tx] * T - h.y) < 20 && !(cortes.get(tx) > t)) { cortes.set(tx, t + 12 + hash(tx) * 6); n++; }
     for (const b of brotos) if (MOLE[b.n] > 0.04 && !(b.corte > t) && b.x > cx.x0 - 4 && b.x < cx.x1 + 4 && Math.abs(b.y - h.y) < 24) { b.corte = t + 14 + hash(b.x) * 8; n++; if (n < 5) folhas(b.x, b.y, 4, h.dir); }
     for (const d of F.atual.decor) if (MOLE[d.n] > 0.06 && d.x > cx.x0 && d.x < cx.x1 && Math.abs(d.y - h.y) < 24) { n++; folhas(d.x, d.y - 14, 3, h.dir); }
     if (n) { ultCorte = J.golpeId; if (window.Som) Som.sopro('mato', 1.2, 1.3); }
@@ -90,7 +91,25 @@
   // correr pelo mato solta folhinhas e faz barulho; o pouso espalha
   let antesChao = true;
   V.rastros = function (dt) { const h = J.heroi; if (!h) return; if (h.noChao && Math.abs(h.vx) > 110 && Math.random() < dt * 5 && brotos.some((b) => Math.abs(b.x - h.x) < 10 && MOLE[b.n] > 0.1)) folhas(h.x, h.y, 1, -Math.sign(h.vx)); if (h.noChao && !antesChao && h.amassa > 0.5) folhas(h.x, h.y, 4, 0); antesChao = h.noChao; };
-  V.frente = function (g) { const x0 = cam.x - 40, x1 = cam.x + D.VW + 40; for (const b of brotos) if (b.f && b.x > x0 && b.x < x1) planta(g, b.n, b.x, b.y, b); };
+  // ---------- tapete de capim: folha por folha, com vento, gente passando e lâmina cortando ----------
+  const GRAMA = { floresta: [['#1f4a3c', '#2f6a52', '#4f8f6a'], 1, 6], vale: [['#3a5a2c', '#5a7e3a', '#86a85a'], 1, 7], lobos: [['#2c3a48', '#4a5a6a', '#7a8a96'], 0.55, 4], cobras: [['#3a4a1c', '#5c6a2a', '#8a9a46'], 1, 7], zumbis: [['#3a3040', '#564a5c', '#7a6a7a'], 0.5, 4], goblins: [['#4a2c18', '#6a4426', '#9a6a3a'], 0.5, 4] };
+  const cortes = new Map();
+  function tapete(g, frente) {
+    const A = F.atual, G = GRAMA[A.regiao] || GRAMA.floresta, dens = A.id.startsWith('covil') ? G[1] * 0.4 : G[1], x0 = Math.max(2, Math.floor((cam.x - 8) / T)), x1 = Math.min(A.W - 3, Math.ceil((cam.x + D.VW + 8) / T));
+    const lotes = [[], [], []];
+    for (let tx = x0; tx <= x1; tx++) {
+      const ty = A.topo[tx]; if (ty >= F.H || F.tile(tx, ty - 1) !== 0 || F.tile(tx, ty) !== 1) continue; if (A.terreno && tx * T > A.lugar.lago - 70 && tx * T < A.lugar.lago + 70) continue;
+      const y = ty * T + (frente ? 3 : 1), inc = V.inclina('capim2', tx * T + 8, y) * 1.6, ct = cortes.get(tx), baixo = ct && ct > t ? 0.3 + 0.7 * Math.max(0, 1 - (ct - t) / 3) : 1;
+      for (let i = frente ? 1 : 0; i < T; i += frente ? 3 : 2) {
+        const r = hash(tx * 31 + i * 7 + (frente ? 99 : 0)); if (r > dens) continue; const x = tx * T + i, h = Math.max(1, Math.round((2 + r * G[2]) * (frente ? 0.7 : 1) * baixo)), c = hash(tx * 13 + i) * 3 | 0, ve = Math.sin(t * 2.3 + x * 0.09) * 0.25;
+        lotes[c].push(x, y, h, inc + ve * (h / 6));
+      }
+    }
+    for (let c = 0; c < 3; c++) { g.fillStyle = G[0][c]; const l = lotes[c]; for (let k = 0; k < l.length; k += 4) { const x = l[k], y = l[k + 1], h = l[k + 2], b = l[k + 3]; for (let j = 0; j < h; j++) g.fillRect(Math.round(x + b * j * j / Math.max(2, h)), y - j - 1, 1, 1); } }
+  }
+  V.tapeteAtras = (g) => tapete(g, false);
+  V.frente = function (g) {
+    tapete(g, true); const x0 = cam.x - 40, x1 = cam.x + D.VW + 40; for (const b of brotos) if (b.f && b.x > x0 && b.x < x1) planta(g, b.n, b.x, b.y, b); };
   D.repintaVivo = () => { areaV = null; };
 
   // ---------- dentro da terra: pedras, ossos, cristais (pintados nos pedaços guardados) ----------

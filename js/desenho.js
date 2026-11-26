@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=15' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=16' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -26,6 +26,7 @@
     let VH = esc >= 2 ? Math.ceil(cv.height / esc) : alvo, VW = esc >= 2 ? Math.ceil(cv.width / esc) : Math.round(alvo * asp);
     if (VW < 360) { VW = 360; VH = Math.min(640, Math.round(VW / asp)); }
     if (VW > 780) { VW = 780; VH = Math.round(VW / asp); }
+    D.esc = esc >= 2 ? esc : cv.height / VH; VW += 1; VH += 1; // uma coluna e uma linha a mais para deslizar
     D.VW = VW; D.VH = VH;
     buf.width = VW; buf.height = VH; luz.width = VW; luz.height = VH;
     g.imageSmoothingEnabled = false;
@@ -36,8 +37,14 @@
     for (const m in A2.monstros) { l.push(['m_' + m, 'assets/floresta/m_' + m + '.webp']); for (const x of ['anda', 'pose']) if (A2.monstros[m][x]) l.push(['m_' + m + '_' + x, 'assets/floresta/m_' + m + '_' + x + '.webp']); }
     for (const r in C.REGIOES) { l.push(['f_' + r, 'assets/floresta/f_' + r + '.webp']); l.push(['p_' + r, 'assets/floresta/p_' + r + '.webp']); }
     l.push(['h_mulher', 'assets/barro/mulher.png'], ['h_filho', 'assets/barro/filho.png'], ['h_vila', 'assets/barro/vila.png'], ['casa', 'assets/floresta/casa.webp'], ['cidade', 'assets/floresta/cidade.webp'], ['marcos', 'assets/floresta/marcos.webp'], ['itens', 'assets/floresta/itens.webp'], ['detalhes', 'assets/floresta/detalhes.webp'], ['bichinhos', 'assets/floresta/bichinhos.webp'], ['armas', 'assets/floresta/armas.webp']);
-    let n = 0;
-    await Promise.all(l.map(async ([k, s]) => { img[k] = await carregaImg(s); n++; if (aviso) aviso(n / l.length); }));
+    l.push(['detalhes', 'assets/floresta/detalhes.webp'], ['bichinhos', 'assets/floresta/bichinhos.webp']);
+    // primeiro o herói, a área onde o jogo vai abrir e o que todo lugar usa; o resto vem depois, sem segurar a tela
+    let sv = null; try { sv = JSON.parse(localStorage.getItem('sina_primeiro')); } catch (e) { /* nada */ }
+    const reg = sv && sv.area && C.REGIOES[sv.area] ? sv.area : sv && sv.area && sv.area.startsWith('covil_') ? sv.area.slice(6) : sv && sv.area === 'lar' ? 'vale' : 'floresta', roupa = (sv && sv.roupa) || 'barro';
+    const ja = (k) => (k.startsWith('h_') && B.roupas.includes(k.slice(2)) ? k === 'h_barro' || k === 'h_' + roupa : /^[fp]_/.test(k) ? k.slice(2) === reg : !/_pose$/.test(k) && !['h_mulher', 'h_filho', 'h_vila', 'casa', 'cidade'].includes(k));
+    const antes = l.filter(([k]) => ja(k)), depois = l.filter(([k]) => !ja(k)); let n = 0;
+    await Promise.all(antes.map(async ([k, s]) => { img[k] = await carregaImg(s); n++; if (aviso) aviso(n / antes.length); }));
+    D.resto = Promise.all(depois.map(async ([k, s]) => { img[k] = await carregaImg(s); }));
   };
   D.img = img;
 
@@ -201,7 +208,7 @@
   function pedaco(i) {
     if (areaPed !== F.atual.id) { pedacos = new Map(); areaPed = F.atual.id; }
     let c = pedacos.get(i);
-    if (!c) { c = pintaPedaco(i); if (pedacos.size > 8) pedacos.delete(pedacos.keys().next().value); pedacos.set(i, c); }
+    if (!c) { c = pintaPedaco(i); if (!img['p_' + F.atual.regiao]) return c; if (pedacos.size > 10) pedacos.delete(pedacos.keys().next().value); pedacos.set(i, c); }
     return c;
   }
   D.repintar = () => { areaPed = null; };
@@ -758,7 +765,7 @@
     const vy = h.noChao ? 4.5 : Math.abs(dif) > 70 ? 6 : 1.4; cam.y += dif * Math.min(1, dt * vy);
     if (F.fechada && F.atual.arena) { const A = F.atual.arena, lar = A.x1 - A.x0; if (lar > D.VW) cam.x = Math.max(A.x0 - 10, Math.min(A.x1 + 10 - D.VW, cam.x)); }
     if (D.foco) { cam.x += (limX(D.foco.x - D.VW / 2) - cam.x) * Math.min(1, dt * 3); }
-    const tr = J.pref && !J.pref.tremor ? 0 : J.tremor, ox = Math.round(cam.x + (tr ? (Math.sin(tempo * 61) * 0.6 + Math.sin(tempo * 97) * 0.4) * tr * 0.62 : 0)), oy = Math.round(cam.y + (tr ? (Math.sin(tempo * 73 + 1) * 0.6 + Math.sin(tempo * 113) * 0.4) * tr * 0.55 : 0));
+    const tr = J.pref && !J.pref.tremor ? 0 : J.tremor, cx0 = cam.x + (tr ? (Math.sin(tempo * 61) * 0.6 + Math.sin(tempo * 97) * 0.4) * tr * 0.62 : 0), cy0 = cam.y + (tr ? (Math.sin(tempo * 73 + 1) * 0.6 + Math.sin(tempo * 113) * 0.4) * tr * 0.55 : 0), ox = Math.floor(cx0), oy = Math.floor(cy0), sbx = cx0 - ox, sby = cy0 - oy;
     g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     fundo();
     g.translate(-ox, -oy);
@@ -773,7 +780,7 @@
     for (const p of A.portas) desenhaPorta(p);
     for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) if (i >= 0 && i * PED < F.W) g.drawImage(pedaco(i), 0, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8), i * PED * T, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8));
     for (const d of A.decor) if (d.c === 1) { if (Math.abs(d.x - ox - D.VW / 2) < D.VW * 0.6 && A2.props[d.n]) contato(d.x, d.y - 1, A2.props[d.n][2] * d.e * 0.42); prop(d.n, d.x, d.y, d); if (d.n === 'cogumelos' && Math.abs(d.x - h.x) < D.VW) brilhos.push([d.x, d.y - 18, 54, '90,220,230', 0.5 + 0.15 * Math.sin(tempo * 2 + d.x)]); }
-    if (D.vivo) { D.vivo.atras(g, brilhos); for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) { const pd = pedacos.get(i); if (pd && pd.luzes) for (const l of pd.luzes) brilhos.push([l[0], l[1], l[2] + Math.sin(tempo * 1.8 + l[0]) * 4, l[3], l[4]]); } }
+    if (D.vivo) { D.vivo.tapeteAtras(g); D.vivo.atras(g, brilhos); for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) { const pd = pedacos.get(i); if (pd && pd.luzes) for (const l of pd.luzes) brilhos.push([l[0], l[1], l[2] + Math.sin(tempo * 1.8 + l[0]) * 4, l[3], l[4]]); } }
     desenhaLar(false); desenhaCerco(); desenhaBaus(); if (D.vivo) D.vivo.bichos(g, dt);
     for (const c of A.circulos) desenhaCirculo(c);
     for (const c of A.coleta) desenhaColeta(c);
@@ -832,16 +839,18 @@
     ctx.imageSmoothingEnabled = false;
     const zz = D.zoom + (J.soco || 0);
     if (zz > 1.001) { const zw = D.VW / zz, zh = D.VH / zz, fx0 = h.fogo ? (h.x + h.fogo.x) / 2 : h.x, zx = Math.max(0, Math.min(D.VW - zw, fx0 - ox - zw / 2)), zy = Math.max(0, Math.min(D.VH - zh, h.y - oy - 26 - zh * 0.58)); ctx.drawImage(buf, zx, zy, zw, zh, 0, 0, cv.width, cv.height); }
-    else ctx.drawImage(buf, 0, 0, cv.width, cv.height);
+    else { const e = D.esc; ctx.drawImage(buf, -Math.round(sbx * e), -Math.round(sby * e), D.VW * e, D.VH * e); }
     // números nítidos, por cima
-    const ex = cv.width / D.VW, ey = cv.height / D.VH;
+    const ex = D.esc, ey = D.esc, ox2 = ox + (zz > 1.001 ? 0 : sbx), oy2 = oy + (zz > 1.001 ? 0 : sby);
     ctx.textAlign = 'center';
     const semNum = J.pref && !J.pref.numeros;
-    for (const t of J.textos) { if (semNum && /^\d+$/.test(t.t)) continue; const a = Math.min(1, t.vida / 0.35), s = (t.grande ? 13 : 10) * (1 + Math.max(0, t.vida - t.max + 0.12) * 4); ctx.globalAlpha = a; ctx.font = '700 ' + Math.round(s * ex) + 'px Cinzel, serif'; ctx.lineWidth = 3 * ex * 0.6; ctx.strokeStyle = 'rgba(6,5,4,0.85)'; const x = (t.x - ox) * ex, y = (t.y - oy) * ey; ctx.strokeText(t.t, x, y); ctx.fillStyle = t.cor; ctx.fillText(t.t, x, y); }
+    for (const t of J.textos) { if (semNum && /^\d+$/.test(t.t)) continue; const a = Math.min(1, t.vida / 0.35), s = (t.grande ? 13 : 10) * (1 + Math.max(0, t.vida - t.max + 0.12) * 4); ctx.globalAlpha = a; ctx.font = '700 ' + Math.round(s * ex) + 'px Cinzel, serif'; ctx.lineWidth = 3 * ex * 0.6; ctx.strokeStyle = 'rgba(6,5,4,0.85)'; const x = (t.x - ox2) * ex, y = (t.y - oy2) * ey; ctx.strokeText(t.t, x, y); ctx.fillStyle = t.cor; ctx.fillText(t.t, x, y); }
+    // de onde veio o golpe: um arco vermelho no lado da tela
+    if (J.dorLado) { const d = J.dorLado, l = Math.sign(d.x - h.x) || 1, k = d.t / 0.9, gr = ctx.createRadialGradient(l > 0 ? cv.width : 0, cv.height * 0.5, 0, l > 0 ? cv.width : 0, cv.height * 0.5, cv.width * 0.32); gr.addColorStop(0, 'rgba(200,30,20,' + 0.5 * k + ')'); gr.addColorStop(1, 'rgba(200,30,20,0)'); ctx.fillStyle = gr; ctx.fillRect(l > 0 ? cv.width * 0.6 : 0, 0, cv.width * 0.4, cv.height); }
     // quem vem de fora da tela: uma ponta vermelha na beira
     if (h.estado !== 'morto' && h.estado !== 'dorme') for (const e of J.inimigos) {
       if (!e.vivo || !['prep', 'persegue', 'golpe'].includes(e.estado)) continue; const dx = e.x - ox; if ((dx > -6 && dx < D.VW + 6) || dx < -260 || dx > D.VW + 260 || Math.abs(e.y - h.y) > 170) continue;
-      const l = dx < 0 ? 1 : -1, x = dx < 0 ? 12 * ex : cv.width - 12 * ex, y = Math.max(60 * ey, Math.min(cv.height * 0.62, (e.y - e.h / 2 - oy) * ey)), k = e.estado === 'prep' ? 1 : 0.55; ctx.globalAlpha = k * (0.6 + 0.4 * Math.sin(tempo * (e.estado === 'prep' ? 22 : 7))); ctx.fillStyle = '#ff5a3a'; ctx.beginPath(); ctx.moveTo(x - l * 5 * ex, y); ctx.lineTo(x + l * 3 * ex, y - 7 * ey); ctx.lineTo(x + l * 1 * ex, y); ctx.lineTo(x + l * 3 * ex, y + 7 * ey); ctx.fill();
+      const l = dx < 0 ? 1 : -1, x = dx < 0 ? 12 * ex : cv.width - 12 * ex, y = Math.max(60 * ey, Math.min(cv.height * 0.62, (e.y - e.h / 2 - oy2) * ey)), k = e.estado === 'prep' ? 1 : 0.55; ctx.globalAlpha = k * (0.6 + 0.4 * Math.sin(tempo * (e.estado === 'prep' ? 22 : 7))); ctx.fillStyle = '#ff5a3a'; ctx.beginPath(); ctx.moveTo(x - l * 5 * ex, y); ctx.lineTo(x + l * 3 * ex, y - 7 * ey); ctx.lineTo(x + l * 1 * ex, y); ctx.lineTo(x + l * 3 * ex, y + 7 * ey); ctx.fill();
     }
     ctx.globalAlpha = 1; if (D.vivo && dt > 0) D.vivo.sons(dt);
   };
