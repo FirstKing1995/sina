@@ -208,3 +208,5 @@ canvas.bicho { image-rendering: pixelated; flex: none; width: 54px; height: 46px
 #n-img.video { background: #000; animation: nasceV 22s ease-out forwards; filter: none; transform: none; } #n-img .n-video { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; } @keyframes nasceV { 0% { filter: brightness(0); } 12% { filter: brightness(.9); } 100% { filter: brightness(1); transform: scale(1.06); } }
 
 .fundo video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+
+#usar.chama { animation: chama 1.2s ease-in-out infinite; } #usar.chama.surge { animation: sobeU .2s ease-out, chama 1.2s ease-in-out .2s infinite; } .toque #usar.chama.surge { animation: sobeT .2s ease-out, chama 1.2s ease-in-out .2s infinite; } @keyframes chama { 50% { filter: brightness(1.25) drop-shadow(0 0 10px #ff9a40); } }

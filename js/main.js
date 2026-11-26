@@ -378,7 +378,7 @@
     let p = modo === 'jogo' && h.estado === 'livre' && !acorda ? J.perto() : null; const u = $('usar');
     // colher ao passar: só o que é de mão, e só em paz
     if (p && p.tipo === 'coleta' && p.o.m !== 'madeira' && UI.pref.coleta && Math.abs(p.o.x - h.x) < 20 && h.noChao && !J.emb && !J.raid && !J.inimigos.some((e) => e.vivo && e.estado !== 'vaga' && Math.abs(e.x - h.x) < 260)) { J.colher(p.o, true); p = null; }
-    if (p) { u.hidden = false; const t = rotulo(p); if (u.dataset.t !== t) { u.dataset.t = t; u.innerHTML = ''; const i = icUsar(p); u.append(i); if (!toque) u.append(el('b', '', 'E')); u.append(el('span', '', t)); u.classList.remove('surge'); void u.offsetWidth; u.classList.add('surge'); } } else u.hidden = true;
+    if (p) { u.hidden = false; u.classList.toggle('chama', ['bau', 'escalar', 'cavar', 'minerar', 'circulo', 'preso', 'solta', 'levanta', 'fogo'].includes(p.tipo)); const t = rotulo(p); if (u.dataset.t !== t) { u.dataset.t = t; u.innerHTML = ''; const i = icUsar(p); u.append(i); if (!toque) u.append(el('b', '', 'E')); u.append(el('span', '', t)); u.classList.remove('surge'); void u.offsetWidth; u.classList.add('surge'); } } else u.hidden = true;
   }
 
   // ---------- teclado e mouse ----------
@@ -514,10 +514,14 @@
   }
   // aparelho que não dá conta: desliga o brilho sozinho (dá para religar nas opções)
   let lentos = 0, medidos = 0, baixou = false;
-  function laco(agora) { const real = (agora - antes) / 1000, dt = Math.min(1 / 30, real); antes = agora; if (!baixou && modo === 'jogo' && real < 0.25) { medidos++; if (real > 0.027) lentos++; if (medidos >= 240) { if (lentos > 150 && UI.pref.brilho) { baixou = true; UI.pref.brilho = 0; UI.pref.bichos = 0; UI.aplica(); } medidos = lentos = 0; } } quadro(dt); requestAnimationFrame(laco); }
+  // em tela parada (menu, fogueira, morte, título) desenha a metade das vezes: poupa bateria
+  let meio = 0, guardado = 0;
+  function laco(agora) { const real0 = (agora - antes) / 1000; antes = agora; if (['menu', 'fogo', 'morte', 'titulo'].includes(modo) && document.visibilityState === 'visible' && (meio ^= 1)) { guardado += real0; requestAnimationFrame(laco); return; } const real = real0 + guardado; guardado = 0; const dt = Math.min(1 / 30, real); if (!baixou && modo === 'jogo' && real < 0.25) { medidos++; if (real > 0.027) lentos++; if (medidos >= 240) { if (lentos > 150 && UI.pref.brilho) { baixou = true; UI.pref.brilho = 0; UI.pref.bichos = 0; UI.aplica(); } medidos = lentos = 0; } } quadro(dt); requestAnimationFrame(laco); }
 
   D.iniciar(cv);
   $('carrega').textContent = 'Moldando o barro...';
   D.carregar((k) => { $('carrega').style.setProperty('--k', Math.round(k * 100)); }).then(() => { try { sessionStorage.removeItem('sina_tenta'); } catch (e) { /* nada */ } titulo(); requestAnimationFrame(laco); });
+  // guarda o jogo no aparelho (abre sem internet e pode virar ícone na tela inicial)
+  if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   window.SINA = { acordaComo, titulo, dormir, abreFala, J, F, D, C, quadro, abreMenu, voltar, continuar, nascer, daNome, get modo() { return modo; } };
 })();

@@ -242,6 +242,9 @@
     { const per = h.ficha.arma.per, ferro = ['adaga', 'espada', 'machado_ferro', 'lanca_prata'].includes(h.ficha.armaId); if (o.magia || o.deLonge || per === 'punho') som('acerto', 0.75, forte ? 0.8 : 1); else { som('acerto', 0.5, forte ? 0.8 : 1); som(per === 'porrete' ? 'madeira' : ferro ? 'lamina' : 'pedra', forte ? 0.55 : 0.4, per === 'porrete' ? 0.8 : per === 'machado' ? 0.75 : 1.05); } }
     if (crit) som('quebra', 0.35, 1.5); if (casca) { som('quebra', 0.4, 1.8); J.faiscas(ix, iy, 8, '#dfe8f0', 1.1); }
     if (!o.magia) { h.sina = Math.min(h.ficha.sina, h.sina + (o.forte ? 13 : 7) * (amu('apito') ? 1.5 : 1) * (J.cl && J.cl('cinza') > 0.4 ? 1.35 : 1)); J.treina(h.ficha.arma.per, 1.2 + Math.min(4, d * 0.04)); if (tem('cobra', 2)) e.veneno = 4; if (h.ficha.arma.veneno) e.veneno = Math.max(e.veneno, h.ficha.arma.veneno); } else if (!o.deHum) J.treina('magia', 2.2);
+    // o corpo do bicho sente: tranco para trás, faíscas na direção do corte; o último golpe do combo pesa mais
+    e.tranco = forte ? 0.16 : 0.1; e.trancoDir = dir; if (!o.magia) for (let i = 0; i < (forte ? 7 : 4); i++) fx({ tipo: 'faisca', x: ix, y: iy + rnd(-4, 4), vx: dir * rnd(140, 340), vy: rnd(-90, 40), grav: 500, vida: rnd(0.12, 0.25), max: 0.25, cor: forte ? '#ffd27a' : '#fff1c8', tam: rnd(1, 2) });
+    if (h.final && !o.magia && !o.deLonge && !o.deHum) { J.pausa = Math.max(J.pausa, 0.09); som('forte', 0.45, 0.72); J.soco = Math.max(J.soco || 0, 0.03); }
     J.pausa = Math.max(J.pausa, forte ? 0.06 : 0.028); treme(forte ? 4 : 1.6); if (forte && !o.deHum) { J.soco = Math.max(J.soco || 0, crit || o.carregado ? 0.035 : 0.018); if (window.UI) UI.vibra(crit ? 22 : 14); }
     if (e.hp <= 0) { morreInimigo(e, dir, forte); return true; }
     if (Math.random() < 0.7) voz(e, 'dor');

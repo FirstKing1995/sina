@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=18' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=19' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -414,7 +414,8 @@
     if (tp.escondida && e.estado === 'vaga' && e.vivo) al = tp.escondida;
     if (e.estado !== 'morto' && al > 0.3) sombra(e.x, e.y, e.w * 0.6);
     const pinta = (src, a) => { g.globalAlpha = a; g.drawImage(src, q * mt.w, 0, mt.w, mt.h, -Math.round(mt.w / 2), -mt.h + 1, mt.w, mt.h); };
-    g.save(); g.translate(Math.round(e.x), Math.round(e.y + 1 + oy)); g.scale(e.dir * sx * es, sy * es);
+    let tx0 = 0; if (e.tranco > 0) { e.tranco = Math.max(0, e.tranco - (D.dt || 0)); const k = e.tranco / 0.16; tx0 = Math.round((e.trancoDir || 0) * k * 5 + Math.sin(tempo * 90) * k * 1.5); sx *= 1 + k * 0.1; sy *= 1 - k * 0.08; }
+    g.save(); g.translate(Math.round(e.x) + tx0, Math.round(e.y + 1 + oy)); g.scale(e.dir * sx * es, sy * es);
     if (e.vivo) pinta(fio(im, corFio(regiao()), chv), al * (0.5 + noiteK * 0.35));
     pinta(im, al);
     if (tp.tinta) pinta(silhueta(im, tp.tinta, chv), al);
