@@ -17,7 +17,7 @@
   const LIMITE = { pa: 1, picareta: 1 }; const jaTem0 = J.jaTem; J.jaTem = (r) => jaTem0(r) || (LIMITE[r.id] && (J.save.inv[r.id] || 0) >= LIMITE[r.id]);
   // o que cada lugar guarda lá em cima e debaixo da terra
   const NINHO = { floresta: ['ovo', 'ovo', 'mel', 'fruta', 'erva', 'fibra'], vale: ['ovo', 'mel', 'mel', 'fruta', 'erva'], lobos: ['ovo', 'presa', 'osso', 'couro'], cobras: ['ovo', 'pele', 'mel', 'erva'], zumbis: ['ovo', 'trapo', 'osso', 'ferro'], goblins: ['ovo', 'ferro', 'trapo', 'orelha'] };
-  const ENTERRADO = { minas: ['ferro', 'ferro', 'prata', 'osso', 'pedra'], floresta: ['osso', 'ferro', 'pedra', 'trapo', 'prata'], vale: ['pedra', 'ferro', 'osso', 'trapo', 'prata'], lobos: ['osso', 'osso', 'ferro', 'presa', 'prata'], cobras: ['pele', 'prata', 'osso', 'ferro'], zumbis: ['osso', 'trapo', 'ferro', 'ferro', 'prata'], goblins: ['ferro', 'ferro', 'orelha', 'trapo', 'prata'] };
+  const ENTERRADO = { mangue: ['osso', 'prata', 'ferro', 'presa', 'trapo'], minas: ['ferro', 'ferro', 'prata', 'osso', 'pedra'], floresta: ['osso', 'ferro', 'pedra', 'trapo', 'prata'], vale: ['pedra', 'ferro', 'osso', 'trapo', 'prata'], lobos: ['osso', 'osso', 'ferro', 'presa', 'prata'], cobras: ['pele', 'prata', 'osso', 'ferro'], zumbis: ['osso', 'trapo', 'ferro', 'ferro', 'prata'], goblins: ['ferro', 'ferro', 'orelha', 'trapo', 'prata'] };
 
   // ---------- monta os extras da área (uma vez) ----------
   J.extras = function (A) {

@@ -97,7 +97,7 @@
 
   // ---------- vida guardada ----------
   J.save = null;
-  J.novoSave = (nome) => ({ v: 3, abates: {}, reforco: {}, vila: {}, nomeVila: '', familias: [], estagio: 0, nivel: 'normal', amuletos: [], amu: [], tocha: 0, marcos: {}, baus: {}, fracas: {}, mapa: {}, hora: 8, dia: 1, emb: {}, lar: null, hum: null, mae: null, prole: [], nome, area: 'floresta', x: null, hp: null, fome: 100, inv: {}, armas: ['punho'], arma: 'punho', afiado: {}, roupas: ['barro'], roupa: 'barro', per: {}, mortes: { lobo: 0, cobra: 0, zumbi: 0, goblin: 0, pedra: 0 }, magias: [], magia2: null, sina: 0, chefes: {}, dicas: {}, fogos: {}, fogo: null, filhos: 0, vida: 1, tempo: 0, colhido: 0, visitas: {}, distancia: 0 });
+  J.novoSave = (nome) => ({ v: 3, abates: {}, reforco: {}, vila: {}, nomeVila: '', familias: [], estagio: 0, nivel: 'normal', amuletos: [], amu: [], tocha: 0, marcos: {}, baus: {}, fracas: {}, mapa: {}, hora: 8, dia: 1, emb: {}, lar: null, hum: null, mae: null, prole: [], nome, area: 'floresta', x: null, hp: null, fome: 100, inv: {}, armas: ['punho'], arma: 'punho', afiado: {}, roupas: ['barro'], roupa: 'barro', per: {}, mortes: { lobo: 0, cobra: 0, zumbi: 0, goblin: 0, pedra: 0, mare: 0 }, magias: [], magia2: null, sina: 0, chefes: {}, dicas: {}, fogos: {}, fogo: null, filhos: 0, vida: 1, tempo: 0, colhido: 0, visitas: {}, distancia: 0 });
   const nv = (k) => (J.save.per[k] ? J.save.per[k].n : 0);
   J.nivel = nv;
   J.treina = function (k, xp) {
@@ -381,6 +381,7 @@
     else if (id === 'vento') { h.vento = 6; som('magia', 0.6, 1.3); J.faiscas(h.x, h.y - 20, 20, M.cor, 1); }
     else if (id === 'espinhos') { for (const a of [-0.14, 0, 0.14]) J.balas.push({ dono: 'h', tipo: 'espinho', x: mx, y: my, vx: d * 420 * Math.cos(a), vy: 420 * Math.sin(a), r: 6, dano: 22 * k, vida: 0.8, cor: M.cor, fura: true, ja: new Set() }); som('magia', 0.7, 1.2); }
     else if (id === 'folego') { const cura = Math.round(h.ficha.vida * 0.33); h.hp = Math.min(h.ficha.vida, h.hp + cura); h.vigor = h.ficha.vigor; texto(h.x, h.y - 66, '+' + cura, '#9cff8a', true); som('beber', 0.6, 1.2); for (let i = 0; i < 26; i++) fx({ tipo: 'alma', x: h.x + rnd(-18, 18), y: h.y - rnd(0, 50), vy: rnd(-70, -20), vida: 0.9, max: 0.9, cor: '#ffe39a', tam: 2 }); }
+    else if (id === 'mare') { h.hp = Math.min(h.ficha.vida, h.hp + 30); h.veneno = 0; texto(h.x, h.y - 74, '+30', '#9cffe0', true); som('bolha', 0.9, 0.8); J.anel(h.x, h.y - 20, 120, M.cor, 0.6, 3); for (const e of J.inimigos) if (e.vivo && Math.abs(e.x - h.x) < 120 && Math.abs(e.y - h.y) < 70) feriInimigo(e, 12, Math.sign(e.x - h.x) || 1, { magia: true, forte: true, quebra: 3 }); for (let i = 0; i < 24; i++) fx({ tipo: 'gota', x: h.x + rnd(-40, 40), y: h.y - rnd(10, 50), vx: rnd(-160, 160), vy: rnd(-260, -80), grav: 600, vida: 0.8, max: 0.8, cor: '#9fd8d0', tam: 2 }); }
     else if (id === 'ferro') { h.ferroT = 6; som('metal', 0.8, 0.7); J.anel(h.x, h.y - 28, 40, M.cor, 0.5, 3); J.faiscas(h.x, h.y - 28, 20, M.cor, 1.2, 'faisca'); }
     else if (id === 'tremor') { if (!h.noChao) { h.vy = 560; h.tremorNoAr = true; } else ondas(h); }
   }
@@ -537,7 +538,7 @@
   // o pé muda com o chão: mato, lama, neve, pedra, terra batida e madeira
   function passo(h) {
     const r = F.atual.regiao, galho = tipoEm(h.x, h.y + 2) === 2, w = window.Som; if (!w) return;
-    if (galho) som('madeira', 0.12, 1.5); else if (J.abrigado && J.abrigado()) som('passop', 0.3, 1); else if (r === 'cobras' || (J.cl && J.cl('chuva', 'tempestade') > 0.6)) som('lama', 0.2, 1.3); else if (r === 'lobos') w.sopro('neve'); else if (r === 'zumbis') som('passop', 0.22, 0.85); else if (r === 'minas') som('pedra', 0.07, 1.7 + Math.random() * 0.3); else if (r === 'goblins') w.sopro('terra'); else w.sopro('mato');
+    if (galho) som('madeira', 0.12, 1.5); else if (J.abrigado && J.abrigado()) som('passop', 0.3, 1); else if (r === 'cobras' || r === 'mangue' || (J.cl && J.cl('chuva', 'tempestade') > 0.6)) som('lama', 0.2, 1.3); else if (r === 'lobos') w.sopro('neve'); else if (r === 'zumbis') som('passop', 0.22, 0.85); else if (r === 'minas') som('pedra', 0.07, 1.7 + Math.random() * 0.3); else if (r === 'goblins') w.sopro('terra'); else w.sopro('mato');
     if (['osso', 'prata'].includes(J.save.roupa) && Math.random() < 0.5) som('malha', 0.09, J.save.roupa === 'osso' ? 1.6 : 1.1);
   }
   function beiraEspinho(h) { for (const dx of [-26, 26]) if (tipoEm(h.x + dx, h.y + 70) === 3 || tipoEm(h.x + dx, h.y + 2) === 3 || tipoEm(h.x + dx, h.y + 2) === 0) return true; return false; }
@@ -694,7 +695,7 @@
     fr.hp = null; J.save.fracas[fr.id] = 1; F.aplicaFracas(J.save.fracas); if (window.Desenho) Desenho.repintar(); treme(8); som('quebra', 1, 0.7); for (let i = 0; i < 5; i++) poeira(x + rnd(-26, 26), y + rnd(0, 30), 6, 0);
     J.treina('coleta', 4); avisa('oco', fr); J.salvar();
   };
-  const ESPOLIO = { minas: ['ferro', 'ferro', 'pedra', 'prata', 'osso', 'tocha'], floresta: ['couro', 'fibra', 'erva', 'ferro', 'fruta'], lobos: ['couro', 'presa', 'osso', 'ferro', 'carne'], cobras: ['pele', 'presa', 'erva', 'prata', 'fibra'], zumbis: ['osso', 'ferro', 'trapo', 'ferro', 'erva'], goblins: ['ferro', 'couro', 'flecha', 'ferro', 'orelha'], vale: ['ferro', 'couro', 'erva', 'prata', 'madeira'] };
+  const ESPOLIO = { mangue: ['carne', 'presa', 'fibra', 'prata', 'osso', 'couro'], minas: ['ferro', 'ferro', 'pedra', 'prata', 'osso', 'tocha'], floresta: ['couro', 'fibra', 'erva', 'ferro', 'fruta'], lobos: ['couro', 'presa', 'osso', 'ferro', 'carne'], cobras: ['pele', 'presa', 'erva', 'prata', 'fibra'], zumbis: ['osso', 'ferro', 'trapo', 'ferro', 'erva'], goblins: ['ferro', 'couro', 'flecha', 'ferro', 'orelha'], vale: ['ferro', 'couro', 'erva', 'prata', 'madeira'] };
   J.abreBau = function (b) {
     const s = J.save; if (s.baus[b.id]) return; s.baus[b.id] = 1; som('tranca', 0.6, 1); som('abrir', 0.8, 0.9); som('raro', 0.5); J.faiscas(b.x, b.y - 20, 20, '#ffe2a0', 1, 'brasa'); J.anel(b.x, b.y - 16, 40, '#ffe2a0', 0.6, 2);
     const l = ESPOLIO[F.atual.regiao], n = 4 + Math.floor(Math.random() * 3); for (let i = 0; i < n; i++) J.restos.push({ m: l[Math.floor(Math.random() * l.length)], x: b.x + rnd(-8, 8), y: b.y - 24, vx: rnd(-90, 90), vy: rnd(-260, -150), w: 6, h: 8, t: 0 });

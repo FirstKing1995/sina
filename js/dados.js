@@ -101,9 +101,10 @@
 
   // ---------- espécies e títulos ----------
   C.ESPECIES = {
-    pedra: { nome: 'Gente de pedra', um: 'golem', cor: '#d0a070' }, lobo: { nome: 'Lobos', um: 'lobo', cor: '#9fb4d0' }, cobra: { nome: 'Cobras', um: 'cobra', cor: '#b8c060' }, zumbi: { nome: 'Zumbis', um: 'zumbi', cor: '#b8a0c8' }, goblin: { nome: 'Goblins', um: 'goblin', cor: '#d8a060' },
+    mare: { nome: 'Gente da maré', um: 'caranguejo', cor: '#7fc0b0' }, pedra: { nome: 'Gente de pedra', um: 'golem', cor: '#d0a070' }, lobo: { nome: 'Lobos', um: 'lobo', cor: '#9fb4d0' }, cobra: { nome: 'Cobras', um: 'cobra', cor: '#b8c060' }, zumbi: { nome: 'Zumbis', um: 'zumbi', cor: '#b8a0c8' }, goblin: { nome: 'Goblins', um: 'goblin', cor: '#d8a060' },
   };
   C.TITULOS = {
+    mare: [[25, 'Catador', '+12% de dano na gente da maré'], [100, 'Pescador', '+30% de dano neles, e a maré alta não te deixa lento'], [250, 'Filho da Maré', 'a casca deles não segura mais os seus golpes']],
     pedra: [[25, 'Quebra-pedra', '+12% de dano na gente de pedra'], [100, 'Mineiro', 'Pele de Pedra: os golpes deles tiram 20% menos de você'], [250, 'Coração de Ferro', 'a casca deles não segura mais os seus golpes']],
     lobo: [[25, 'Perseguidor de Lobos', '+12% de dano em lobos'], [100, 'Caçador de Lobos', 'Faro do Lobo: você corre 12% mais, e a esquiva gasta metade do vigor'], [250, 'Flagelo da Matilha', 'lobos fogem feridos e o bote deles não derruba você']],
     cobra: [[25, 'Pisador de Cobras', '+12% de dano em cobras'], [100, 'Caçador de Cobras', 'Sangue Frio: veneno não pega em você, e seus golpes envenenam'], [250, 'Língua de Serpente', 'seu veneno vale o dobro']],
@@ -117,12 +118,17 @@
     vento: { nome: 'Passo do Vento', custo: 30, espera: 8, cor: '#9fd8ff', desc: 'Por 6 segundos, corra e esquive sem gastar vigor.' },
     espinhos: { nome: 'Espinhos da Mata', custo: 34, espera: 2, cor: '#a8d060', desc: 'Três espinhos que atravessam a fila toda.' },
     folego: { nome: 'Fôlego da Terra', custo: 48, espera: 16, cor: '#ffe39a', desc: 'A terra devolve um terço da sua vida.' },
+    mare: { nome: 'Maré', custo: 34, espera: 16, cor: '#7fd0c0', desc: 'A água lava: cura 30, tira o veneno e empurra quem estiver perto.' },
     ferro: { nome: 'Pele de Ferro', custo: 36, espera: 14, cor: '#d8a070', desc: 'Por 6 segundos, os golpes tiram metade e não derrubam você.' },
     tremor: { nome: 'Tremor', custo: 38, espera: 4, cor: '#d8b070', desc: 'Soca o chão: duas ondas de pedra.' },
   };
 
   // ---------- caderno do caçador: [o que é, o que faz, como cair em cima] ----------
   C.BICHOS = {
+    caranguejo: ['Do tamanho de um cachorro, e com mais raiva.', 'Anda de lado, rápido, e belisca duas vezes. A casca segura golpe fraco.', 'Golpe forte ou machado: a casca racha.'],
+    afogado: ['Saiu para pescar e a maré não deixou voltar.', 'Joga o arpão de longe e recua.', 'Feche a distância: de perto ele só tem as mãos.'],
+    guaiamum: ['O avô de todos os caranguejos do mangue.', 'Pinça pesada, duas vezes seguidas, e não recua.', 'Espere a segunda pinçada e bata nas costas.'],
+    caboclo: ['O dono do rio. Pede fumo, e cobra quem esquece.', 'Puxa a maré, chama os caranguejos e salta sobre você.', 'Na maré baixa ele fica lento: aproveite.'],
     rastejante: ['Uma pedra que anda e morde.', 'Rola para cima de você. A casca segura golpe fraco.', 'Porrete, machado ou golpe forte: a casca não aguenta.'],
     minerador: ['Cavou fundo demais e ficou.', 'Bate com a picareta duas vezes. Às vezes levanta de novo.', 'Termine com golpe forte, senão ele volta.'],
     golem: ['Uma pilha de pedra que lembra de um homem.', 'Lento, mas a pancada corre pelo chão.', 'Pule a onda e bata nas costas, no descanso.'],
@@ -156,6 +162,11 @@
   // vel px/s, alcance do golpe, prep: aviso, golpe: duração, recua: descanso, firme: golpes até cambalear
   // reflexo: chance de reagir ao seu golpe; flanco: vontade de ir às suas costas; finta: golpe falso; bruto: não recua
   C.TIPOS = {
+    // a gente da maré do Mangue
+    caranguejo: { nome: 'Caranguejo do mangue', esp: 'mare', spr: 'caranguejo', hp: 46, dano: 13, vel: 104, visao: 230, alcance: 52, prep: 0.3, golpe: 0.22, recua: 0.45, firme: 3, reflexo: 0.45, casca: true, seguidos: 2, w: 30, h: 22, cai: { carne: 0.7, presa: 0.25 }, passo: 6 },
+    afogado: { nome: 'Pescador afogado', esp: 'mare', spr: 'afogado', hp: 58, dano: 15, vel: 60, visao: 340, alcance: 260, prep: 0.6, golpe: 0.2, recua: 0.7, firme: 3, reflexo: 0.3, atira: 'flechaI', distancia: 170, levanta: 0.2, w: 20, h: 56, cai: { trapo: 0.6, fibra: 0.6, osso: 0.3, flecha: 0.8 }, passo: 9 },
+    guaiamum: { nome: 'Guaiamum velho', esp: 'mare', spr: 'caranguejo', hp: 200, dano: 28, vel: 72, visao: 240, alcance: 64, prep: 0.5, golpe: 0.26, recua: 0.5, firme: 11, casca: true, bruto: true, seguidos: 2, avanco: 80, w: 46, h: 34, esc: 1.6, cai: { carne: 2, presa: 1, couro: 0.5 }, passo: 8, tinta: 'rgba(200,60,40,0.3)' },
+    caboclo: { nome: "O Caboclo d'Água", esp: 'mare', spr: 'caboclo', hp: 900, dano: 22, vel: 70, visao: 520, alcance: 66, prep: 0.55, golpe: 0.28, recua: 0.6, firme: 12, w: 48, h: 96, chefe: true, seguidos: 2, poder: 'salto', chama: 'mare', chamaL: ['caranguejo', 'afogado', 'caranguejo'], cai: { carne: 6, presa: 4, prata: 3 }, passo: 10, magia: 'mare' },
     // a gente de pedra das Minas de Ferro
     rastejante: { nome: 'Rastejante de pedra', esp: 'pedra', spr: 'rastejante', hp: 38, dano: 11, vel: 92, visao: 240, alcance: 62, prep: 0.32, golpe: 0.26, recua: 0.5, firme: 3, reflexo: 0.4, casca: true, w: 30, h: 22, salta: 230, cai: { pedra: 0.8, ferro: 0.2 }, passo: 7 },
     minerador: { nome: 'Minerador morto', esp: 'pedra', spr: 'minerador', hp: 72, dano: 19, vel: 52, visao: 250, alcance: 48, prep: 0.44, golpe: 0.24, recua: 0.45, firme: 5, levanta: 0.25, seguidos: 2, avanco: 130, w: 22, h: 58, cai: { ferro: 0.45, trapo: 0.4, tocha: 0.12 }, passo: 8 },
@@ -193,6 +204,7 @@
 
   // ---------- regiões ----------
   C.REGIOES = {
+    mangue: { frase: 'A água sobe duas vezes por dia. Os mortos, uma vez só.', nome: 'Mangue das Marés', fundo: 'f_mangue', p: 'mangue', nevoa: '104,132,124', luz: [104, 122, 116], amb: 'rio', mus: 'mangue', ar: ['vagalume', 'nevoa', 'esporo'], terra: [26, 30, 24] },
     minas: { frase: 'Ninguém subiu de volta.', nome: 'Minas de Ferro', fundo: 'f_minas', p: 'minas', nevoa: '92,84,96', luz: [96, 90, 104], amb: 'mina', mus: 'minas', ar: ['cinza', 'cinza', 'brasinha'], terra: [24, 20, 22], semArvores: true, fundo0: 0.3 },
     floresta: { frase: 'Onde o barro acordou.', nome: 'Floresta Antiga', fundo: 'f_floresta', p: 'floresta', nevoa: '96,168,156', luz: [150, 172, 166], amb: 'brisa', ar: ['vagalume', 'vagalume', 'folha', 'esporo'], terra: [30, 22, 16] },
     lobos: { frase: 'O vento aqui tem dentes.', nome: 'Serra dos Uivos', fundo: 'f_lobos', p: 'lobos', nevoa: '120,146,184', luz: [112, 124, 152], amb: 'noite', mus: 'serra', ar: ['neve', 'neve', 'nevoa'], terra: [22, 24, 30] },

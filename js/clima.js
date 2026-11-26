@@ -6,7 +6,7 @@
   const { rnd, treme, poeira, fx, cruza, caixa } = K;
   const PESO = {
     floresta: { limpo: 5, chuva: 2, neblina: 2, tempestade: 1 }, vale: { limpo: 5, chuva: 2, neblina: 2 }, lobos: { limpo: 3, neve: 4, vento: 2 },
-    cobras: { neblina: 4, chuva: 3, limpo: 2 }, zumbis: { neblina: 3, limpo: 3, chuva: 1, cinza: 2 }, goblins: { cinza: 4, limpo: 3, tempestade: 1 }, minas: { limpo: 1 },
+    cobras: { neblina: 4, chuva: 3, limpo: 2 }, zumbis: { neblina: 3, limpo: 3, chuva: 1, cinza: 2 }, goblins: { cinza: 4, limpo: 3, tempestade: 1 }, minas: { limpo: 1 }, mangue: { neblina: 3, chuva: 2, limpo: 3 },
   };
   J.NOMECLIMA = { chuva: 'chuva', tempestade: 'tempestade', neblina: 'neblina', neve: 'neve', vento: 'ventania', cinza: 'cinza' };
   const C0 = (J.clima = { tipo: 'limpo', forca: 0, resta: 60, area: null, lado: 1, raio: 9 });

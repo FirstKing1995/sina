@@ -112,7 +112,7 @@
     const dentro = (x) => a.escuros.some((q) => x > q.x0 - 30 && x < q.x1 + 30);
     const livre = (tx, larg) => { const y0 = a.topo[tx]; for (let k = -larg; k <= larg; k++) { const t = a.topo[Math.max(0, Math.min(W - 1, tx + k))]; if (Math.abs(t - y0) > 1) return false; } return true; };
     const perto = (x, l, d) => l.some((o) => Math.abs(o.x - x) < d);
-    const PLANTAS = { vale: ['samambaia', 'planta', 'pedras', 'frutas', 'tronco', 'planta'],  floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'], minas: ['pedras', 'pedrao', 'ossos', 'pedras', 'ossos2', 'tronco'] }[a.regiao];
+    const PLANTAS = { vale: ['samambaia', 'planta', 'pedras', 'frutas', 'tronco', 'planta'],  floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'], minas: ['pedras', 'pedrao', 'ossos', 'pedras', 'ossos2', 'tronco'], mangue: ['planta', 'samambaia', 'tronco', 'pedras', 'ossos', 'planta'] }[a.regiao];
     for (let tx = 4; tx < W - 4; tx += 2 + Math.floor(r() * 4)) {
       const x = tx * T + 8;
       if (perto(x, a.portas, 110) || perto(x, a.circulos, 100) || perto(x, a.fogos, 46) || perto(x, a.coleta, 26) || perto(x, a.baus, 34)) continue;
@@ -129,6 +129,7 @@
 
   // quem aparece de cada espécie, conforme o quanto já se andou (k de 0 a 1)
   const VARIA = {
+    mare: [['caranguejo', 0, 1], ['afogado', 0.1, 0.6], ['guaiamum', 0.45, 0.22]],
     pedra: [['rastejante', 0, 1], ['minerador', 0.12, 0.6], ['golem', 0.3, 0.42], ['golem_ferro', 0.55, 0.2]],
     lobo: [['lobo', 0, 1], ['lobo_negro', 0.22, 0.42], ['lobo_rubro', 0.4, 0.24]],
     cobra: [['cobra', 0, 1], ['cobra_coral', 0.18, 0.4], ['cobra_cuspe', 0.28, 0.4], ['cobra_prata', 0.45, 0.28]],
@@ -202,8 +203,8 @@
       k++;
     }
     // a clareira dos quatro caminhos
-    o.y = 30; o.plano(10).placa('caminhos').fogo('Fogueira da Clareira').plano(22).enf('ossos', -13, 1).enf('placa', -11, 1).enf('ossos', 3, 1).porta('p_lobos', ['lobos', 'volta'], 'Serra dos Uivos').plano(24).enf('ninho', -13, 1).enf('placa', -11, 1).enf('ninho', 3, 1).porta('p_cobras', ['cobras', 'volta'], 'Alagado das Presas').plano(24).enf('lapide', -13, 1).enf('placa', -11, 1).enf('lapide', 3, 1).porta('p_zumbis', ['zumbis', 'volta'], 'Chão dos Enterrados', 'arco').plano(24).enf('totem', -13, 1).enf('placa', -11, 1).enf('totem', 3, 1).porta('p_goblins', ['goblins', 'volta'], 'Barrancos do Fortim').plano(24).enf('frutas', -12, 1).enf('placa', -10, 1).porta('p_vale', ['vale', 'volta'], 'Vale do Rio Manso', 'arco').plano(24).enf('pedrao', -13, 1).enf('placa', -11, 1).enf('pedras', 3, 1).porta('p_minas', ['minas', 'volta'], 'Minas de Ferro').plano(6);
-    o.a.portas.find((p) => p.id === 'p_vale').precisa = 2; o.a.portas.find((p) => p.id === 'p_minas').precisa = 4;
+    o.y = 30; o.plano(10).placa('caminhos').fogo('Fogueira da Clareira').plano(22).enf('ossos', -13, 1).enf('placa', -11, 1).enf('ossos', 3, 1).porta('p_lobos', ['lobos', 'volta'], 'Serra dos Uivos').plano(24).enf('ninho', -13, 1).enf('placa', -11, 1).enf('ninho', 3, 1).porta('p_cobras', ['cobras', 'volta'], 'Alagado das Presas').plano(24).enf('lapide', -13, 1).enf('placa', -11, 1).enf('lapide', 3, 1).porta('p_zumbis', ['zumbis', 'volta'], 'Chão dos Enterrados', 'arco').plano(24).enf('totem', -13, 1).enf('placa', -11, 1).enf('totem', 3, 1).porta('p_goblins', ['goblins', 'volta'], 'Barrancos do Fortim').plano(24).enf('frutas', -12, 1).enf('placa', -10, 1).porta('p_vale', ['vale', 'volta'], 'Vale do Rio Manso', 'arco').plano(24).enf('pedrao', -13, 1).enf('placa', -11, 1).enf('pedras', 3, 1).porta('p_minas', ['minas', 'volta'], 'Minas de Ferro').plano(22).enf('tronco', -12, 1).enf('placa', -9, 1).porta('p_mangue', ['mangue', 'volta'], 'Mangue das Marés').plano(6);
+    o.a.portas.find((p) => p.id === 'p_vale').precisa = 2; o.a.portas.find((p) => p.id === 'p_minas').precisa = 4; o.a.portas.find((p) => p.id === 'p_mangue').precisa = 5;
     return o.fim();
   }
   // ---------- um caminho ----------
@@ -241,7 +242,7 @@
       if (o.x > 600 && fogo === 1) { o.plano(16).porta('meio', cfg.meio, cfg.meioNome, 'arco', -6).plano(8).plano(8).fogo(cfg.fogos[2]).plano(6); fogo = 2; }
       if (o.x > 800 && emb === 1) { o.embosca([onda(3), onda(3)], 48).plano(8); emb = 2; }
       if (o.x > 960 && fogo === 2) { o.plano(14).fogo(cfg.fogos[1]).plano(6); fogo = 3; }
-      if (o.x > 1120 && emb === 2) { o.embosca([onda(3), onda(3), [cfg.elite, varia(esp, 1, o.r), cfg.b]], 52).plano(8); emb = 3; }
+      if (o.x > 1120 && emb === 2) { o.embosca([onda(3), onda(3), [cfg.elite, varia(esp, 1, o.r), window.Dados.TIPOS[cfg.b] ? cfg.b : cfg.outro ? cfg.outro[0] : VARIA[esp][0][0]]], 52).plano(8); emb = 3; }
     }
     o.plano(10).porta('cruza', cfg.cruza, cfg.cruzaNome, 'arco', -2).plano(22).porta('covil', ['covil_' + id, 'volta'], cfg.covil, 'caverna').plano(10);
     return o.fim();
@@ -313,6 +314,8 @@
   F.aplicaRochas = function (abertas) { const a = F.atual; if (!a.rochas) return; for (const r of a.rochas) if (abertas && abertas[r.id]) for (let c = r.c0; c <= r.c1; c++) for (let ty = r.y0; ty <= r.y1; ty++) F.poe(c, ty, 0); };
   const MONTA = {
     minas: () => rochas(teto(caminho('minas', 77, { zonas: ['Boca da Mina', 'Galerias', [0.86, 0.86, 0.96], 'Veio Fundo', [1.08, 0.9, 0.8]], lug: ['O Elevador Caído', 'A corda foi cortada. Do lado de cima.', 'Refeitório dos Mineiros', 'Os pratos ainda estão na mesa. Cobertos de pó, não de comida.', 'Sala do Capataz', 'Uma lista de nomes. Todos riscados, menos o dele.'], elite: 'golem_ferro', b: 'pedra', bando: 3, outro: ['minerador', 1], terreno: ['ondula', 'ondula', 'sobe', 'desce', 'muro', 'vao', 'queda', 'vaoG'], pega: ['pedra', 'pedra', 'ferro', 'galho', 'osso'], fogos: ['Fogueira da Boca', 'Fogueira dos Trilhos', 'Fogueira do Poço Velho'], meio: ['floresta', 'p_minas'], meioNome: 'Saída para a clareira', cruza: ['floresta', 'p_minas'], cruzaNome: 'Poço de luz para a clareira', covil: 'O Fundo da Mina' }), 15)),
+    mangue: () => caminho('mangue', 91, { zonas: ['Lama Rasa', 'Raízes Altas', [0.9, 1, 0.96], 'Boca do Rio', [1.05, 0.95, 0.85]], lug: ['O Barco Virado', 'O casco ainda tem um nome pintado. Ninguém lembra dele.', 'Palafitas dos Pescadores', 'As redes estão secando há anos.', 'Altar do Caboclo', 'Fumo, cachaça e espelhos. Algumas oferendas são de ontem.'], elite: 'guaiamum', b: 'mare', bando: 3, outro: ['afogado', 1], terreno: ['ondula', 'ondula', 'vao', 'desce', 'sobe', 'vaoG', 'ondula', 'queda'], pega: ['galho', 'fibra', 'carne', 'osso', 'fruta'], fogos: ['Fogueira da Lama', 'Fogueira das Palafitas', 'Fogueira do Barco'], meio: ['floresta', 'p_mangue'], meioNome: 'Saída para a clareira', cruza: ['floresta', 'p_mangue'], cruzaNome: 'Trilha de volta para a clareira', covil: 'O Altar do Caboclo' }),
+    covil_mangue: () => covil('covil_mangue', 'mangue', 92, { id: 'caboclo', b: 'caranguejo', magia: 'mare' }, 'O Altar do Caboclo', ['mangue', 'covil']),
     covil_minas: () => teto(covil('covil_minas', 'minas', 78, { id: 'capataz', b: 'golem', magia: 'ferro' }, 'O Fundo da Mina', ['minas', 'covil']), 17),
     vale, lar,
     floresta,

@@ -231,7 +231,11 @@
   const CAPATAZ = Object.assign({}, GURGO, { ritmo: [0.6, 0.46, 0.3], cor: '#e0a060', virada: ['rastejante', 'rastejante'], golpes: Object.assign({}, GURGO.golpes, {
     bando: { peso: (c) => (c.fase >= 2 && capangas() < 1 && c.dist > 120 ? 1.2 : 0), cd: 20, f(e, dt) { e.vx = 0; e.qf = 6; if (passou(e, dt, 0.5)) { som('quebra', 1, 0.6); treme(8); chama(e, e.fase === 3 ? ['rastejante', 'minerador', 'rastejante'] : ['rastejante', 'rastejante']); } return e.t > 1.1; } },
   }) });
-  const DONOS = { alfa: ALFA, rainha: RAINHA, carcereiro: CARC, chefe: GURGO, capataz: CAPATAZ };
+  // o Caboclo d'Água: luta como o Gurgo, chama a gente da maré e, ferido, puxa a maré alta
+  const CABOCLO = Object.assign({}, GURGO, { ritmo: [0.62, 0.48, 0.32], cor: '#7fd0c0', virada: ['caranguejo', 'caranguejo'], golpes: Object.assign({}, GURGO.golpes, {
+    bando: { peso: (c) => (c.fase >= 2 && capangas() < 1 && c.dist > 120 ? 1.2 : 0), cd: 18, f(e, dt) { e.vx = 0; e.qf = 4; if (passou(e, dt, 0.5)) { som('bolha', 1, 0.5); treme(6); J.mareAlta = 9; chama(e, e.fase === 3 ? ['caranguejo', 'afogado', 'caranguejo'] : ['caranguejo', 'caranguejo']); } return e.t > 1.1; } },
+  }) });
+  const DONOS = { alfa: ALFA, rainha: RAINHA, carcereiro: CARC, chefe: GURGO, capataz: CAPATAZ, caboclo: CABOCLO };
   J.DONOS = DONOS;
 
   // ---------- escolher e encadear ----------

@@ -34,7 +34,7 @@
     const mem = J.memorias(), l = $('memorias'); l.innerHTML = '';
     if (mem.length) { l.append(el('h3', '', 'Os que vieram antes')); for (const x of mem.slice(0, 4)) l.append(el('p', '', x.nome + (x.titulo ? ', ' + x.titulo : '') + ' · ' + Math.max(1, Math.round(x.tempo / 60)) + ' min · ' + x.mortes + ' mortes')); }
   }
-  const nomeArea = (id) => (id === 'lar' ? (J.save && J.save.nomeVila) || 'Clareira do Rio' : F.IDS.includes(id) ? (id.startsWith('covil_') ? { covil_lobos: 'Toca do Alfa', covil_cobras: 'Ninho da Rainha', covil_zumbis: 'A Cripta Fechada', covil_goblins: 'O Fortim', covil_minas: 'O Fundo da Mina' }[id] : C.REGIOES[id].nome) : '');
+  const nomeArea = (id) => (id === 'lar' ? (J.save && J.save.nomeVila) || 'Clareira do Rio' : F.IDS.includes(id) ? (id.startsWith('covil_') ? { covil_lobos: 'Toca do Alfa', covil_cobras: 'Ninho da Rainha', covil_zumbis: 'A Cripta Fechada', covil_goblins: 'O Fortim', covil_minas: 'O Fundo da Mina', covil_mangue: 'O Altar do Caboclo' }[id] : C.REGIOES[id].nome) : '');
 
   // ---------- nascimento ----------
   let nas = null;
