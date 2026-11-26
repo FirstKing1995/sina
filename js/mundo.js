@@ -17,7 +17,7 @@
   const LIMITE = { pa: 1, picareta: 1 }; const jaTem0 = J.jaTem; J.jaTem = (r) => jaTem0(r) || (LIMITE[r.id] && (J.save.inv[r.id] || 0) >= LIMITE[r.id]);
   // o que cada lugar guarda lá em cima e debaixo da terra
   const NINHO = { floresta: ['ovo', 'ovo', 'mel', 'fruta', 'erva', 'fibra'], vale: ['ovo', 'mel', 'mel', 'fruta', 'erva'], lobos: ['ovo', 'presa', 'osso', 'couro'], cobras: ['ovo', 'pele', 'mel', 'erva'], zumbis: ['ovo', 'trapo', 'osso', 'ferro'], goblins: ['ovo', 'ferro', 'trapo', 'orelha'] };
-  const ENTERRADO = { floresta: ['osso', 'ferro', 'pedra', 'trapo', 'prata'], vale: ['pedra', 'ferro', 'osso', 'trapo', 'prata'], lobos: ['osso', 'osso', 'ferro', 'presa', 'prata'], cobras: ['pele', 'prata', 'osso', 'ferro'], zumbis: ['osso', 'trapo', 'ferro', 'ferro', 'prata'], goblins: ['ferro', 'ferro', 'orelha', 'trapo', 'prata'] };
+  const ENTERRADO = { minas: ['ferro', 'ferro', 'prata', 'osso', 'pedra'], floresta: ['osso', 'ferro', 'pedra', 'trapo', 'prata'], vale: ['pedra', 'ferro', 'osso', 'trapo', 'prata'], lobos: ['osso', 'osso', 'ferro', 'presa', 'prata'], cobras: ['pele', 'prata', 'osso', 'ferro'], zumbis: ['osso', 'trapo', 'ferro', 'ferro', 'prata'], goblins: ['ferro', 'ferro', 'orelha', 'trapo', 'prata'] };
 
   // ---------- monta os extras da área (uma vez) ----------
   J.extras = function (A) {
@@ -29,7 +29,7 @@
     const ant = F.grade; F.grade = A.grade; const antW = F.W; F.W = W;
     // árvores altas: tronco com cipó, galhos lá em cima com um ninho
     for (let tx = 24; tx < W - 24; tx += 30 + Math.floor(hash(sem + tx) * 30)) {
-      const x = tx * T + 8; if (hash(sem + tx * 3) > (A.id.startsWith('covil') ? 0 : reg === 'goblins' || reg === 'zumbis' ? 0.45 : 0.62) || !livre(tx, 3) || proibido(x)) continue;
+      const x = tx * T + 8; if (hash(sem + tx * 3) > (A.id.startsWith('covil') || reg === 'minas' ? 0 : reg === 'goblins' || reg === 'zumbis' ? 0.45 : 0.62) || !livre(tx, 3) || proibido(x)) continue;
       const g = A.topo[tx], alt = 9 + Math.floor(hash(tx * 7 + sem) * 4), top = g - alt; if (top < 6 || !vazio(tx, top - 3, g - 1, 3)) continue;
       for (let k = -2; k <= 2; k++) F.poe(tx + k, top, 2);
       E.arvores.push({ x, tx, y0: g * T, y1: top * T, id: A.id + '_a' + tx });
@@ -40,7 +40,7 @@
     // terra fofa
     for (let tx = 14; tx < W - 14; tx += 16 + Math.floor(hash(sem + tx * 5) * 26)) { const x = tx * T + 8; if (hash(tx * 13 + sem) > 0.55 || !livre(tx, 1) || proibido(x) || perto(x, E.arvores, 50)) continue; E.montes.push({ x, y: A.topo[tx] * T, id: A.id + '_m' + tx, tx }); }
     // veios: na cara dos barrancos de três blocos ou mais
-    for (let tx = 6; tx < W - 6; tx++) for (const d of [-1, 1]) { const des = A.topo[tx + d] - A.topo[tx]; if (des < 3 || des > 18 || hash(tx * 17 + d + sem) > 0.32) continue; const x = d > 0 ? (tx + 1) * T + 2 : tx * T - 2; if (proibido(x)) continue; const ty = A.topo[tx] + 1 + Math.floor(hash(tx) * Math.min(4, des - 1)); E.veios.push({ x, y: ty * T + 8, id: A.id + '_v' + tx + d, d, prata: hash(tx * 3) < 0.18 }); }
+    for (let tx = 6; tx < W - 6; tx++) for (const d of [-1, 1]) { const des = A.topo[tx + d] - A.topo[tx]; if (des < 3 || des > 18 || hash(tx * 17 + d + sem) > (reg === 'minas' ? 0.7 : 0.32)) continue; const x = d > 0 ? (tx + 1) * T + 2 : tx * T - 2; if (proibido(x)) continue; const ty = A.topo[tx] + 1 + Math.floor(hash(tx) * Math.min(4, des - 1)); E.veios.push({ x, y: ty * T + 8, id: A.id + '_v' + tx + d, d, prata: hash(tx * 3) < 0.18 }); }
     F.grade = ant; F.W = antW;
     return E;
   };
@@ -52,16 +52,18 @@
     const A = F.atual, E = A.extras, s = J.save; if (!E) return null; s.cavados = s.cavados || {}; s.minados = s.minados || {};
     for (const a of E.arvores) if (Math.abs(a.x - h.x) < 16 && Math.abs(h.y - a.y0) < 6) return { tipo: 'escalar', o: a };
     for (const m of E.montes) if (!s.cavados[m.id] && Math.abs(m.x - h.x) < 22 && Math.abs(m.y - h.y) < 30) return { tipo: 'cavar', o: m };
+    if (A.rochas) for (const r of A.rochas) if (!(s.rochas && s.rochas[r.id]) && Math.abs(r.x - h.x) < 34 && Math.abs(r.y1 * T - h.y) < 30) return { tipo: 'romper', o: r };
     for (const v of E.veios) if (!(s.minados[v.id] > J.save.dia - 3) && Math.abs(v.x - h.x) < 26 && Math.abs(v.y - (h.y - 26)) < 40) return { tipo: 'minerar', o: v };
     return null;
   };
-  J.rotuloMundo = (p) => (p.tipo === 'escalar' ? 'Escalar a árvore' : p.tipo === 'cavar' ? ((J.save.inv.pa || 0) > 0 ? 'Cavar a terra fofa' : 'Terra fofa: precisa de uma pá') : p.tipo === 'minerar' ? ((J.save.inv.picareta || 0) > 0 ? 'Quebrar o veio' : 'Veio de minério: precisa de picareta') : null);
+  J.rotuloMundo = (p) => (p.tipo === 'romper' ? ((J.save.inv.picareta || 0) > 0 ? 'Abrir a parede de minério' : 'Parede de minério: precisa de picareta') : p.tipo === 'escalar' ? 'Escalar a árvore' : p.tipo === 'cavar' ? ((J.save.inv.pa || 0) > 0 ? 'Cavar a terra fofa' : 'Terra fofa: precisa de uma pá') : p.tipo === 'minerar' ? ((J.save.inv.picareta || 0) > 0 ? 'Quebrar o veio' : 'Veio de minério: precisa de picareta') : null);
 
   // ---------- usar ----------
   J.usaMundo = function (p) {
     const h = J.heroi, s = J.save;
     if (p.tipo === 'escalar') { h.estado = 'escala'; h.t = 0; h.arv = p.o; h.x = p.o.x - h.dir * 6; h.vx = 0; h.vy = 0; som('pano', 0.4, 1.2); return; }
     if (p.tipo === 'cavar') { if (!(s.inv.pa > 0)) { texto(h.x, h.y - 66, 'precisa de uma pá', '#e0b070'); return; } h.estado = 'cava'; h.t = 0; h.vx = 0; h.alvoM = p.o; h.dir = Math.sign(p.o.x - h.x) || h.dir; h.golpes = 0; return; }
+    if (p.tipo === 'romper') { if (!(s.inv.picareta > 0)) { texto(h.x, h.y - 66, 'precisa de picareta', '#e0b070'); return; } const r = p.o; h.estado = 'minera'; h.t = 0; h.vx = 0; h.alvoV = { x: r.x, y: h.y - 30, d: Math.sign(h.x - r.x) || 1, id: r.id, rocha: r }; h.dir = Math.sign(r.x - h.x) || h.dir; h.golpes = 0; return; }
     if (p.tipo === 'minerar') { if (!(s.inv.picareta > 0)) { texto(h.x, h.y - 66, 'precisa de picareta', '#e0b070'); return; } h.estado = 'minera'; h.t = 0; h.vx = 0; h.alvoV = p.o; h.dir = p.o.d > 0 ? -1 : 1; if (Math.abs(p.o.x - h.x) > 4) h.dir = Math.sign(p.o.x - h.x); h.golpes = 0; }
   };
   // cada batida: cavar três, minerar quatro
@@ -85,6 +87,7 @@
         else { som('minerar', 0.6, 0.9 + Math.random() * 0.2); J.faiscas(o.x, o.y, 10, o.prata ? '#dfe8f0' : '#ffd89a', 1, 'faisca'); treme(1.6); }
         if (h.golpes === n) {
           if (h.estado === 'cava') { s.cavados[o.id] = 1; const l = ENTERRADO[F.atual.regiao] || ENTERRADO.floresta, q = 2 + Math.floor(Math.random() * 2); for (let i = 0; i < q; i++) J.restos.push({ m: um(l), x: o.x + rnd(-4, 4), y: o.y - 8, vx: rnd(-70, 70), vy: rnd(-260, -160), w: 6, h: 8, t: 0 }); if (Math.random() < 0.2) { s.inv.pa--; texto(h.x, h.y - 80, 'a pá quebrou', '#e0b070'); } J.treina('coleta', 6); som('raro', 0.4, 1.3); }
+          else if (o.rocha) { s.rochas = s.rochas || {}; s.rochas[o.id] = 1; F.aplicaRochas(s.rochas); if (window.Desenho) Desenho.repintar(); treme(8); for (let i = 0; i < 4; i++) J.restos.push({ m: i === 0 && Math.random() < 0.6 ? 'ferro' : 'pedra', x: o.x, y: o.y, vx: rnd(-90, 90), vy: rnd(-240, -120), w: 6, h: 8, t: 0 }); for (let i = 0; i < 8; i++) poeira(o.x + rnd(-10, 10), h.y - rnd(0, 60), 6, 0); som('quebra', 1, 0.6); J.treina('oficio', 6); }
           else { s.minados[o.id] = s.dia; const q = 1 + (Math.random() < 0.4 ? 1 : 0); for (let i = 0; i < q; i++) J.restos.push({ m: o.prata && i === 0 ? 'prata' : 'ferro', x: o.x - o.d * 8, y: o.y, vx: -o.d * rnd(40, 110), vy: rnd(-220, -120), w: 6, h: 8, t: 0 }); J.restos.push({ m: 'pedra', x: o.x, y: o.y, vx: rnd(-60, 60), vy: -150, w: 6, h: 8, t: 0 }); if (Math.random() < 0.15) { s.inv.picareta--; texto(h.x, h.y - 80, 'a picareta quebrou', '#e0b070'); } J.treina('oficio', 4); som('quebra', 0.6, 0.9); }
           J.salvar();
         }

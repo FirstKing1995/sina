@@ -101,9 +101,10 @@
 
   // ---------- espécies e títulos ----------
   C.ESPECIES = {
-    lobo: { nome: 'Lobos', um: 'lobo', cor: '#9fb4d0' }, cobra: { nome: 'Cobras', um: 'cobra', cor: '#b8c060' }, zumbi: { nome: 'Zumbis', um: 'zumbi', cor: '#b8a0c8' }, goblin: { nome: 'Goblins', um: 'goblin', cor: '#d8a060' },
+    pedra: { nome: 'Gente de pedra', um: 'golem', cor: '#d0a070' }, lobo: { nome: 'Lobos', um: 'lobo', cor: '#9fb4d0' }, cobra: { nome: 'Cobras', um: 'cobra', cor: '#b8c060' }, zumbi: { nome: 'Zumbis', um: 'zumbi', cor: '#b8a0c8' }, goblin: { nome: 'Goblins', um: 'goblin', cor: '#d8a060' },
   };
   C.TITULOS = {
+    pedra: [[25, 'Quebra-pedra', '+12% de dano na gente de pedra'], [100, 'Mineiro', 'Pele de Pedra: os golpes deles tiram 20% menos de você'], [250, 'Coração de Ferro', 'a casca deles não segura mais os seus golpes']],
     lobo: [[25, 'Perseguidor de Lobos', '+12% de dano em lobos'], [100, 'Caçador de Lobos', 'Faro do Lobo: você corre 12% mais, e a esquiva gasta metade do vigor'], [250, 'Flagelo da Matilha', 'lobos fogem feridos e o bote deles não derruba você']],
     cobra: [[25, 'Pisador de Cobras', '+12% de dano em cobras'], [100, 'Caçador de Cobras', 'Sangue Frio: veneno não pega em você, e seus golpes envenenam'], [250, 'Língua de Serpente', 'seu veneno vale o dobro']],
     zumbi: [[25, 'Coveiro', '+12% de dano em zumbis'], [100, 'Caçador de Mortos', 'Barro Vivo: cada morte devolve 6 de vida'], [250, 'Fim do Descanso', 'mortos explodem em brasa quando caem']],
@@ -116,11 +117,17 @@
     vento: { nome: 'Passo do Vento', custo: 30, espera: 8, cor: '#9fd8ff', desc: 'Por 6 segundos, corra e esquive sem gastar vigor.' },
     espinhos: { nome: 'Espinhos da Mata', custo: 34, espera: 2, cor: '#a8d060', desc: 'Três espinhos que atravessam a fila toda.' },
     folego: { nome: 'Fôlego da Terra', custo: 48, espera: 16, cor: '#ffe39a', desc: 'A terra devolve um terço da sua vida.' },
+    ferro: { nome: 'Pele de Ferro', custo: 36, espera: 14, cor: '#d8a070', desc: 'Por 6 segundos, os golpes tiram metade e não derrubam você.' },
     tremor: { nome: 'Tremor', custo: 38, espera: 4, cor: '#d8b070', desc: 'Soca o chão: duas ondas de pedra.' },
   };
 
   // ---------- caderno do caçador: [o que é, o que faz, como cair em cima] ----------
   C.BICHOS = {
+    rastejante: ['Uma pedra que anda e morde.', 'Rola para cima de você. A casca segura golpe fraco.', 'Porrete, machado ou golpe forte: a casca não aguenta.'],
+    minerador: ['Cavou fundo demais e ficou.', 'Bate com a picareta duas vezes. Às vezes levanta de novo.', 'Termine com golpe forte, senão ele volta.'],
+    golem: ['Uma pilha de pedra que lembra de um homem.', 'Lento, mas a pancada corre pelo chão.', 'Pule a onda e bata nas costas, no descanso.'],
+    golem_ferro: ['O minério pegou nele por dentro.', 'Bate duas vezes seguidas e quase não cambaleia.', 'Gaste a guarda com golpes pesados antes de chegar perto.'],
+    capataz: ['Ainda manda na mina, mesmo sem ninguém vivo.', 'Salta, corre de ombro e derruba o teto. Chama os rastejantes.', 'Quando bate na parede, fica tonto: é a hora.'],
     lobo: ['Cinza, magro, nunca só de verdade.', 'Salta para fora do golpe e volta. Ferido, uiva.', 'Espere o bote e role por dentro dele. Cansa depois de errar.'],
     lobo_negro: ['O que fica atrás do bando, olhando.', 'Morde e some. Procura as suas costas.', 'Encoste numa parede: sem costas, ele perde o jeito.'],
     lobo_rubro: ['Maior que você deitado. Cheira a ferro.', 'Dois botes seguidos. Não para quando apanha.', 'Golpe carregado quebra a postura; depois do segundo bote ele respira.'],
@@ -149,6 +156,12 @@
   // vel px/s, alcance do golpe, prep: aviso, golpe: duração, recua: descanso, firme: golpes até cambalear
   // reflexo: chance de reagir ao seu golpe; flanco: vontade de ir às suas costas; finta: golpe falso; bruto: não recua
   C.TIPOS = {
+    // a gente de pedra das Minas de Ferro
+    rastejante: { nome: 'Rastejante de pedra', esp: 'pedra', spr: 'rastejante', hp: 38, dano: 11, vel: 92, visao: 240, alcance: 62, prep: 0.32, golpe: 0.26, recua: 0.5, firme: 3, reflexo: 0.4, casca: true, w: 30, h: 22, salta: 230, cai: { pedra: 0.8, ferro: 0.2 }, passo: 7 },
+    minerador: { nome: 'Minerador morto', esp: 'pedra', spr: 'minerador', hp: 72, dano: 19, vel: 52, visao: 250, alcance: 48, prep: 0.44, golpe: 0.24, recua: 0.45, firme: 5, levanta: 0.25, seguidos: 2, avanco: 130, w: 22, h: 58, cai: { ferro: 0.45, trapo: 0.4, tocha: 0.12 }, passo: 8 },
+    golem: { nome: 'Homem de pedra', esp: 'pedra', spr: 'golem', hp: 175, dano: 28, vel: 40, visao: 230, alcance: 54, prep: 0.62, golpe: 0.3, recua: 0.6, firme: 10, casca: true, bruto: true, onda: true, avanco: 60, w: 40, h: 64, cai: { pedra: 2, ferro: 0.8, prata: 0.15 }, passo: 10 },
+    golem_ferro: { nome: 'Homem de ferro', esp: 'pedra', spr: 'golem', hp: 220, dano: 27, vel: 46, visao: 260, alcance: 58, prep: 0.56, golpe: 0.3, recua: 0.55, firme: 13, casca: true, bruto: true, onda: true, seguidos: 2, avanco: 90, w: 44, h: 70, esc: 1.12, cai: { ferro: 2, prata: 0.5, pedra: 1 }, passo: 10, tinta: 'rgba(170,96,40,0.3)' },
+    capataz: { nome: 'O Capataz de Ferro', esp: 'pedra', spr: 'capataz', hp: 980, dano: 24, vel: 66, visao: 520, alcance: 64, prep: 0.56, golpe: 0.28, recua: 0.6, firme: 12, w: 46, h: 86, chefe: true, seguidos: 2, poder: 'salto', chama: 'pedra', chamaL: ['rastejante', 'minerador', 'rastejante'], cai: { ferro: 8, prata: 3, pedra: 6 }, passo: 10, magia: 'ferro' },
     // lobos
     lobo: { nome: 'Lobo', esp: 'lobo', spr: 'lobo', hp: 40, dano: 14, vel: 126, visao: 280, alcance: 88, prep: 0.34, golpe: 0.34, recua: 0.5, firme: 2.4, reflexo: 0.55, flanco: 0.6, finta: 0.22, uiva: true, w: 40, h: 30, salta: 270, cai: { couro: 0.45, carne: 0.5, osso: 0.3, presa: 0.12 }, passo: 9 },
     lobo_negro: { nome: 'Lobo negro', esp: 'lobo', spr: 'lobo_negro', hp: 30, dano: 12, vel: 172, visao: 320, alcance: 96, prep: 0.26, golpe: 0.32, recua: 0.55, firme: 1.8, reflexo: 0.8, flanco: 1, finta: 0.35, sorrateiro: true, batecorre: true, w: 38, h: 30, salta: 310, cai: { couro: 0.4, carne: 0.3, presa: 0.35 }, passo: 8 },
@@ -180,6 +193,7 @@
 
   // ---------- regiões ----------
   C.REGIOES = {
+    minas: { frase: 'Ninguém subiu de volta.', nome: 'Minas de Ferro', fundo: 'f_minas', p: 'minas', nevoa: '92,84,96', luz: [96, 90, 104], amb: 'masmorra', mus: 'minas', ar: ['cinza', 'cinza', 'brasinha'], terra: [24, 20, 22], semArvores: true, fundo0: 0.3 },
     floresta: { frase: 'Onde o barro acordou.', nome: 'Floresta Antiga', fundo: 'f_floresta', p: 'floresta', nevoa: '96,168,156', luz: [150, 172, 166], amb: 'brisa', ar: ['vagalume', 'vagalume', 'folha', 'esporo'], terra: [30, 22, 16] },
     lobos: { frase: 'O vento aqui tem dentes.', nome: 'Serra dos Uivos', fundo: 'f_lobos', p: 'lobos', nevoa: '120,146,184', luz: [112, 124, 152], amb: 'noite', mus: 'serra', ar: ['neve', 'neve', 'nevoa'], terra: [22, 24, 30] },
     cobras: { frase: 'A água parada também respira.', nome: 'Alagado das Presas', fundo: 'f_cobras', p: 'cobras', nevoa: '150,166,86', luz: [146, 146, 104], amb: 'rio', mus: 'alagado', ar: ['esporo', 'vagalume', 'nevoa'], terra: [30, 27, 14] },

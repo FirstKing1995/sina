@@ -112,7 +112,7 @@
     const dentro = (x) => a.escuros.some((q) => x > q.x0 - 30 && x < q.x1 + 30);
     const livre = (tx, larg) => { const y0 = a.topo[tx]; for (let k = -larg; k <= larg; k++) { const t = a.topo[Math.max(0, Math.min(W - 1, tx + k))]; if (Math.abs(t - y0) > 1) return false; } return true; };
     const perto = (x, l, d) => l.some((o) => Math.abs(o.x - x) < d);
-    const PLANTAS = { vale: ['samambaia', 'planta', 'pedras', 'frutas', 'tronco', 'planta'],  floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'] }[a.regiao];
+    const PLANTAS = { vale: ['samambaia', 'planta', 'pedras', 'frutas', 'tronco', 'planta'],  floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'], minas: ['pedras', 'pedrao', 'ossos', 'pedras', 'ossos2', 'pilar'] }[a.regiao];
     for (let tx = 4; tx < W - 4; tx += 2 + Math.floor(r() * 4)) {
       const x = tx * T + 8;
       if (perto(x, a.portas, 110) || perto(x, a.circulos, 100) || perto(x, a.fogos, 46) || perto(x, a.coleta, 26) || perto(x, a.baus, 34)) continue;
@@ -120,7 +120,7 @@
       if (a.semMata && k < 0.5 && tx > a.semMata[0] && tx < a.semMata[1]) continue;
       if (k < 0.16 && (dentro(x) || perto(x, a.marcos, 120))) continue;
       if (dentro(x) && k > 0.5) continue;
-      if (k < 0.16 && livre(tx, 4)) a.decor.push({ n: r() < (a.regiao === 'floresta' || a.regiao === 'cobras' || a.regiao === 'vale' ? 0.55 : 0.25) ? 'arvorao' : 'arvore', x, y: chao(tx) + 3, c: 0, e: 0.85 + r() * 0.3, v: r() < 0.5 });
+      if (k < 0.16 && livre(tx, 4) && a.regiao !== 'minas') a.decor.push({ n: r() < (a.regiao === 'floresta' || a.regiao === 'cobras' || a.regiao === 'vale' ? 0.55 : 0.25) ? 'arvorao' : 'arvore', x, y: chao(tx) + 3, c: 0, e: 0.85 + r() * 0.3, v: r() < 0.5 });
       else if (k < 0.62 && livre(tx, 1)) { const n = PLANTAS[Math.floor(r() * PLANTAS.length)]; a.decor.push({ n, x, y: chao(tx) + 2, c: 1, e: 0.8 + r() * 0.35, v: r() < 0.5 }); }
       else if (k < 0.7 && livre(tx, 1)) a.decor.push({ n: r() < 0.5 ? 'samambaia' : 'planta', x, y: chao(tx) + 10, c: 2, e: 1.3 + r() * 0.5, v: r() < 0.5 });
     }
@@ -129,6 +129,7 @@
 
   // quem aparece de cada espécie, conforme o quanto já se andou (k de 0 a 1)
   const VARIA = {
+    pedra: [['rastejante', 0, 1], ['minerador', 0.12, 0.6], ['golem', 0.3, 0.42], ['golem_ferro', 0.55, 0.2]],
     lobo: [['lobo', 0, 1], ['lobo_negro', 0.22, 0.42], ['lobo_rubro', 0.4, 0.24]],
     cobra: [['cobra', 0, 1], ['cobra_coral', 0.18, 0.4], ['cobra_cuspe', 0.28, 0.4], ['cobra_prata', 0.45, 0.28]],
     zumbi: [['zumbi', 0, 1], ['zumbi_mulher', 0.14, 0.42], ['zumbi_machado', 0.3, 0.32], ['zumbi_lanca', 0.36, 0.36], ['zumbi_inchado', 0.5, 0.18]],
@@ -201,8 +202,8 @@
       k++;
     }
     // a clareira dos quatro caminhos
-    o.y = 30; o.plano(10).placa('caminhos').fogo('Fogueira da Clareira').plano(22).enf('ossos', -13, 1).enf('placa', -11, 1).enf('ossos', 3, 1).porta('p_lobos', ['lobos', 'volta'], 'Serra dos Uivos').plano(24).enf('ninho', -13, 1).enf('placa', -11, 1).enf('ninho', 3, 1).porta('p_cobras', ['cobras', 'volta'], 'Alagado das Presas').plano(24).enf('lapide', -13, 1).enf('placa', -11, 1).enf('lapide', 3, 1).porta('p_zumbis', ['zumbis', 'volta'], 'Chão dos Enterrados', 'arco').plano(24).enf('totem', -13, 1).enf('placa', -11, 1).enf('totem', 3, 1).porta('p_goblins', ['goblins', 'volta'], 'Barrancos do Fortim').plano(24).enf('frutas', -12, 1).enf('placa', -10, 1).porta('p_vale', ['vale', 'volta'], 'Vale do Rio Manso', 'arco').plano(10);
-    o.a.portas.find((p) => p.id === 'p_vale').precisa = 2;
+    o.y = 30; o.plano(10).placa('caminhos').fogo('Fogueira da Clareira').plano(22).enf('ossos', -13, 1).enf('placa', -11, 1).enf('ossos', 3, 1).porta('p_lobos', ['lobos', 'volta'], 'Serra dos Uivos').plano(24).enf('ninho', -13, 1).enf('placa', -11, 1).enf('ninho', 3, 1).porta('p_cobras', ['cobras', 'volta'], 'Alagado das Presas').plano(24).enf('lapide', -13, 1).enf('placa', -11, 1).enf('lapide', 3, 1).porta('p_zumbis', ['zumbis', 'volta'], 'Chão dos Enterrados', 'arco').plano(24).enf('totem', -13, 1).enf('placa', -11, 1).enf('totem', 3, 1).porta('p_goblins', ['goblins', 'volta'], 'Barrancos do Fortim').plano(24).enf('frutas', -12, 1).enf('placa', -10, 1).porta('p_vale', ['vale', 'volta'], 'Vale do Rio Manso', 'arco').plano(24).enf('pedrao', -13, 1).enf('placa', -11, 1).enf('pedras', 3, 1).porta('p_minas', ['minas', 'volta'], 'Minas de Ferro').plano(6);
+    o.a.portas.find((p) => p.id === 'p_vale').precisa = 2; o.a.portas.find((p) => p.id === 'p_minas').precisa = 4;
     return o.fim();
   }
   // ---------- um caminho ----------
@@ -294,7 +295,25 @@
     o.plano(6).pega('madeira').plano(5).pega('pedra').plano(4).pega('madeira').plano(4).pega('fibra').plano(4).pega('folha').plano(4);
     return o.fim();
   }
+  // a mina tem teto: pedra por cima, sempre uns quinze blocos acima do chão mais alto em volta
+  function teto(a, folga) {
+    const W = a.W;
+    for (let tx = 0; tx < W; tx++) { let m = 99; for (let k = -16; k <= 16; k++) m = Math.min(m, a.topo[Math.max(0, Math.min(W - 1, tx + k))]); const c = m - folga - (Math.sin(tx * 0.37) > 0.6 ? 1 : 0); for (let ty = 0; ty < c; ty++) if (a.grade[ty * W + tx] === 0) a.grade[ty * W + tx] = 1; }
+    return a;
+  }
+  // paredes de minério: fecham o túnel até a picareta abrir
+  function rochas(a) {
+    a.rochas = []; const W = a.W; for (let tx = 160; tx < W - 120; tx += 150) {
+      let ok = -1; for (let k = 0; k < 40 && ok < 0; k++) { const c = tx + k; let p = true; for (let d = -4; d <= 4; d++) if (a.topo[c + d] !== a.topo[c]) p = false; if (p && !a.portas.some((q) => Math.abs(q.tx - c) < 12) && !a.fogos.some((q) => Math.abs(q.tx - c) < 12) && !a.emboscadas.some((e) => c * T > e.x0 - 60 && c * T < e.x1 + 60)) ok = c; }
+      if (ok < 0) continue; const y = a.topo[ok]; a.rochas.push({ id: a.id + '_r' + ok, c0: ok, c1: ok + 1, y0: y - 16, y1: y - 1, x: (ok + 1) * T });
+      for (let c = ok; c <= ok + 1; c++) for (let ty = y - 16; ty < y; ty++) a.grade[ty * W + c] = 1;
+    }
+    return a;
+  }
+  F.aplicaRochas = function (abertas) { const a = F.atual; if (!a.rochas) return; for (const r of a.rochas) if (abertas && abertas[r.id]) for (let c = r.c0; c <= r.c1; c++) for (let ty = r.y0; ty <= r.y1; ty++) F.poe(c, ty, 0); };
   const MONTA = {
+    minas: () => rochas(teto(caminho('minas', 77, { zonas: ['Boca da Mina', 'Galerias', [0.86, 0.86, 0.96], 'Veio Fundo', [1.08, 0.9, 0.8]], lug: ['O Elevador Caído', 'A corda foi cortada. Do lado de cima.', 'Refeitório dos Mineiros', 'Os pratos ainda estão na mesa. Cobertos de pó, não de comida.', 'Sala do Capataz', 'Uma lista de nomes. Todos riscados, menos o dele.'], elite: 'golem_ferro', b: 'pedra', bando: 3, outro: ['minerador', 1], terreno: ['ondula', 'ondula', 'sobe', 'desce', 'muro', 'vao', 'queda', 'vaoG'], pega: ['pedra', 'pedra', 'ferro', 'galho', 'osso'], fogos: ['Fogueira da Boca', 'Fogueira dos Trilhos', 'Fogueira do Poço Velho'], meio: ['floresta', 'p_minas'], meioNome: 'Saída para a clareira', cruza: ['floresta', 'p_minas'], cruzaNome: 'Poço de luz para a clareira', covil: 'O Fundo da Mina' }), 15)),
+    covil_minas: () => teto(covil('covil_minas', 'minas', 78, { id: 'capataz', b: 'golem', magia: 'ferro' }, 'O Fundo da Mina', ['minas', 'covil']), 17),
     vale, lar,
     floresta,
     lobos: () => caminho('lobos', 21, { zonas: ['Encosta', 'Garganta do Vento', [0.9, 0.96, 1.12], 'Alto dos Ossos', [1.12, 1.1, 1.14]], lug: ['O Grande Caído', 'Um bicho maior que a mata morreu aqui. Os lobos ainda comem dele.', 'Vigia do Vento', 'Daqui dava para ver a fumaça das outras casas. Não há mais fumaça.', 'Mesa da Matilha', 'Os ossos estão arrumados por tamanho.'], amu: 'pena', elite: 'lobo_rubro', b: 'lobo', bando: 4, outro: ['lobo', 1], terreno: ['ondula', 'sobe', 'desce', 'muro', 'vao', 'escada', 'queda'], pega: ['pedra', 'galho', 'osso'], fogos: ['Fogueira da Encosta', 'Fogueira do Penhasco', 'Fogueira da Trilha Velha'], meio: ['cobras', 'meio'], meioNome: 'Trilha para o Alagado', cruza: ['goblins', 'cruza'], cruzaNome: 'Passagem dos Barrancos', covil: 'Toca do Alfa' }),
@@ -311,7 +330,7 @@
   F.zonaEm = (x) => { const l = F.atual.zonas; let z = null; for (const q of l) if (x >= q.tx * T) z = q; return z; };
   // chão rachado: quebrado ou inteiro, conforme a vida guardada
   F.aplicaFracas = function (quebradas) { for (const f of F.atual.fracas) for (let c = f.c0; c <= f.c1; c++) for (let k = f.y0; k <= f.y1; k++) F.poe(c, k, quebradas[f.id] ? 0 : 1); };
-  F.entrar = function (id) { const a = F.area(id); F.atual = a; F.W = a.W; F.grade = a.grade; F.fechada = false; return a; };
+  F.entrar = function (id) { const a = F.area(id); F.atual = a; F.W = a.W; F.grade = a.grade; F.fechada = false; if (window.Jogo && window.Jogo.save) F.aplicaRochas(window.Jogo.save.rochas); return a; };
   F.chao = (x) => F.atual.topo[Math.max(0, Math.min(F.W - 1, Math.floor(x / T)))] * T;
   // fecha um trecho (emboscada): duas paredes de raiz
   F.fechar = function (sim, x0, x1) {

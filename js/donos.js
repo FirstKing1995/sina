@@ -228,7 +228,10 @@
   };
   function pedras(e, n) { const h = J.heroi; for (let i = 0; i < n + 1; i++) { const x = noArena(i === 0 ? h.x : h.x + rnd(-190, 190), 30); J.magias.push({ tipo: 'queda', x, y: piso(x), t: -0.15 * i, dur: 1.15, dano: e.T.dano * 0.7, ja: new Set(), quem: e.tipo }); } }
 
-  const DONOS = { alfa: ALFA, rainha: RAINHA, carcereiro: CARC, chefe: GURGO };
+  const CAPATAZ = Object.assign({}, GURGO, { ritmo: [0.6, 0.46, 0.3], cor: '#e0a060', virada: ['rastejante', 'rastejante'], golpes: Object.assign({}, GURGO.golpes, {
+    bando: { peso: (c) => (c.fase >= 2 && capangas() < 1 && c.dist > 120 ? 1.2 : 0), cd: 20, f(e, dt) { e.vx = 0; e.qf = 6; if (passou(e, dt, 0.5)) { som('quebra', 1, 0.6); treme(8); chama(e, e.fase === 3 ? ['rastejante', 'minerador', 'rastejante'] : ['rastejante', 'rastejante']); } return e.t > 1.1; } },
+  }) });
+  const DONOS = { alfa: ALFA, rainha: RAINHA, carcereiro: CARC, chefe: GURGO, capataz: CAPATAZ };
   J.DONOS = DONOS;
 
   // ---------- escolher e encadear ----------

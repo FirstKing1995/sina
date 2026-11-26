@@ -34,7 +34,7 @@
     const mem = J.memorias(), l = $('memorias'); l.innerHTML = '';
     if (mem.length) { l.append(el('h3', '', 'Os que vieram antes')); for (const x of mem.slice(0, 4)) l.append(el('p', '', x.nome + (x.titulo ? ', ' + x.titulo : '') + ' · ' + Math.max(1, Math.round(x.tempo / 60)) + ' min · ' + x.mortes + ' mortes')); }
   }
-  const nomeArea = (id) => (id === 'lar' ? (J.save && J.save.nomeVila) || 'Clareira do Rio' : F.IDS.includes(id) ? (id.startsWith('covil_') ? { covil_lobos: 'Toca do Alfa', covil_cobras: 'Ninho da Rainha', covil_zumbis: 'A Cripta Fechada', covil_goblins: 'O Fortim' }[id] : C.REGIOES[id].nome) : '');
+  const nomeArea = (id) => (id === 'lar' ? (J.save && J.save.nomeVila) || 'Clareira do Rio' : F.IDS.includes(id) ? (id.startsWith('covil_') ? { covil_lobos: 'Toca do Alfa', covil_cobras: 'Ninho da Rainha', covil_zumbis: 'A Cripta Fechada', covil_goblins: 'O Fortim', covil_minas: 'O Fundo da Mina' }[id] : C.REGIOES[id].nome) : '');
 
   // ---------- nascimento ----------
   let nas = null;
@@ -198,7 +198,7 @@
     if (modo !== 'jogo' || !J.heroi || J.heroi.estado !== 'livre') return;
     const p = J.perto(); if (!p) return;
     if (['levanta', 'solta', 'varal', 'horta'].includes(p.tipo)) { J.usaLar(p); return; }
-    if (['escalar', 'cavar', 'minerar'].includes(p.tipo)) { J.usaMundo(p); return; }
+    if (['escalar', 'cavar', 'minerar', 'romper'].includes(p.tipo)) { J.usaMundo(p); return; }
     if (p.tipo === 'bau') { J.abreBau(p.o); return; }
     if (p.tipo === 'casa') { abreMenu('lar'); return; }
     if (p.tipo === 'fala') { abreFala(); return; }
@@ -245,7 +245,7 @@
     const v = $('veu'); v.classList.add('ver'); solta();
     setTimeout(() => { J.entrarArea(p.para[0], p.para[1]); D.centrar(); areaVista = null; D.quadro(0.016); setTimeout(() => { v.classList.remove('ver'); viajando = false; }, 220); }, 420);
   }
-  const rotulo = (p) => J.rotuloMundo(p) || (p.tipo === 'preso' ? 'Quebrar a jaula' : p.tipo === 'morador' ? (p.o.id === 'fam' ? 'Conversar' : 'Falar com ' + J.save.vila[p.o.id].nome) : p.tipo === 'poco' ? 'Beber do poço' : p.tipo === 'celeiro' ? 'Abrir o celeiro' : p.tipo === 'mercador' ? 'Trocar com o mercador' : p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
+  const rotulo = (p) => J.rotuloMundo(p) || (p.tipo === 'preso' ? 'Quebrar a jaula' : p.tipo === 'morador' ? (p.o.id === 'fam' ? 'Conversar' : 'Falar com ' + J.save.vila[p.o.id].nome) : p.tipo === 'poco' ? 'Beber do poço' : p.tipo === 'celeiro' ? 'Abrir o celeiro' : p.tipo === 'mercador' ? 'Trocar com o mercador' : p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? (F.atual.regiao === 'minas' ? 'Soltar a escora velha' : 'Cortar a árvore') : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
 
   // ---------- fogueira ----------
   function abreFogo(f) {
@@ -354,7 +354,7 @@
   function atualizaMochila() { const s = J.save; $('h-dir').firstElementChild.classList.toggle('novo', C.RECEITAS.some((r) => r.tipo && r.tipo !== 'item' && J.pode(r) && !J.jaTem(r))); void s; }
   function vesteRetrato() { const c = $('retrato-c'), q = c.getContext('2d'); q.imageSmoothingEnabled = false; q.clearRect(0, 0, 34, 34); const im = D.img['h_' + J.save.roupa]; if (im) q.drawImage(im, 26, 12, 44, 44, -2, 0, 44, 44); montaMagias(); atualizaMochila(); }
   function montaMagias() { const m = $('h-magias'); m.innerHTML = ''; const s = J.save; [s.magias[0], s.magia2].forEach((id, i) => { if (!id) return; const d = el('div', 'mg'); d.style.setProperty('--cor', C.MAGIAS[id].cor); d.append(UI.ico(id), el('b', '', i ? 'F' : 'R'), el('s')); d.dataset.id = id; m.append(d); }); UI.zeraToque(); $('b-sina').hidden = !s.magias.length; }
-  const icUsar = (p) => (p.tipo === 'coleta' && p.o.m !== 'madeira' ? UI.item(p.o.m, 34) : UI.ico({ coleta: 'machado', fogo: 'fogueira', porta: 'sair', bau: 'bau', casa: 'casa', circulo: 'olho', pesca: 'gota', preso: 'cadeado', solta: 'cadeado', levanta: 'vida', fala: 'vida', morador: 'familia', crianca: 'familia', escalar: 'pula', cavar: 'cesto', minerar: 'machado', poco: 'gota', celeiro: 'fome', mercador: 'troca', varal: 'comer', horta: 'cesto' }[p.tipo] || 'mao'));
+  const icUsar = (p) => (p.tipo === 'coleta' && p.o.m !== 'madeira' ? UI.item(p.o.m, 34) : UI.ico({ coleta: 'machado', fogo: 'fogueira', porta: 'sair', bau: 'bau', casa: 'casa', circulo: 'olho', pesca: 'gota', preso: 'cadeado', solta: 'cadeado', levanta: 'vida', fala: 'vida', morador: 'familia', crianca: 'familia', escalar: 'pula', cavar: 'cesto', minerar: 'machado', romper: 'machado', poco: 'gota', celeiro: 'fome', mercador: 'troca', varal: 'comer', horta: 'cesto' }[p.tipo] || 'mao'));
   let vistas = '';
   function hud(dt) {
     hudT -= dt; if (hudT > 0) return; hudT = 0.06;

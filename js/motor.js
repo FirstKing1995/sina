@@ -97,7 +97,7 @@
 
   // ---------- vida guardada ----------
   J.save = null;
-  J.novoSave = (nome) => ({ v: 3, abates: {}, reforco: {}, vila: {}, nomeVila: '', familias: [], estagio: 0, nivel: 'normal', amuletos: [], amu: [], tocha: 0, marcos: {}, baus: {}, fracas: {}, mapa: {}, hora: 8, dia: 1, emb: {}, lar: null, hum: null, mae: null, prole: [], nome, area: 'floresta', x: null, hp: null, fome: 100, inv: {}, armas: ['punho'], arma: 'punho', afiado: {}, roupas: ['barro'], roupa: 'barro', per: {}, mortes: { lobo: 0, cobra: 0, zumbi: 0, goblin: 0 }, magias: [], magia2: null, sina: 0, chefes: {}, dicas: {}, fogos: {}, fogo: null, filhos: 0, vida: 1, tempo: 0, colhido: 0, visitas: {}, distancia: 0 });
+  J.novoSave = (nome) => ({ v: 3, abates: {}, reforco: {}, vila: {}, nomeVila: '', familias: [], estagio: 0, nivel: 'normal', amuletos: [], amu: [], tocha: 0, marcos: {}, baus: {}, fracas: {}, mapa: {}, hora: 8, dia: 1, emb: {}, lar: null, hum: null, mae: null, prole: [], nome, area: 'floresta', x: null, hp: null, fome: 100, inv: {}, armas: ['punho'], arma: 'punho', afiado: {}, roupas: ['barro'], roupa: 'barro', per: {}, mortes: { lobo: 0, cobra: 0, zumbi: 0, goblin: 0, pedra: 0 }, magias: [], magia2: null, sina: 0, chefes: {}, dicas: {}, fogos: {}, fogo: null, filhos: 0, vida: 1, tempo: 0, colhido: 0, visitas: {}, distancia: 0 });
   const nv = (k) => (J.save.per[k] ? J.save.per[k].n : 0);
   J.nivel = nv;
   J.treina = function (k, xp) {
@@ -185,7 +185,7 @@
       if (q && !q.T.atira) { if (q.T.chefe) q.firmeza -= 3; else { q.estado = 'cambaleia'; q.t = 0; q.dur = 1.1; q.couraca = false; q.vx = h.dir * 120; } }
       return false;
     }
-    let d = dano * (1 - h.ficha.def);
+    let d = dano * (1 - h.ficha.def) * (h.ferroT > 0 ? 0.5 : 1);
     const tp = C.TIPOS[quem]; if (tp && tem(tp.esp, 2)) d *= 0.8;
     if (tp && tp.esp === 'cobra' && amu('escama')) d *= 0.75;
     d = Math.max(1, Math.round(d * rnd(0.92, 1.1)));
@@ -202,7 +202,7 @@
     if (rv.volta && tp && dex != null) { const q = J.inimigos.find((e) => e.vivo && e.tipo === quem && Math.abs(e.x - dex) < 4 && Math.abs(e.x - h.x) < 110); if (q) { J.faiscas(q.x, q.y - q.h / 2, 8, '#dfe8f0', 1); feriInimigo(q, d * rv.volta + 2, Math.sign(q.x - h.x) || 1, { magia: true, deHum: true, quebra: 0.5 }); } }
     J.treina('corpo', 2 + d * 0.12);
     if (h.hp <= 0) { h.hp = 0; J.morrer(J.ultimoDano); return true; }
-    if (rv.firme && ['carga', 'forte'].includes(h.estado) && !o.forte) return true;
+    if ((rv.firme && ['carga', 'forte'].includes(h.estado) && !o.forte) || h.ferroT > 0) return true;
     h.estado = 'dor'; h.t = rv.firme ? 0.12 : 0; h.carga = 0; h.cheia = false; h.vx = lado * (o.forte ? 260 : 170); h.vy = -190; h.dir = -lado;
     return true;
   };
@@ -219,7 +219,7 @@
       if (o.carregado) { e.estado = 'cambaleia'; e.t = 0; e.dur = 0.9; e.firmeza = e.T.firme; e.semCamb = 2; texto(e.x, e.y - e.h - 8, 'guarda quebrada', '#ffd27a', true); som('quebra', 0.7, 1.2); }
       else { e.estado = 'bloqueia'; e.t = 0.1; J.faiscas(e.x + e.dir * 14, e.y - e.h * 0.55, 10, '#e8d8a0', 1); som('quebra', 0.5, 1.7); texto(e.x, e.y - e.h - 8, 'aparou', '#c8b890'); if (!o.deLonge) { h.vx = -h.dir * 130; h.vigor -= 6; } J.pausa = 0.04; return false; }
     }
-    const casca = e.T.casca && !o.magia && !o.forte && !h.ficha.arma.fura && !['porrete', 'machado'].includes(h.ficha.arma.per) && (e.dir === -Math.sign(dir)) && e.estado !== 'recua';
+    const casca = e.T.casca && !tem(esp, 3) && !o.magia && !o.forte && !h.ficha.arma.fura && !['porrete', 'machado'].includes(h.ficha.arma.per) && (e.dir === -Math.sign(dir)) && e.estado !== 'recua';
     if (casca) dano *= 0.4;
     let d = dano;
     const aberto = e.estado === 'cambaleia' || (e.estado === 'recua' && e.T.bruto), nuca = e.estado === 'vaga';
@@ -381,6 +381,7 @@
     else if (id === 'vento') { h.vento = 6; som('magia', 0.6, 1.3); J.faiscas(h.x, h.y - 20, 20, M.cor, 1); }
     else if (id === 'espinhos') { for (const a of [-0.14, 0, 0.14]) J.balas.push({ dono: 'h', tipo: 'espinho', x: mx, y: my, vx: d * 420 * Math.cos(a), vy: 420 * Math.sin(a), r: 6, dano: 22 * k, vida: 0.8, cor: M.cor, fura: true, ja: new Set() }); som('magia', 0.7, 1.2); }
     else if (id === 'folego') { const cura = Math.round(h.ficha.vida * 0.33); h.hp = Math.min(h.ficha.vida, h.hp + cura); h.vigor = h.ficha.vigor; texto(h.x, h.y - 66, '+' + cura, '#9cff8a', true); som('beber', 0.6, 1.2); for (let i = 0; i < 26; i++) fx({ tipo: 'alma', x: h.x + rnd(-18, 18), y: h.y - rnd(0, 50), vy: rnd(-70, -20), vida: 0.9, max: 0.9, cor: '#ffe39a', tam: 2 }); }
+    else if (id === 'ferro') { h.ferroT = 6; som('metal', 0.8, 0.7); J.anel(h.x, h.y - 28, 40, M.cor, 0.5, 3); J.faiscas(h.x, h.y - 28, 20, M.cor, 1.2, 'faisca'); }
     else if (id === 'tremor') { if (!h.noChao) { h.vy = 560; h.tremorNoAr = true; } else ondas(h); }
   }
   // machado: o chão racha dos dois lados; porrete: a pancada corre para a frente
@@ -398,7 +399,7 @@
   // ---------- herói: um quadro ----------
   function passoHeroi(dt) {
     const h = J.heroi, e = J.ent, f = h.ficha, s = J.save;
-    h.t += dt; h.inv = Math.max(0, h.inv - dt); h.vento = Math.max(0, h.vento - dt); h.degrau = Math.max(0, (h.degrau || 0) - dt);
+    h.t += dt; h.inv = Math.max(0, h.inv - dt); h.ferroT = Math.max(0, (h.ferroT || 0) - dt); h.vento = Math.max(0, h.vento - dt); h.degrau = Math.max(0, (h.degrau || 0) - dt);
     for (const k in h.espera) h.espera[k] = Math.max(0, h.espera[k] - dt);
     h.amassa = Math.max(0, h.amassa - dt * 5); h.virou = Math.max(0, h.virou - dt);
     h.semVigor -= dt;
@@ -693,7 +694,7 @@
     fr.hp = null; J.save.fracas[fr.id] = 1; F.aplicaFracas(J.save.fracas); if (window.Desenho) Desenho.repintar(); treme(8); som('quebra', 1, 0.7); for (let i = 0; i < 5; i++) poeira(x + rnd(-26, 26), y + rnd(0, 30), 6, 0);
     J.treina('coleta', 4); avisa('oco', fr); J.salvar();
   };
-  const ESPOLIO = { floresta: ['couro', 'fibra', 'erva', 'ferro', 'fruta'], lobos: ['couro', 'presa', 'osso', 'ferro', 'carne'], cobras: ['pele', 'presa', 'erva', 'prata', 'fibra'], zumbis: ['osso', 'ferro', 'trapo', 'ferro', 'erva'], goblins: ['ferro', 'couro', 'flecha', 'ferro', 'orelha'], vale: ['ferro', 'couro', 'erva', 'prata', 'madeira'] };
+  const ESPOLIO = { minas: ['ferro', 'ferro', 'pedra', 'prata', 'osso', 'tocha'], floresta: ['couro', 'fibra', 'erva', 'ferro', 'fruta'], lobos: ['couro', 'presa', 'osso', 'ferro', 'carne'], cobras: ['pele', 'presa', 'erva', 'prata', 'fibra'], zumbis: ['osso', 'ferro', 'trapo', 'ferro', 'erva'], goblins: ['ferro', 'couro', 'flecha', 'ferro', 'orelha'], vale: ['ferro', 'couro', 'erva', 'prata', 'madeira'] };
   J.abreBau = function (b) {
     const s = J.save; if (s.baus[b.id]) return; s.baus[b.id] = 1; som('tranca', 0.6, 1); som('abrir', 0.8, 0.9); som('raro', 0.5); J.faiscas(b.x, b.y - 20, 20, '#ffe2a0', 1, 'brasa'); J.anel(b.x, b.y - 16, 40, '#ffe2a0', 0.6, 2);
     const l = ESPOLIO[F.atual.regiao], n = 4 + Math.floor(Math.random() * 3); for (let i = 0; i < n; i++) J.restos.push({ m: l[Math.floor(Math.random() * l.length)], x: b.x + rnd(-8, 8), y: b.y - 24, vx: rnd(-90, 90), vy: rnd(-260, -150), w: 6, h: 8, t: 0 });

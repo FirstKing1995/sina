@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=19' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=20' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -113,7 +113,7 @@
   function camadaArvores(par, forca, passo, esc, sem) {
     const R = regiao(), off = cam.x * par, i0 = Math.floor(off / passo) - 2;
     for (let i = i0; i < i0 + Math.ceil(D.VW / passo) + 4; i++) {
-      const r1 = hash(i * 7 + sem), r2 = hash(i * 13 + sem), seca = ['zumbis', 'goblins', 'lobos'].includes(F.atual.regiao);
+      const r1 = hash(i * 7 + sem), r2 = hash(i * 13 + sem), seca = ['zumbis', 'goblins', 'lobos'].includes(F.atual.regiao); if (R.semArvores) { if (r1 < 0.45) continue; const t2 = tingida(r2 < 0.5 ? 'pilar' : 'pedrao', F.atual.regiao, R.nevoa, forca); if (!t2) continue; const e2 = esc * 2.2 * (0.8 + r1 * 0.5), w2 = Math.round(t2.width * e2), h2 = Math.round(t2.height * e2), x2 = Math.round(i * passo - off + r2 * 90), y2 = Math.round(D.VH * 0.94 - (cam.y - 190) * par * 0.3); g.drawImage(t2, x2 - w2 / 2, y2 - h2, w2, h2); continue; }
       if (r1 < (seca ? 0.5 : 0.12)) continue;
       const nome = r2 < 0.5 && !seca ? 'arvorao' : 'arvore';
       const t = tingida(nome, F.atual.regiao, R.nevoa, forca); if (!t) continue;
@@ -510,7 +510,8 @@
   const COLETA = { galho: 'galhada', pedra: 'pedras', folha: 'planta', fibra: 'samambaia', fruta: 'frutas', osso: 'ossos' };
   // árvores altas, terra fofa, veios e tochas fincadas
   function desenhaMundo() {
-    const A = F.atual, E = A.extras, s = J.save, h = J.heroi; if (!E) return; const x0 = cam.x - 200, x1 = cam.x + D.VW + 200;
+    const A = F.atual, E = A.extras, s = J.save, h = J.heroi; if (!E) return;
+    if (A.rochas) for (const r of A.rochas) { if (s.rochas && s.rochas[r.id]) continue; if (r.x < cam.x - 60 || r.x > cam.x + D.VW + 60) continue; const x0 = r.c0 * T - 3, w = (r.c1 - r.c0 + 1) * T + 6, y0 = r.y0 * T, hh = (r.y1 - r.y0 + 1) * T; g.fillStyle = '#1a1416'; g.fillRect(x0, y0, w, hh); for (let y = y0; y < y0 + hh; y += 7) for (let x = x0; x < x0 + w; x += 9) { const k = hash(x * 3 + y); g.fillStyle = k < 0.18 ? '#c8884a' : k < 0.24 ? '#dfe8f0' : k < 0.6 ? '#3a3236' : '#2a2428'; g.fillRect(x + ((y / 7) % 2) * 4, y, k < 0.24 ? 3 : 8, k < 0.24 ? 2 : 6); } const k2 = Math.max(0, Math.sin(tempo * 2 + r.x)); brilhos.push([r.x, r.y1 * T - 30, 40, '255,170,90', 0.25 * k2]); } const x0 = cam.x - 200, x1 = cam.x + D.VW + 200;
     for (const a of E.arvores) {
       if (a.x < x0 || a.x > x1) continue; const alt = a.y0 - a.y1, e = (alt + 90) / 304; prop('arvorao', a.x + 6, a.y0 + 4, { e, v: a.tx % 2 === 0 });
       // o tronco tem cipó e marcas de garra: dá para subir
@@ -526,6 +527,7 @@
     if (J.colhidos[c.id] > 0 || c.x < cam.x - 60 || c.x > cam.x + D.VW + 60) return;
     const p = COLETA[c.m];
     if (c.alto) { const b = Math.sin(tempo * 2.5 + c.x) * 1.5; peca('lenha', c.x, c.y + 3, { e: 0.36 }); itemEm(g, c.m, Math.round(c.x - 10), Math.round(c.y - 22 + b), 0.62); }
+    else if (c.m === 'madeira' && F.atual.regiao === 'minas') { prop('pilar', c.x, c.y + 3, { e: 0.55 }); peca('cepo', c.x + 14, c.y + 2, { e: 0.7 }); }
     else if (c.m === 'madeira') { prop('arvore', c.x, c.y + 3, { e: 0.8 }); peca('cepo', c.x + 16, c.y + 2, { e: 0.8 }); if (c.talho) { g.fillStyle = '#e8c890'; g.fillRect(Math.round(c.x - 4), Math.round(c.y - 18), 4 + c.talho * 2, 3); } }
     else if (p) { prop(p, c.x, c.y + 2); if (c.m === 'fruta') for (let i = 0; i < 6; i++) { const x = c.x - 14 + hash(c.x + i) * 28, y = c.y - 8 - hash(c.x * 3 + i) * 22; g.fillStyle = '#1a0608'; g.fillRect(x - 1, y - 1, 4, 4); g.fillStyle = '#d83030'; g.fillRect(x, y, 2, 2); } }
     else itemEm(g, c.m, Math.round(c.x - 14), Math.round(c.y - 26), 0.82);
@@ -823,7 +825,7 @@
 
     // luz
     gl.setTransform(1, 0, 0, 1, 0, 0); gl.globalCompositeOperation = 'source-over';
-    const cl0 = J.claridade ? J.claridade() : 1, dusk = Math.sin(Math.PI * Math.min(1, Math.max(0, cl0))) , k = (D.escuro == null ? 1 : D.escuro) * (0.56 + 0.44 * cl0) * (1 - 0.14 * J.cl('chuva') - 0.28 * J.cl('tempestade') - 0.08 * J.cl('cinza'));
+    const cl0 = R.fundo0 != null ? R.fundo0 : J.claridade ? J.claridade() : 1, dusk = Math.sin(Math.PI * Math.min(1, Math.max(0, cl0))) , k = (D.escuro == null ? 1 : D.escuro) * (0.56 + 0.44 * cl0) * (1 - 0.14 * J.cl('chuva') - 0.28 * J.cl('tempestade') - 0.08 * J.cl('cinza'));
     // a luz muda de trecho para trecho da mesma área
     const zx = cam.x + D.VW / 2, zl = A.zonas; let zt = [1, 1, 1]; for (let i = 0; i < zl.length; i++) { const kz = Math.max(0, Math.min(1, (zx - zl[i].tx * T + 160) / 320)); zt = zt.map((v, j) => v + (zl[i].luz[j] - v) * kz); }
     const tom = [1 - (1 - cl0) * 0.18 + dusk * 0.14, 1 - (1 - cl0) * 0.08, 1 + (1 - cl0) * 0.16 - dusk * 0.1];

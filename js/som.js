@@ -19,6 +19,9 @@
   };
   // a voz de cada espécie: [som, volume, tom] para avisar, atacar, apanhar e morrer
   const VOZ = {
+    pedra: { alerta: ['pedra', 0.5, 0.6], ataque: ['quebra', 0.4, 0.8], dor: ['pedra', 0.45, 1], morte: ['quebra', 0.8, 0.55] },
+    minerador: { alerta: ['mor', 0.45, 0.7], ataque: ['metal', 0.4, 0.9], dor: ['mor', 0.3, 1], morte: ['mor', 0.5, 0.55] },
+    capataz: { alerta: ['gig', 0.8, 0.6], ataque: ['metal', 0.6, 0.6], dor: ['metal', 0.5, 0.8], morte: ['quebra', 1, 0.45] },
     lobo: { alerta: ['rugido', 0.4, 1.45], ataque: ['mordida', 0.35, 1.2], dor: ['fere', 0.4, 1.5], morte: ['morreu', 0.5, 1.5] },
     lobo_rubro: { alerta: ['urro', 0.5, 0.95], ataque: ['rugido', 0.5, 0.8], dor: ['fere', 0.5, 1], morte: ['morreu', 0.7, 0.95] },
     cobra: { alerta: ['~chiado', 0.4, 1], ataque: ['~chiado', 0.5, 1.4], dor: ['~chiado', 0.35, 1.8], morte: ['lama', 0.5, 0.9] },
@@ -124,11 +127,11 @@
     batalha: { vol: 0.42, laco: [4.209, 136.746], entra: 0.6, sai: 2.4, recomeca: 12 },
     // as novas: uma por caminho, a vila de dia e o cerco à noite (laço no arquivo inteiro, cruzando no fim)
     serra: { vol: 0.34, laco: [1, 190.6], entra: 3, sai: 2.5 }, alagado: { vol: 0.34, laco: [1, 181.4], entra: 3, sai: 2.5 }, enterrados: { vol: 0.36, laco: [1, 172.3], entra: 3, sai: 2.5 },
-    rio: { vol: 0.36, laco: [1, 131.1], entra: 2.5, sai: 2.5 }, fortim: { vol: 0.36, laco: [1, 190.5], entra: 3, sai: 2.5 }, primeiro: { vol: 0.42, laco: [0, 187.6], entra: 2, sai: 3 }, cerco: { vol: 0.42, laco: [1, 173.3], entra: 0.8, sai: 2.4, recomeca: 12 }, chefao: { vol: 0.5, laco: [3.868, 162.189], entra: 0.4, sai: 2.5, recomeca: 0 },
+    rio: { vol: 0.36, laco: [1, 131.1], entra: 2.5, sai: 2.5 }, minas: { vol: 0.34, laco: [1, 172.3], entra: 3, sai: 2.5, arq: 'enterrados' }, fortim: { vol: 0.36, laco: [1, 190.5], entra: 3, sai: 2.5 }, primeiro: { vol: 0.42, laco: [0, 187.6], entra: 2, sai: 3 }, cerco: { vol: 0.42, laco: [1, 173.3], entra: 0.8, sai: 2.4, recomeca: 12 }, chefao: { vol: 0.5, laco: [3.868, 162.189], entra: 0.4, sai: 2.5, recomeca: 0 },
   };
   const CRUZA = 1.1;
   // o arquivo fica na memória (uns 2 MB): os dois aparelhos usam o mesmo, e pular de ponto não depende da rede
-  function baixa(m, n) { const u = 'som/musica/sina-' + n + '.mp3?v=1'; m.baixando = fetch(u).then((r) => { if (!r.ok) throw 0; return r.blob(); }).then((b) => { m.url = URL.createObjectURL(b); }).catch(() => { m.url = u; }).then(() => { m.A = aparelho(m); m.g = 0; if (m.quer && !document.hidden) toca(m, m.A); }); }
+  function baixa(m, n) { const u = 'som/musica/sina-' + (m.arq || n) + '.mp3?v=1'; m.baixando = fetch(u).then((r) => { if (!r.ok) throw 0; return r.blob(); }).then((b) => { m.url = URL.createObjectURL(b); }).catch(() => { m.url = u; }).then(() => { m.A = aparelho(m); m.g = 0; if (m.quer && !document.hidden) toca(m, m.A); }); }
   function aparelho(m) { const el = new Audio(m.url); el.preload = 'auto'; el.volume = 0; return el; }
   function toca(m, el) { const p = el.play(); if (p && p.catch) p.catch(() => { m.falhou = performance.now(); }); }
   S.musica = function (nome) {
