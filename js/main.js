@@ -147,8 +147,8 @@
     else if (tipo === 'emboscada') { J.mostraArea('Emboscada', 'as raízes fecharam o caminho'); }
     else if (tipo === 'onda') { if (x[1] > 1) sussurra('Onda ' + x[0] + ' de ' + x[1], 2.2); }
     else if (tipo === 'emboscadaFim') J.mostraArea('O caminho abriu', 'ninguém ficou de pé');
-    else if (tipo === 'grito') sussurra('Alguém grita. É gente. Não deixe que cheguem nela.', 5);
-    else if (tipo === 'encontrou') { J.mostraArea(x.nome, 'ela não está mais sozinha, nem você'); setTimeout(() => sussurra('“' + C.FALAS.medo[2] + '”', 6), 3600); }
+    else if (tipo === 'grito') sussurra('Alguém grita. É gente, com barro fresco nos pés. Não deixe que cheguem nela.', 5);
+    else if (tipo === 'encontrou') { J.mostraArea(x.nome, 'feita do mesmo barro que você: nenhum dos dois está mais sozinho'); setTimeout(() => sussurra('“' + C.FALAS.medo[2] + '”', 6), 3600); }
     else if (tipo === 'fugiu') J.mostraArea('Ela fugiu ferida', 'durma e volte a procurá-la aqui');
     else if (tipo === 'humCaiu') sussurra((s.hum ? s.hum.nome : 'Ela') + ' caiu! Chegue perto e levante-a antes que a levem.', 5);
     else if (tipo === 'levada') { J.mostraArea('Levaram ' + s.hum.nome, x); setTimeout(() => sussurra('As pegadas vão para ' + nomeArea(s.hum.cativeiro) + ', perto do covil.', 7), 3600); }

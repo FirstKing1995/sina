@@ -215,7 +215,7 @@
 
   // ---------- regiões ----------
   C.REGIOES = {
-    ruinas: { frase: 'Aqui ele aprendeu a fazer você. Aqui ficaram os erros.', nome: 'Ruínas do Oleiro', fundo: 'f_ruinas', p: 'ruinas', nevoa: '170,134,108', luz: [124, 106, 94], amb: 'cinzas', mus: 'ruinas', ar: ['cinza', 'brasinha', 'cinza'], terra: [40, 26, 18], semArvores: true },
+    ruinas: { frase: 'Aqui ele aprendeu a fazer você. Mas estas paredes são mais velhas que ele.', nome: 'Ruínas do Oleiro', fundo: 'f_ruinas', p: 'ruinas', nevoa: '170,134,108', luz: [124, 106, 94], amb: 'cinzas', mus: 'ruinas', ar: ['cinza', 'brasinha', 'cinza'], terra: [40, 26, 18], semArvores: true },
     mangue: { frase: 'A água sobe duas vezes por dia. Os mortos, uma vez só.', nome: 'Mangue das Marés', fundo: 'f_mangue', p: 'mangue', nevoa: '104,132,124', luz: [104, 122, 116], amb: 'rio', mus: 'mangue', ar: ['vagalume', 'nevoa', 'esporo'], terra: [26, 30, 24] },
     minas: { frase: 'Ninguém subiu de volta.', nome: 'Minas de Ferro', fundo: 'f_minas', p: 'minas', nevoa: '92,84,96', luz: [96, 90, 104], amb: 'mina', mus: 'minas', ar: ['cinza', 'cinza', 'brasinha'], terra: [24, 20, 22], semArvores: true, fundo0: 0.3 },
     floresta: { frase: 'Onde o barro acordou.', nome: 'Floresta Antiga', fundo: 'f_floresta', p: 'floresta', nevoa: '96,168,156', luz: [150, 172, 166], amb: 'brisa', ar: ['vagalume', 'vagalume', 'folha', 'esporo'], terra: [30, 22, 16] },
