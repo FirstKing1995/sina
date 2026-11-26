@@ -10,6 +10,7 @@
     S.ambiente(alvoAmb); S.musica(alvoMus);
   };
   const BANCO = {
+    latido: ['latido1'], rosnado: ['rosnado1'], rocha: ['rocha_urro1'], ferro: ['ferro_urro1'], impacto: ['impacto1'], rastejar: ['rastejar1'],
     golpe: ['golpe1', 'golpe2', 'golpe3'], forte: ['forte1'], acerto: ['acerto1', 'acerto2', 'acerto3'], dor: ['heroi_dor1'],
     inimigoDor: ['dor1', 'dor2'], morte: ['morte1', 'morte2', 'morte3'], rugido: ['rugido1', 'rugido2'], uivo: ['uivo1'], mordida: ['mordida1', 'mordida2'],
     moeda: ['moeda1', 'moeda2'], beber: ['beber1', 'beber2'], fogo: ['fogo1', 'fogo2'], abrir: ['abrir1'], porta: ['porta1'], raro: ['raro1'], magia: ['magia1', 'magia2'], quebra: ['quebra1'], livro: ['livro1'], pegar: ['pegar1'], minerar: ['minerar1', 'minerar2'],
@@ -19,9 +20,10 @@
   };
   // a voz de cada espécie: [som, volume, tom] para avisar, atacar, apanhar e morrer
   const VOZ = {
-    pedra: { alerta: ['pedra', 0.5, 0.6], ataque: ['quebra', 0.4, 0.8], dor: ['pedra', 0.45, 1], morte: ['quebra', 0.8, 0.55] },
+    pedra: { alerta: ['rocha', 0.55, 1], ataque: ['impacto', 0.55, 1.05], dor: ['pedra', 0.45, 1], morte: ['impacto', 0.8, 0.8] },
+    rastejante: { alerta: ['rastejar', 0.5, 1.1], ataque: ['rastejar', 0.5, 1.3], dor: ['pedra', 0.4, 1.3], morte: ['quebra', 0.6, 0.9] },
     minerador: { alerta: ['mor', 0.45, 0.7], ataque: ['metal', 0.4, 0.9], dor: ['mor', 0.3, 1], morte: ['mor', 0.5, 0.55] },
-    capataz: { alerta: ['gig', 0.8, 0.6], ataque: ['metal', 0.6, 0.6], dor: ['metal', 0.5, 0.8], morte: ['quebra', 1, 0.45] },
+    capataz: { alerta: ['ferro', 0.9, 1], ataque: ['impacto', 0.75, 0.9], dor: ['metal', 0.5, 0.8], morte: ['ferro', 1, 0.7] },
     lobo: { alerta: ['rugido', 0.4, 1.45], ataque: ['mordida', 0.35, 1.2], dor: ['fere', 0.4, 1.5], morte: ['morreu', 0.5, 1.5] },
     lobo_rubro: { alerta: ['urro', 0.5, 0.95], ataque: ['rugido', 0.5, 0.8], dor: ['fere', 0.5, 1], morte: ['morreu', 0.7, 0.95] },
     cobra: { alerta: ['~chiado', 0.4, 1], ataque: ['~chiado', 0.5, 1.4], dor: ['~chiado', 0.35, 1.8], morte: ['lama', 0.5, 0.9] },
@@ -115,7 +117,7 @@
   let alvoAmb = null, alvoMus = null;
   S.ambiente = function (nome) {
     alvoAmb = nome; if (!ligado) return;
-    for (const n of ['noite', 'masmorra', 'brisa', 'chuva', 'rio', 'cinzas', 'cripta']) laco('som/amb/' + n + '.mp3', n === nome ? (n === 'masmorra' ? 0.6 : n === 'cinzas' || n === 'cripta' ? 0.5 : 0.38) : 0);
+    for (const n of ['noite', 'masmorra', 'brisa', 'chuva', 'rio', 'cinzas', 'cripta', 'mina']) if (n === nome || lacos['som/amb/' + n + '.mp3']) laco('som/amb/' + n + '.mp3', n === nome ? (n === 'masmorra' || n === 'mina' ? 0.6 : n === 'cinzas' || n === 'cripta' ? 0.5 : 0.38) : 0);
   };
   // chuva por cima do ambiente da área
   S.chuva = function (k) { if (!ligado || (!k && !lacos['som/amb/chuva.mp3'])) return; if (alvoAmb === 'chuva') return; laco('som/amb/chuva.mp3', k); };

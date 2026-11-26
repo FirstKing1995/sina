@@ -193,7 +193,7 @@
 
   // ---------- regiões ----------
   C.REGIOES = {
-    minas: { frase: 'Ninguém subiu de volta.', nome: 'Minas de Ferro', fundo: 'f_minas', p: 'minas', nevoa: '92,84,96', luz: [96, 90, 104], amb: 'masmorra', mus: 'minas', ar: ['cinza', 'cinza', 'brasinha'], terra: [24, 20, 22], semArvores: true, fundo0: 0.3 },
+    minas: { frase: 'Ninguém subiu de volta.', nome: 'Minas de Ferro', fundo: 'f_minas', p: 'minas', nevoa: '92,84,96', luz: [96, 90, 104], amb: 'mina', mus: 'minas', ar: ['cinza', 'cinza', 'brasinha'], terra: [24, 20, 22], semArvores: true, fundo0: 0.3 },
     floresta: { frase: 'Onde o barro acordou.', nome: 'Floresta Antiga', fundo: 'f_floresta', p: 'floresta', nevoa: '96,168,156', luz: [150, 172, 166], amb: 'brisa', ar: ['vagalume', 'vagalume', 'folha', 'esporo'], terra: [30, 22, 16] },
     lobos: { frase: 'O vento aqui tem dentes.', nome: 'Serra dos Uivos', fundo: 'f_lobos', p: 'lobos', nevoa: '120,146,184', luz: [112, 124, 152], amb: 'noite', mus: 'serra', ar: ['neve', 'neve', 'nevoa'], terra: [22, 24, 30] },
     cobras: { frase: 'A água parada também respira.', nome: 'Alagado das Presas', fundo: 'f_cobras', p: 'cobras', nevoa: '150,166,86', luz: [146, 146, 104], amb: 'rio', mus: 'alagado', ar: ['esporo', 'vagalume', 'nevoa'], terra: [30, 27, 14] },

@@ -7,7 +7,7 @@ from PIL import Image
 
 LAT = Path(__file__).parent.parent
 IA, D = LAT.parent / "arte-ia" / "lateral" / "pixellab", LAT / "assets" / "floresta"
-PASSO = {"zumbi": 9, "zumbi_inchado": 10}
+PASSO = {"zumbi": 9, "zumbi_inchado": 10, "minerador": 9}
 
 meta = json.loads((D / "meta.json").read_text())
 for n in sys.argv[1:]:

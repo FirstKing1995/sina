@@ -57,13 +57,13 @@
           P.cd = 1.5 - nv * 0.17; P.tMorde = 0.32; P.dir = Math.sign(p.x - P.x) || P.dir; P.vx = P.dir * 90;
           k.feriInimigo(p, (p.T.chefe ? 3 : 5) + nv * 3, P.dir, { magia: true, deHum: true, y: p.y - p.h * 0.35 });
           s.pet.xp = (s.pet.xp || 0) + 1; if (nivelPet() > nv) { k.texto(P.x, P.y - 36, s.pet.nome + ' cresceu', '#ffd8a0', true); k.som('raro', 0.5); }
-          k.som('golpe', 0.3, 1.6);
+          k.som(Math.random() < 0.5 ? 'rosnado' : 'mordida', 0.35, 1.15);
         }
         // apanhou de quem mordeu: recua um pouco
         if ((p.estado === 'golpe' && p.t < 0.1 && Math.abs(p.x - P.x) < p.T.alcance) && P.tDor <= 0) { P.tDor = 1.2; P.vx = -Math.sign(p.x - P.x) * 160; P.vy = -220; P.noChao = false; }
       } else if (P.tDor > 0) alvo = h.x - Math.sign(h.x - P.x || 1) * 50;
       // late para o que está escondido ou vem vindo
-      if (P.latiu <= 0) for (const e of J.inimigos) if (e.vivo && e.estado === 'vaga' && Math.abs(e.x - h.x) < 230 && Math.abs(e.x - h.x) > 60 && Math.sign(e.x - h.x) === h.dir) { P.latiu = 14; P.dir = Math.sign(e.x - P.x) || P.dir; k.texto(P.x + P.dir * 8, P.y - 30, '!', '#ffcf6a', true); k.som('golpe', 0.15, 2.2); break; }
+      if (P.latiu <= 0) for (const e of J.inimigos) if (e.vivo && e.estado === 'vaga' && Math.abs(e.x - h.x) < 230 && Math.abs(e.x - h.x) > 60 && Math.sign(e.x - h.x) === h.dir) { P.latiu = 14; P.dir = Math.sign(e.x - P.x) || P.dir; k.texto(P.x + P.dir * 8, P.y - 30, '!', '#ffcf6a', true); k.som('latido', 0.45, 1.05 + Math.random() * 0.1); break; }
       // traz o que achar no chão
       if (!p && P.vai == null && P.cdColhe <= 0) { P.cdColhe = 8 - nv; const c = F.atual.coleta.find((q) => !(J.colhidos[q.id] > 0) && q.m !== 'madeira' && !q.alto && Math.abs(q.x - P.x) < 150 && Math.abs(q.y - P.y) < 40); if (c) P.vai = c; }
       if (P.vai) { const c = P.vai; if (J.colhidos[c.id] > 0 || p) P.vai = null; else { alvo = c.x; if (Math.abs(c.x - P.x) < 10) { J.colhidos[c.id] = 150; J.ganha(c.m, 1, P.x, P.y - 20); P.vai = null; } } }
