@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=23' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=24' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -113,7 +113,7 @@
   function camadaArvores(par, forca, passo, esc, sem) {
     const R = regiao(), off = cam.x * par, i0 = Math.floor(off / passo) - 2;
     for (let i = i0; i < i0 + Math.ceil(D.VW / passo) + 4; i++) {
-      const r1 = hash(i * 7 + sem), r2 = hash(i * 13 + sem), seca = ['zumbis', 'goblins', 'lobos'].includes(F.atual.regiao); if (R.semArvores) { if (r1 < 0.45) continue; const t2 = tingida(r2 < 0.5 ? 'pilar' : 'pedrao', F.atual.regiao, R.nevoa, forca); if (!t2) continue; const e2 = esc * 2.2 * (0.8 + r1 * 0.5), w2 = Math.round(t2.width * e2), h2 = Math.round(t2.height * e2), x2 = Math.round(i * passo - off + r2 * 90), y2 = Math.round(D.VH * 0.94 - (cam.y - 190) * par * 0.3); g.drawImage(t2, x2 - w2 / 2, y2 - h2, w2, h2); continue; }
+      const r1 = hash(i * 7 + sem), r2 = hash(i * 13 + sem), seca = ['zumbis', 'goblins', 'lobos'].includes(F.atual.regiao); if (R.semArvores) { if (r1 < 0.45) continue; const t2 = r2 < 0.55 ? escora(R, forca, r1 < 0.75) : tingida('pedrao', F.atual.regiao, R.nevoa, forca); if (!t2) continue; const e2 = esc * 2.2 * (0.8 + r1 * 0.5), w2 = Math.round(t2.width * e2), h2 = Math.round(t2.height * e2), x2 = Math.round(i * passo - off + r2 * 90), y2 = Math.round(D.VH * 0.94 - (cam.y - 190) * par * 0.3); g.drawImage(t2, x2 - w2 / 2, y2 - h2, w2, h2); continue; }
       if (r1 < (seca ? 0.5 : 0.12)) continue;
       const nome = r2 < 0.5 && !seca ? 'arvorao' : 'arvore';
       const t = tingida(nome, F.atual.regiao, R.nevoa, forca); if (!t) continue;
@@ -121,6 +121,17 @@
       const x = Math.round(i * passo - off + r2 * 90), y = Math.round(D.VH * 0.94 - (cam.y - 190) * par * 0.3);
       if (r2 * 7 % 1 < 0.5) { g.save(); g.translate(x, 0); g.scale(-1, 1); g.drawImage(t, -w / 2, y - h, w, h); g.restore(); } else g.drawImage(t, x - w / 2, y - h, w, h);
     }
+  }
+  // escora de mina ao longe (duas pernas, travessa, mãos-francesas e às vezes um lampião pendurado)
+  function escora(R, forca, luz) {
+    return guarda('esc' + R.nevoa + forca + luz, 44, 76, (q, w, h) => {
+      const nv = R.nevoa.split(',').map(Number), mix = (c, k) => 'rgb(' + c.map((v, i) => Math.round(v * (1 - forca) + nv[i] * forca * 0.75) * (k || 1) | 0).join(',') + ')';
+      q.fillStyle = mix([62, 45, 32]); q.fillRect(5, 6, 6, h - 6); q.fillRect(w - 11, 6, 6, h - 6); q.fillRect(1, 2, w - 2, 7);
+      q.fillStyle = mix([62, 45, 32], 0.7); q.fillRect(5, 9, 6, 2); q.fillRect(w - 11, 9, 6, 2); q.fillRect(1, 8, w - 2, 1);
+      q.fillStyle = mix([54, 39, 28]); for (let k = 0; k < 9; k++) { q.fillRect(11 + k, 9 + k, 2, 2); q.fillRect(w - 13 - k, 9 + k, 2, 2); }
+      q.fillStyle = mix([80, 60, 42]); q.fillRect(1, 2, w - 2, 1); q.fillRect(5, 6, 1, h - 6); q.fillRect(w - 11, 6, 1, h - 6);
+      if (luz) { q.fillStyle = mix([30, 26, 24]); q.fillRect(w / 2, 9, 1, 13); q.fillRect(w / 2 - 3, 22, 7, 8); q.fillStyle = 'rgba(255,176,90,' + (0.95 - forca * 0.5) + ')'; q.fillRect(w / 2 - 1, 24, 3, 4); q.fillStyle = 'rgba(255,150,70,' + (0.25 - forca * 0.15) + ')'; q.fillRect(w / 2 - 6, 19, 13, 14); }
+    });
   }
   function nevoa(R, a) {
     g.drawImage(guarda('nev' + R.nevoa + a, 2, 128, (q, w, h) => { const gr = q.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(' + R.nevoa + ',0)'); gr.addColorStop(0.7, 'rgba(' + R.nevoa + ',' + a + ')'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',' + a * 0.7 + ')'); q.fillStyle = gr; q.fillRect(0, 0, w, h); }), 0, D.VH * 0.3, D.VW, D.VH * 0.7);
@@ -527,7 +538,7 @@
     if (J.colhidos[c.id] > 0 || c.x < cam.x - 60 || c.x > cam.x + D.VW + 60) return;
     const p = COLETA[c.m];
     if (c.alto) { const b = Math.sin(tempo * 2.5 + c.x) * 1.5; peca('lenha', c.x, c.y + 3, { e: 0.36 }); itemEm(g, c.m, Math.round(c.x - 10), Math.round(c.y - 22 + b), 0.62); }
-    else if (c.m === 'madeira' && F.atual.regiao === 'minas') { prop('pilar', c.x, c.y + 3, { e: 0.55 }); peca('cepo', c.x + 14, c.y + 2, { e: 0.7 }); }
+    else if (c.m === 'madeira' && F.atual.regiao === 'minas') { const es = escora(regiao(), 0.05, false); g.drawImage(es, Math.round(c.x - es.width / 2), Math.round(c.y + 3 - es.height)); peca('cepo', c.x + 14, c.y + 2, { e: 0.7 }); }
     else if (c.m === 'madeira') { prop('arvore', c.x, c.y + 3, { e: 0.8 }); peca('cepo', c.x + 16, c.y + 2, { e: 0.8 }); if (c.talho) { g.fillStyle = '#e8c890'; g.fillRect(Math.round(c.x - 4), Math.round(c.y - 18), 4 + c.talho * 2, 3); } }
     else if (p) { prop(p, c.x, c.y + 2); if (c.m === 'fruta') for (let i = 0; i < 6; i++) { const x = c.x - 14 + hash(c.x + i) * 28, y = c.y - 8 - hash(c.x * 3 + i) * 22; g.fillStyle = '#1a0608'; g.fillRect(x - 1, y - 1, 4, 4); g.fillStyle = '#d83030'; g.fillRect(x, y, 2, 2); } }
     else itemEm(g, c.m, Math.round(c.x - 14), Math.round(c.y - 26), 0.82);
@@ -584,7 +595,25 @@
     if (x + w < cam.x - 10 || x - w > cam.x + D.VW + 10) return;
     g.save(); if (o.a != null) g.globalAlpha = o.a; g.translate(Math.round(x), Math.round(y)); if (o.v) g.scale(-1, 1); g.drawImage(img.casa, p[0], p[1], p[2], p[3], Math.round(-w / 2), -h, w, h); g.restore();
   }
+  // o elevador velho da mina: torre de madeira com roldana, corda partida e a gaiola caída
+  function elevador() {
+    return guarda('elevador', 76, 196, (q, w, h) => {
+      const c = (r, g2, b) => 'rgb(' + r + ',' + g2 + ',' + b + ')';
+      q.fillStyle = c(58, 42, 30); q.fillRect(10, 22, 7, h - 22); q.fillRect(w - 17, 22, 7, h - 22);
+      for (let y = 40; y < h - 20; y += 38) { q.fillRect(8, y, w - 16, 5); q.fillStyle = c(48, 34, 24); for (let k = 0; k < 30; k++) { q.fillRect(17 + k * 1.4, y + 5 + k, 2, 2); } q.fillStyle = c(58, 42, 30); }
+      q.fillStyle = c(84, 62, 42); q.fillRect(10, 22, 1, h - 22); q.fillRect(w - 17, 22, 1, h - 22);
+      q.fillStyle = c(52, 38, 27); q.fillRect(4, 18, w - 8, 7);
+      // roldana
+      q.fillStyle = c(46, 42, 40); q.beginPath(); q.arc(w / 2, 12, 11, 0, Math.PI * 2); q.fill(); q.fillStyle = c(24, 20, 18); q.beginPath(); q.arc(w / 2, 12, 6, 0, Math.PI * 2); q.fill();
+      q.fillStyle = c(96, 88, 80); q.fillRect(w / 2 - 1, 1, 2, 22); q.fillRect(w / 2 - 11, 11, 22, 2);
+      // corda partida
+      q.fillStyle = c(120, 96, 64); q.fillRect(w / 2 + 10, 12, 1, 70); q.fillRect(w / 2 + 9, 82, 3, 2);
+      // gaiola caída de lado no pé da torre
+      q.fillStyle = c(40, 36, 34); q.fillRect(14, h - 22, 34, 3); q.fillRect(14, h - 4, 34, 3); for (let k = 14; k <= 48; k += 6) q.fillRect(k, h - 22, 2, 21);
+    });
+  }
   function lugar(n, x, y, o) {
+    if (n === 'elevador') { const t = elevador(); if (x + 60 < cam.x || x - 60 > cam.x + D.VW) return; g.drawImage(t, Math.round(x - t.width / 2), Math.round(y - t.height)); return; }
     const p = A2.marcos && A2.marcos[n]; if (!p || !img.marcos) return; o = o || {}; const e = o.e || 1, w = Math.round(p[2] * e), h = Math.round(p[3] * e);
     if (x + w < cam.x - 10 || x - w > cam.x + D.VW + 10) return;
     g.save(); g.translate(Math.round(x), Math.round(y)); if (o.v) g.scale(-1, 1); g.drawImage(img.marcos, p[0], p[1], p[2], p[3], Math.round(-w / 2), -h, w, h); g.restore();

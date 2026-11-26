@@ -537,7 +537,7 @@
   // o pé muda com o chão: mato, lama, neve, pedra, terra batida e madeira
   function passo(h) {
     const r = F.atual.regiao, galho = tipoEm(h.x, h.y + 2) === 2, w = window.Som; if (!w) return;
-    if (galho) som('madeira', 0.12, 1.5); else if (J.abrigado && J.abrigado()) som('passop', 0.3, 1); else if (r === 'cobras' || (J.cl && J.cl('chuva', 'tempestade') > 0.6)) som('lama', 0.2, 1.3); else if (r === 'lobos') w.sopro('neve'); else if (r === 'zumbis') som('passop', 0.22, 0.85); else if (r === 'goblins') w.sopro('terra'); else w.sopro('mato');
+    if (galho) som('madeira', 0.12, 1.5); else if (J.abrigado && J.abrigado()) som('passop', 0.3, 1); else if (r === 'cobras' || (J.cl && J.cl('chuva', 'tempestade') > 0.6)) som('lama', 0.2, 1.3); else if (r === 'lobos') w.sopro('neve'); else if (r === 'zumbis') som('passop', 0.22, 0.85); else if (r === 'minas') som('pedra', 0.07, 1.7 + Math.random() * 0.3); else if (r === 'goblins') w.sopro('terra'); else w.sopro('mato');
     if (['osso', 'prata'].includes(J.save.roupa) && Math.random() < 0.5) som('malha', 0.09, J.save.roupa === 'osso' ? 1.6 : 1.1);
   }
   function beiraEspinho(h) { for (const dx of [-26, 26]) if (tipoEm(h.x + dx, h.y + 70) === 3 || tipoEm(h.x + dx, h.y + 2) === 3 || tipoEm(h.x + dx, h.y + 2) === 0) return true; return false; }

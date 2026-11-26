@@ -67,7 +67,7 @@
       // traz o que achar no chão
       if (!p && P.vai == null && P.cdColhe <= 0) { P.cdColhe = 8 - nv; const c = F.atual.coleta.find((q) => !(J.colhidos[q.id] > 0) && q.m !== 'madeira' && !q.alto && Math.abs(q.x - P.x) < 150 && Math.abs(q.y - P.y) < 40); if (c) P.vai = c; }
       if (P.vai) { const c = P.vai; if (J.colhidos[c.id] > 0 || p) P.vai = null; else { alvo = c.x; if (Math.abs(c.x - P.x) < 10) { J.colhidos[c.id] = 150; J.ganha(c.m, 1, P.x, P.y - 20); P.vai = null; } } }
-      if (alvo == null && Math.abs(h.x - P.x) > 48) alvo = h.x - h.dir * 32;
+      if (alvo == null && Math.abs(h.x - P.x) > 56) alvo = h.x - h.dir * 42;
     }
     const dx = alvo == null ? 0 : alvo - P.x, vel = k.CORRE * 1.18;
     if (P.tDor > 0.9) { /* voando para trás */ } else if (Math.abs(dx) > 6) { P.dir = Math.sign(dx); P.vx = P.dir * Math.min(vel, Math.abs(dx) * 5 + 30); } else P.vx *= Math.pow(0.001, dt);

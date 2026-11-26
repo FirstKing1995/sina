@@ -83,9 +83,9 @@
       // ruína: escada de pedra quebrada com um baú lá em cima
       ruina(nome, texto, loot) {
         if (y < 25) o.queda(25 - y).plano(4);
-        const x0 = x, yy = y; o.plano(26); o.marco('torre', nome, texto, -9);
+        const x0 = x, yy = y, mina = a.regiao === 'minas'; o.plano(26); o.marco(mina ? 'elevador' : 'torre', nome, texto, -9);
         o.galho(x0 + 4, yy - 4, 4).galho(x0 + 9, yy - 8, 4).galho(x0 + 4, yy - 12, 5);
-        a.decor.push({ n: 'pilar', x: px(x0 + 3), y: 0, c: 0, e: 1 }, { n: 'pilar', x: px(x0 + 13), y: 0, c: 0, e: 0.9 });
+        if (!mina) a.decor.push({ n: 'pilar', x: px(x0 + 3), y: 0, c: 0, e: 1 }, { n: 'pilar', x: px(x0 + 13), y: 0, c: 0, e: 0.9 });
         a.baus.push({ id: a.id + '_b' + a.baus.length, x: px(x0 + 6), tx: x0 + 6, y: (yy - 12) * T, loot: loot || null });
         return o.plano(4);
       },
@@ -112,7 +112,7 @@
     const dentro = (x) => a.escuros.some((q) => x > q.x0 - 30 && x < q.x1 + 30);
     const livre = (tx, larg) => { const y0 = a.topo[tx]; for (let k = -larg; k <= larg; k++) { const t = a.topo[Math.max(0, Math.min(W - 1, tx + k))]; if (Math.abs(t - y0) > 1) return false; } return true; };
     const perto = (x, l, d) => l.some((o) => Math.abs(o.x - x) < d);
-    const PLANTAS = { vale: ['samambaia', 'planta', 'pedras', 'frutas', 'tronco', 'planta'],  floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'], minas: ['pedras', 'pedrao', 'ossos', 'pedras', 'ossos2', 'pilar'] }[a.regiao];
+    const PLANTAS = { vale: ['samambaia', 'planta', 'pedras', 'frutas', 'tronco', 'planta'],  floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'], minas: ['pedras', 'pedrao', 'ossos', 'pedras', 'ossos2', 'tronco'] }[a.regiao];
     for (let tx = 4; tx < W - 4; tx += 2 + Math.floor(r() * 4)) {
       const x = tx * T + 8;
       if (perto(x, a.portas, 110) || perto(x, a.circulos, 100) || perto(x, a.fogos, 46) || perto(x, a.coleta, 26) || perto(x, a.baus, 34)) continue;

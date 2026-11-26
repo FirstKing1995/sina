@@ -10,6 +10,7 @@
     S.ambiente(alvoAmb); S.musica(alvoMus);
   };
   const BANCO = {
+    chiado: ['chiado1'], rainhaUrro: ['rainha1'],
     latido: ['latido1'], rosnado: ['rosnado1'], rocha: ['rocha_urro1'], ferro: ['ferro_urro1'], impacto: ['impacto1'], rastejar: ['rastejar1'],
     golpe: ['golpe1', 'golpe2', 'golpe3'], forte: ['forte1'], acerto: ['acerto1', 'acerto2', 'acerto3'], dor: ['heroi_dor1'],
     inimigoDor: ['dor1', 'dor2'], morte: ['morte1', 'morte2', 'morte3'], rugido: ['rugido1', 'rugido2'], uivo: ['uivo1'], mordida: ['mordida1', 'mordida2'],
@@ -26,14 +27,14 @@
     capataz: { alerta: ['ferro', 0.9, 1], ataque: ['impacto', 0.75, 0.9], dor: ['metal', 0.5, 0.8], morte: ['ferro', 1, 0.7] },
     lobo: { alerta: ['rugido', 0.4, 1.45], ataque: ['mordida', 0.35, 1.2], dor: ['fere', 0.4, 1.5], morte: ['morreu', 0.5, 1.5] },
     lobo_rubro: { alerta: ['urro', 0.5, 0.95], ataque: ['rugido', 0.5, 0.8], dor: ['fere', 0.5, 1], morte: ['morreu', 0.7, 0.95] },
-    cobra: { alerta: ['~chiado', 0.4, 1], ataque: ['~chiado', 0.5, 1.4], dor: ['~chiado', 0.35, 1.8], morte: ['lama', 0.5, 0.9] },
+    cobra: { alerta: ['chiado', 0.45, 1], ataque: ['chiado', 0.5, 1.25], dor: ['~chiado', 0.35, 1.8], morte: ['lama', 0.5, 0.9] },
     zumbi: { alerta: ['mor', 0.45, 0.8], ataque: ['mor', 0.35, 0.95], dor: ['mor', 0.3, 1.15], morte: ['mor', 0.5, 0.62] },
     zumbi_mulher: { alerta: ['mor', 0.6, 1.55], ataque: ['mor', 0.4, 1.7], dor: ['mor', 0.35, 1.9], morte: ['mor', 0.5, 1.2] },
     zumbi_inchado: { alerta: ['ogro', 0.45, 0.7], ataque: ['ogro', 0.5, 0.62], dor: ['lama', 0.5, 0.7], morte: ['lama', 0.8, 0.5] },
     goblin: { alerta: ['gob', 0.4, 1.5], ataque: ['gob', 0.3, 1.8], dor: ['gob', 0.35, 1.95], morte: ['gob', 0.5, 1.25] },
     goblin_porrete: { alerta: ['ogro', 0.5, 1], ataque: ['ogro', 0.5, 0.85], dor: ['ogro', 0.4, 1.25], morte: ['ogro', 0.6, 0.72] },
     alfa: { alerta: ['lobisomem', 0.8, 0.8], ataque: ['urro', 0.5, 0.9], dor: ['fere', 0.4, 0.85], morte: ['lobisomem', 0.9, 0.6] },
-    rainha: { alerta: ['~chiado', 0.9, 0.55], ataque: ['~chiado', 0.7, 0.8], dor: ['~chiado', 0.5, 1.2], morte: ['urro', 0.8, 1.5] },
+    rainha: { alerta: ['rainhaUrro', 0.9, 1], ataque: ['chiado', 0.75, 0.7], dor: ['~chiado', 0.5, 1.2], morte: ['rainhaUrro', 1, 0.75] },
     carcereiro: { alerta: ['mor', 0.8, 0.5], ataque: ['mor', 0.5, 0.6], dor: ['metal', 0.4, 0.7], morte: ['mor', 0.9, 0.42] },
     chefe: { alerta: ['gig', 0.8, 0.95], ataque: ['gig', 0.5, 1.15], dor: ['ogro', 0.45, 0.9], morte: ['gig', 0.9, 0.7] },
   };

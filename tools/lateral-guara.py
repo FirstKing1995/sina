@@ -5,7 +5,7 @@ Grava m_guara.webp (parado, 3 passos, prepara, morde, ferido, deitado) e m_guara
 import importlib.util, json
 from pathlib import Path
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 AQUI = Path(__file__).parent
 sp = importlib.util.spec_from_file_location("lv", AQUI / "lateral-variantes.py")
@@ -36,6 +36,10 @@ def tira(nome, qs, meta, chave=None):
     T = Image.new("RGBA", (w * len(qs), h))
     for i, q in enumerate(qs):
         T.paste(q, (i * w + (w - q.width) // 2, h - 1 - q.height), q)
+    # o Retro Diffusion pinta mais vivo que o resto do jogo: puxa a cor e a luz para a paleta dos bichos
+    al = T.getchannel("A")
+    T = ImageEnhance.Brightness(ImageEnhance.Color(T.convert("RGB")).enhance(0.74)).enhance(0.84).convert("RGBA")
+    T.putalpha(al)
     la.contorno(T).save(DEST / f"m_{nome}.webp", lossless=True, method=6)
     return {"w": w, "h": h, "n": len(qs)}
 

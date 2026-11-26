@@ -210,3 +210,6 @@ canvas.bicho { image-rendering: pixelated; flex: none; width: 54px; height: 46px
 .fundo video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
 
 #usar.chama { animation: chama 1.2s ease-in-out infinite; } #usar.chama.surge { animation: sobeU .2s ease-out, chama 1.2s ease-in-out .2s infinite; } .toque #usar.chama.surge { animation: sobeT .2s ease-out, chama 1.2s ease-in-out .2s infinite; } @keyframes chama { 50% { filter: brightness(1.25) drop-shadow(0 0 10px #ff9a40); } }
+
+/* companheiro (guará) */
+#h-pet { width: 150px; margin-top: 6px; font: 600 11px Cinzel, serif; color: #f2c89a; text-shadow: 0 1px 3px #000; } #h-pet .barra { height: 4px; margin: 3px 0 0 2px; } #b-pet i { background: linear-gradient(#ffb070, #b4582a); }
