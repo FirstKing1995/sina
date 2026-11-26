@@ -11,9 +11,9 @@
   UI.item = (m, t) => { const c = D.icone(m, t || 34); c.className = 'ic'; return c; };
 
   // ---------- preferências do jogador ----------
-  const PAD = { coleta: matchMedia('(pointer: coarse)').matches || /[?&]toque/.test(location.search) ? 1 : 0, tremor: 1, vibra: 1, assist: 1, numeros: 1, brilho: 1, repete: 1, golpeE: 0, esc: 1, alfa: 0.9, texto: 1, bichos: 1, meta: 1 };
+  const PAD = { v: 2, coleta: 1, tremor: 1, vibra: 1, assist: 1, numeros: 1, brilho: 1, repete: 1, golpeE: 0, esc: 1, alfa: 0.9, texto: 1, bichos: 1, meta: 1 };
   UI.pref = Object.assign({}, PAD);
-  try { Object.assign(UI.pref, JSON.parse(localStorage.getItem('sina_pref')) || {}); } catch (e) { /* nada guardado */ }
+  try { const g = JSON.parse(localStorage.getItem('sina_pref')) || {}; if (!(g.v >= 2)) { g.coleta = 1; g.v = 2; } Object.assign(UI.pref, g); } catch (e) { /* nada guardado */ }
   UI.mudaPref = function (k, v) { UI.pref[k] = v; try { localStorage.setItem('sina_pref', JSON.stringify(UI.pref)); } catch (e) { /* nada */ } UI.aplica(); };
   UI.aplica = function () {
     const r = document.documentElement, p = UI.pref, b = Math.max(0.78, Math.min(1.45, Math.min(innerHeight, innerWidth) / 390));
