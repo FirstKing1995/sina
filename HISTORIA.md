@@ -96,13 +96,16 @@ o poder do herói sobe por **reinos**, cada um com três graus (inicial, médio,
 
 O herói **se transforma fisicamente** conforme sobe. Cada reino troca o visual dele (não só a roupa):
 
-- **Barro:** corpo de barro cru, rachado, marcas de dedo do criador.
-- **Brasa:** as rachaduras acendem por dentro; olhos com brilho de forno.
-- **Ferro:** pele mais escura e lisa, veios de metal no braço e no peito.
-- **Ruína:** marcas da tecnologia antiga se fundem ao corpo (linhas de luz, placas), cicatrizes da radiação.
-- **Estrela:** pele com pontos de luz como um céu, aura leve, cabelo e olhos mudam de cor.
-- **Semideus:** corpo maior, aura constante, sinais gravados que brilham ao lutar.
-- **Divino:** quase todo luz e barro dourado; a forma humana fica só como lembrança.
+A regra: quanto mais forte, **mais perfeito** o corpo fica. As rachaduras do barro vão fechando até sumir,
+a pele fica lisa e viva, e o **cabelo cresce** a cada reino.
+
+- **Barro:** barro cru, rachado, marcas de dedo do criador; cabelo curto e grosso.
+- **Brasa:** as rachaduras começam a fechar, só as mais fundas ainda brilham por dentro; o cabelo passa do pescoço.
+- **Ferro:** **pele sem rachaduras**, lisa e firme, cor de gente; cabelo pelos ombros; corpo mais definido.
+- **Ruína:** a pele ganha marcas finas da energia antiga (linhas de luz que só aparecem ao lutar); cabelo comprido, preso.
+- **Estrela:** pele com um brilho leve, pontos de luz quando usa magia; cabelo longo que se move como se tivesse vento.
+- **Semideus:** corpo maior e perfeito, aura constante, cabelo muito longo, olhos que brilham.
+- **Divino:** pele quase luz, sem nenhuma marca; o barro só aparece como lembrança dourada no peito.
 
 **Técnicas** seguem a mesma escada: técnicas de terra, de céu, astrais, divinas e, por último, primordiais.
 Cada reino novo mostra um inimigo, um lugar e uma técnica que fazem o reino anterior parecer pequeno.
