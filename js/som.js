@@ -76,8 +76,12 @@
   };
   // a natureza, feita na hora: passarinho, grilo, coruja, sapo, corvo, gota, sopro de vento e o coração
   const nota = (f0, f1, d, vol, ini, tipo, sai) => { const t0 = ctx.currentTime + ini, o = ctx.createOscillator(), g = ctx.createGain(); o.type = tipo || 'sine'; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + d); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + d * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d); o.connect(g); g.connect(sai); o.start(t0); o.stop(t0 + d + 0.02); };
+  // gravações reais (CC0) quando já chegaram; senão, o som feito na hora
+  const NAT = { pio: ['pio1', 'pio2', 'pio3', 'pio4'], pio2: ['pio1', 'pio2', 'pio3', 'pio4'], grilo: ['grilo'], coruja: ['coruja'], sapo: ['sapo1', 'sapo2'], corvo: ['corvo1', 'corvo2'], gota: ['gota1', 'gota2', 'gota3'], sopro: ['vento'], morcego: ['morcego'], uivo: ['uivo'] }, natB = {}; let natPedido = false;
+  function pedeNat() { if (natPedido || !ctx) return; natPedido = true; const l = [...new Set(Object.values(NAT).flat())]; let i = 0; const vai = () => { const n = l[i++]; if (!n) return; fetch('som/natureza/' + n + '.mp3').then((r) => r.arrayBuffer()).then((a) => ctx.decodeAudioData(a)).then((b) => { natB[n] = b; }).catch(() => {}).then(vai); }; vai(); vai(); }
   S.bicho = function (tipo, vol, pan) {
-    if (!ctx || ctx.state !== 'running') return; const amb = tipo === 'coracao' ? 1 : S.vol.ambiente; if (amb <= 0) return; const s = ctx.createGain(); s.gain.value = vol * amb; liga(s, pan); const R = Math.random;
+    if (!ctx || ctx.state !== 'running') return; pedeNat(); const amb = tipo === 'coracao' ? 1 : S.vol.ambiente; if (amb <= 0) return; const s = ctx.createGain(); s.gain.value = vol * amb; liga(s, pan); const R = Math.random;
+    const gr = NAT[tipo] && NAT[tipo].map((n) => natB[n]).filter(Boolean); if (gr && gr.length) { const f = ctx.createBufferSource(); f.buffer = gr[Math.floor(R() * gr.length)]; f.playbackRate.value = 0.9 + R() * 0.2; s.gain.value = vol * amb * (tipo === 'sopro' ? 0.5 : tipo === 'grilo' ? 0.35 : 0.6); f.connect(s); f.start(); return; }
     if (tipo === 'pio') { const b = 2200 + R() * 1400, n = 2 + Math.floor(R() * 4); for (let i = 0; i < n; i++) nota(b * (1 + R() * 0.2), b * (0.8 + R() * 0.5), 0.07 + R() * 0.05, 0.05, i * (0.11 + R() * 0.03), 'sine', s); }
     else if (tipo === 'pio2') { const b = 3000 + R() * 900; nota(b, b * 1.25, 0.12, 0.04, 0, 'sine', s); nota(b * 1.2, b * 0.8, 0.2, 0.045, 0.16, 'sine', s); if (R() < 0.5) nota(b, b * 1.2, 0.1, 0.035, 0.42, 'sine', s); }
     else if (tipo === 'grilo') { const b = 4100 + R() * 500; for (let j = 0; j < 2 + R() * 2; j++) for (let i = 0; i < 4; i++) nota(b, b * 1.01, 0.028, 0.026, j * 0.36 + i * 0.042, 'triangle', s); }
@@ -117,7 +121,10 @@
   // cada uma toca em dois aparelhos: perto do fim do laço o segundo entra no ponto certo e cruza com o primeiro, sem buraco
   const MUS = {
     floresta: { vol: 0.34, laco: [9.262, 164.718], entra: 3, sai: 2 }, calma: { vol: 0.4, laco: [6.117, 77.137], entra: 2.2, sai: 2 },
-    batalha: { vol: 0.42, laco: [4.209, 136.746], entra: 0.6, sai: 2.4, recomeca: 12 }, chefao: { vol: 0.5, laco: [3.868, 162.189], entra: 0.4, sai: 2.5, recomeca: 0 },
+    batalha: { vol: 0.42, laco: [4.209, 136.746], entra: 0.6, sai: 2.4, recomeca: 12 },
+    // as novas: uma por caminho, a vila de dia e o cerco à noite (laço no arquivo inteiro, cruzando no fim)
+    serra: { vol: 0.34, laco: [1, 190.6], entra: 3, sai: 2.5 }, alagado: { vol: 0.34, laco: [1, 181.4], entra: 3, sai: 2.5 }, enterrados: { vol: 0.36, laco: [1, 172.3], entra: 3, sai: 2.5 },
+    rio: { vol: 0.36, laco: [1, 131.1], entra: 2.5, sai: 2.5 }, fortim: { vol: 0.36, laco: [1, 190.5], entra: 3, sai: 2.5 }, primeiro: { vol: 0.42, laco: [0, 187.6], entra: 2, sai: 3 }, cerco: { vol: 0.42, laco: [1, 173.3], entra: 0.8, sai: 2.4, recomeca: 12 }, chefao: { vol: 0.5, laco: [3.868, 162.189], entra: 0.4, sai: 2.5, recomeca: 0 },
   };
   const CRUZA = 1.1;
   // o arquivo fica na memória (uns 2 MB): os dois aparelhos usam o mesmo, e pular de ponto não depende da rede

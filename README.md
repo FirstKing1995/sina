@@ -75,3 +75,10 @@ Arte: herói do PixelLab, roupas, monstros, fundos e enfeites pintados no Gemini
 - Três níveis escolhidos ao nascer (`C.NIVEIS` em `js/bando.js`, guardado em `save.nivel`): Barro mole, Barro duro e Pesadelo (sem mira assistida).
 - Câmera em subpixel: o mundo anda em pixels inteiros e o quadro pronto desliza pela sobra (buffer com uma coluna e uma linha a mais).
 - IA por distância: bicho parado longe pensa a cada três quadros. A arte das outras áreas carrega depois da primeira tela (`D.resto`).
+
+## Mundo, sons, músicas e cenas (26/11/2026)
+
+- `js/mundo.js`: árvores altas para escalar (manche para cima ou Usar), com ninho e itens lá em cima; terra fofa para a pá; veios de ferro e prata nos barrancos para a picareta; tocha fincada no chão (tecla B ou mochila).
+- Coleta ao passar agora agacha rápido e pega (animação curta, sem parar o herói).
+- Sons reais CC0 em `som/natureza` (créditos em `../referencias/sons/CREDITOS.md`); músicas novas do Suno por caminho, vila de dia, cerco e abertura.
+- Cenas em vídeo (Gemini) em `assets/cenas`, listadas em `cenas.js`: abertura (atrás do texto do nascimento), floresta (fundo da tela inicial) e serra (primeira chegada).

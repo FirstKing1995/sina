@@ -1,7 +1,7 @@
 // Duelos simulados com os quatro donos. node tools/lateral-donos.js
 global.window = global; global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const L = __dirname + (require('fs').existsSync(__dirname + '/../js/motor.js') ? '/../js/' : '/../lateral/js/');
-for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila', 'cidade']) require(L + f + '.js');
+for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila', 'cidade', 'mundo']) require(L + f + '.js');
 const J = window.Jogo, F = window.Fase; J.semSalvar = true;
 const fichas = { fraco: { armas: ['lanca'], arma: 'lanca', roupas: ['folhas'], roupa: 'folhas', per: { lanca: { n: 4, x: 0 }, corpo: { n: 4, x: 0 }, folego: { n: 4, x: 0 } } },
   bom: { armas: ['espada'], arma: 'espada', roupas: ['couro'], roupa: 'couro', per: { espada: { n: 8, x: 0 }, corpo: { n: 10, x: 0 }, folego: { n: 9, x: 0 } }, inv: { curativo: 4, erva: 4 } } };

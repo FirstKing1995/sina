@@ -402,6 +402,9 @@
     if (h.semVigor <= 0 && !['golpe', 'forte', 'rola', 'carga', 'mira'].includes(h.estado)) h.vigor = Math.min(f.vigor, h.vigor + (s.fome < 15 ? 24 : 46) * (J.cl && J.cl('neve') > 0.4 && ['barro', 'folhas'].includes(s.roupa) && !s.tochaAcesa && !J.abrigado() ? 0.62 : 1) * dt);
     h.lerdo = Math.max(0, (h.lerdo || 0) - dt);
     if (h.estado === 'dorme') { h.vx = 0; h.vy = Math.min(QUEDA, h.vy + G * dt); mover(h, dt); return; }
+    if (J.passoMundo && J.passoMundo(h, dt, e)) { if (h.estado !== 'escala') { h.vy = Math.min(QUEDA, h.vy + G * dt); mover(h, dt); } return; }
+    // empurrar o manche para cima no pé de uma árvore alta: escala
+    if (h.estado === 'livre' && e.cima && h.noChao && J.pertoMundo) { const p = J.pertoMundo(h); if (p && p.tipo === 'escalar') { J.usaMundo(p); return; } }
     if (h.estado === 'morto' || h.estado === 'nasce') { h.vy = Math.min(QUEDA, h.vy + G * dt); h.vx *= 0.9; mover(h, dt); return; }
     // fome e veneno
     s.fome = Math.max(0, s.fome - (dt / 9) * (amu('raiz') ? 0.6 : 1)); s.tempo += dt;
@@ -416,8 +419,8 @@
     h.coyote = h.noChao ? 0.11 : h.coyote - dt;
     if (h.noChao) { h.arDash = true; if (tipoEm(h.x, h.y + 2) === 1 && !beiraEspinho(h)) h.ultimoSeguro = { x: h.x, y: h.y }; }
 
-    if (livre || h.estado === 'come') {
-      const alvo = eixo * vel * (h.estado === 'come' ? 0.3 : 1);
+    if (livre || h.estado === 'come' || (h.estado === 'colhe' && h.rapido)) {
+      const alvo = eixo * vel * (h.estado === 'come' ? 0.3 : h.estado === 'colhe' ? 0.55 : 1);
       const vira = eixo && Math.sign(h.vx) === -eixo;
       const ac = h.noChao ? (eixo ? (vira ? 2600 : 1300) : 1700) : eixo ? 1100 : 500;
       if (alvo > h.vx) h.vx = Math.min(alvo, h.vx + ac * dt); else h.vx = Math.max(alvo, h.vx - ac * dt);
@@ -425,7 +428,7 @@
     } else if (h.estado === 'golpe' || h.estado === 'magia') {
       if (h.noChao) h.vx *= Math.pow(h.investida ? 0.02 : 0.0008, dt); else h.vx += (eixo * vel * 0.8 - h.vx) * Math.min(1, dt * 8);
     } else if (h.estado === 'forte') h.vx *= Math.pow(0.002, dt);
-    else if (['carga', 'mira', 'soltou', 'colhe', 'pesca'].includes(h.estado)) { if (h.noChao) h.vx *= Math.pow(0.0001, dt); }
+    else if (['carga', 'mira', 'soltou', 'colhe', 'pesca'].includes(h.estado) && !(h.estado === 'colhe' && h.rapido)) { if (h.noChao) h.vx *= Math.pow(0.0001, dt); }
     else if (h.estado === 'dor') h.vx *= Math.pow(0.05, dt);
 
     // pular
@@ -499,7 +502,7 @@
     if (h.estado === 'magia') { if (!h.magiaFeita && h.t > 0.22) { h.magiaFeita = true; soltaMagia(h); } if (h.t > h.dur) { h.estado = 'livre'; h.t = 0; } }
     if (h.estado === 'livre' && usa('come')) J.comer();
     if (h.estado === 'come' && h.t > 0.55) { h.estado = 'livre'; h.t = 0; }
-    if (h.estado === 'colhe') { if (!h.pegou && h.t > 0.22) { h.pegou = true; J.recolhe(h.alvo); } if (h.t > 0.42) { h.estado = 'livre'; h.t = 0; } }
+    if (h.estado === 'colhe') { const r = h.rapido ? 0.55 : 1; if (!h.pegou && h.t > 0.22 * r) { h.pegou = true; J.recolhe(h.alvo); } if (h.t > 0.42 * r) { h.estado = 'livre'; h.t = 0; h.rapido = false; } }
     if (h.estado === 'pesca' && (eixo || J.ja.rola > 0 || J.ja.pula > 0) && h.t > 0.3) { h.estado = 'livre'; h.t = 0; }
     if (h.estado === 'dor' && h.t > 0.34) { h.estado = 'livre'; h.t = 0; }
 
@@ -625,7 +628,7 @@
   };
   J.colhidos = {}; // id -> segundos até brotar de novo
   const TEM_MACHADO = () => J.save.armas.includes('machado') || J.save.armas.includes('machado_ferro');
-  J.colher = function (c) { const h = J.heroi; if (h.estado !== 'livre') return; if (c.m === 'madeira' && !TEM_MACHADO()) { texto(h.x, h.y - 66, 'precisa de um machado', '#e0b070'); return; } h.estado = 'colhe'; h.t = 0; h.alvo = c; h.pegou = false; h.dir = Math.sign(c.x - h.x) || h.dir; h.vx = 0; };
+  J.colher = function (c, rapido) { const h = J.heroi; if (h.estado !== 'livre') return; h.rapido = !!rapido && c.m !== 'madeira'; if (c.m === 'madeira' && !TEM_MACHADO()) { texto(h.x, h.y - 66, 'precisa de um machado', '#e0b070'); return; } h.estado = 'colhe'; h.t = 0; h.alvo = c; h.pegou = false; h.dir = Math.sign(c.x - h.x) || h.dir; h.vx = 0; };
   J.recolhe = function (c) {
     if (!c || J.colhidos[c.id] > 0) return;
     if (c.m === 'madeira') { c.talho = (c.talho || 0) + 1; som('minerar', 0.7, 0.8); J.faiscas(c.x, c.y - 26, 10, '#a8804a', 0.9, 'pedra'); treme(2); if (c.talho < 3) { J.treina('coleta', 1.5); return; } c.talho = 0; J.ganha('madeira', 2 + (J.nivel('coleta') > 4 ? 1 : 0), c.x, c.y - 30); J.ganha('galho', 1, c.x, c.y - 12); J.colhidos[c.id] = 240; J.save.colhido++; J.treina('coleta', 6); return; }
@@ -672,6 +675,7 @@
     const A = F.atual, dy = (o, k) => Math.abs(o.y - h.y) < (k || 40);
     const lar = J.pertoLar && J.pertoLar(h); if (lar) return lar;
     for (const c of A.coleta) if (!(J.colhidos[c.id] > 0) && Math.abs(c.x - h.x) < 24 && dy(c, 50)) return { tipo: 'coleta', o: c };
+    const mu = J.pertoMundo && J.pertoMundo(h); if (mu) return mu;
     for (const b of A.baus) if (!J.save.baus[b.id] && Math.abs(b.x - h.x) < 28 && dy(b)) return { tipo: 'bau', o: b };
     for (const c of A.circulos) if (!J.save.magias.includes(c.magia) && Math.abs(c.x - h.x) < 50 && dy(c) && !(A.arena && !J.save.chefes[A.arena.chefe])) return { tipo: 'circulo', o: c };
     if (!J.chefeAtivo && !J.emb && !J.raid) for (const f of A.fogos) if (Math.abs(f.x - h.x) < 30 && dy(f)) return { tipo: 'fogo', o: f };

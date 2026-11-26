@@ -16,7 +16,8 @@
   // ---------- título ----------
   function titulo() {
     modo = 'titulo'; mostra('titulo'); J.heroi = null; D.escuro = null; D.foco = null;
-    if (window.Som) { Som.musica('calma'); Som.ambiente('brisa'); Som.fogueira(0); }
+    { const f = document.querySelector('#titulo .fundo'); if ((window.CENAS || {}).area_floresta && !f.querySelector('video')) { const v = document.createElement('video'); v.src = 'assets/cenas/area_floresta.mp4?v=1'; v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true; f.append(v); const p = v.play(); if (p && p.catch) p.catch(() => {}); } }
+    if (window.Som) { Som.musica('primeiro'); Som.ambiente('brisa'); Som.fogueira(0); }
     const m = $('titulo-menu'); m.innerHTML = '';
     const s = J.carregar();
     if (s) {
@@ -44,6 +45,8 @@
     $('n-pede').hidden = true; $('n-texto').textContent = ''; $('n-img').className = ''; $('n-luz').className = '';
     nas = { t: 0, i: -1, part: [], fim: false };
     requestAnimationFrame(() => { $('n-img').className = 'vai'; $('n-luz').className = 'vai'; });
+    // a abertura em vídeo, quando existe: o barro sobe de verdade por trás do texto
+    $('n-img').innerHTML = ''; if (!semIntro && (window.CENAS || {}).abertura) { const v = document.createElement('video'); v.src = 'assets/cenas/abertura.mp4?v=1'; v.muted = true; v.playsInline = true; v.autoplay = true; v.className = 'n-video'; $('n-img').append(v); $('n-img').className = 'vai video'; const p = v.play(); if (p && p.catch) p.catch(() => {}); if (window.Som && Som.MUS.primeiro) Som.musica('primeiro'); }
     if (semIntro === true) { nas.fim = true; pedeNome(); } else proximaLinha();
   }
   function proximaLinha() {
@@ -58,7 +61,7 @@
   let nivel = 'normal'; try { nivel = localStorage.getItem('sina_nivel') || 'normal'; } catch (e) { /* nada */ }
   function montaNiveis() {
     const c = $('n-niveis'); c.innerHTML = '';
-    for (const k in C.NIVEIS) { const N = C.NIVEIS[k], b = el('button', 'nivel' + (k === nivel ? ' ativa' : '')); b.append(UI.ico(k === 'normal' ? 'vida' : k === 'duro' ? 'escudo' : 'caveira'), el('b', '', N.nome)); b.title = N.desc; b.onclick = () => { nivel = k; try { localStorage.setItem('sina_nivel', k); } catch (e) { /* nada */ } som('abrir', 0.4, k === 'pesadelo' ? 0.7 : 1.2); UI.vibra(8); montaNiveis(); }; c.append(b); }
+    for (const k in C.NIVEIS) { const N = C.NIVEIS[k], b = el('button', 'nivel' + (k === nivel ? ' ativa' : '')); b.append(UI.ico(k === 'normal' ? 'vida' : k === 'duro' ? 'escudo' : 'caveira'), el('b', '', N.nome), el('small', '', N.grau)); b.title = N.desc; b.onclick = () => { nivel = k; try { localStorage.setItem('sina_nivel', k); } catch (e) { /* nada */ } som('abrir', 0.4, k === 'pesadelo' ? 0.7 : 1.2); UI.vibra(8); montaNiveis(); }; c.append(b); }
     $('n-ndesc').textContent = C.NIVEIS[nivel].desc;
   }
   function pedeNome() { montaNiveis(); $('n-texto').textContent = ''; $('n-pede').hidden = false; $('n-nome').value = ''; if (!toque) $('n-nome').focus(); }
@@ -95,6 +98,19 @@
     if (velho) { J.save.v = 3; J.save.prole = J.save.prole || []; J.save.emb = {}; const f = s.fogo && F.area(s.fogo.area).fogos.find((o) => o.id === s.fogo.id); if (f) { J.save.area = s.fogo.area; J.save.x = f.x; J.save.y = f.y; } else { J.save.area = 'floresta'; J.save.x = null; } }
     J.entrarArea(J.save.area); D.centrar(); D.escuro = null; modo = 'jogo'; mostra(null); areaVista = null; vesteRetrato();
   }
+
+  // ---------- cenas animadas (vídeos curtos): a abertura e a primeira vez em cada caminho ----------
+  const CENAS = window.CENAS || {};
+  function cena(nome, titulo, sub, depois) {
+    const c = CENAS[nome]; if (!c) { if (depois) depois(); return false; }
+    const v = $('cena-v'), box = $('cena'); let fim = false; const acaba = () => { if (fim) return; fim = true; box.classList.remove('ver'); setTimeout(() => { box.hidden = true; v.pause(); v.removeAttribute('src'); v.load(); }, 500); if (window.Som) Som.musica(null); if (depois) depois(); };
+    box.hidden = false; requestAnimationFrame(() => box.classList.add('ver')); $('cena-t').textContent = titulo || ''; $('cena-s').textContent = sub || ''; $('cena-t').parentElement.classList.remove('ver'); setTimeout(() => $('cena-t').parentElement.classList.add('ver'), 900);
+    v.src = 'assets/cenas/' + nome + '.mp4?v=1'; v.muted = true; v.playbackRate = c.vel || 1; const p = v.play(); if (p && p.catch) p.catch(acaba);
+    if (window.Som && c.mus) Som.musica(c.mus);
+    v.onended = acaba; v.onerror = acaba; $('cena-pula').onclick = acaba; box.onpointerdown = (ev) => { if (ev.target === box || ev.target === v) { if (v.currentTime > 1.2) acaba(); } };
+    return true;
+  }
+  J.cena = cena;
 
   // ---------- avisos na tela ----------
   let sussT = 0, areaT = 0, areaVista = null;
@@ -182,6 +198,7 @@
     if (modo !== 'jogo' || !J.heroi || J.heroi.estado !== 'livre') return;
     const p = J.perto(); if (!p) return;
     if (['levanta', 'solta', 'varal', 'horta'].includes(p.tipo)) { J.usaLar(p); return; }
+    if (['escalar', 'cavar', 'minerar'].includes(p.tipo)) { J.usaMundo(p); return; }
     if (p.tipo === 'bau') { J.abreBau(p.o); return; }
     if (p.tipo === 'casa') { abreMenu('lar'); return; }
     if (p.tipo === 'fala') { abreFala(); return; }
@@ -228,7 +245,7 @@
     const v = $('veu'); v.classList.add('ver'); solta();
     setTimeout(() => { J.entrarArea(p.para[0], p.para[1]); D.centrar(); areaVista = null; D.quadro(0.016); setTimeout(() => { v.classList.remove('ver'); viajando = false; }, 220); }, 420);
   }
-  const rotulo = (p) => (p.tipo === 'preso' ? 'Quebrar a jaula' : p.tipo === 'morador' ? (p.o.id === 'fam' ? 'Conversar' : 'Falar com ' + J.save.vila[p.o.id].nome) : p.tipo === 'poco' ? 'Beber do poço' : p.tipo === 'celeiro' ? 'Abrir o celeiro' : p.tipo === 'mercador' ? 'Trocar com o mercador' : p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
+  const rotulo = (p) => J.rotuloMundo(p) || (p.tipo === 'preso' ? 'Quebrar a jaula' : p.tipo === 'morador' ? (p.o.id === 'fam' ? 'Conversar' : 'Falar com ' + J.save.vila[p.o.id].nome) : p.tipo === 'poco' ? 'Beber do poço' : p.tipo === 'celeiro' ? 'Abrir o celeiro' : p.tipo === 'mercador' ? 'Trocar com o mercador' : p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? 'Cortar a árvore' : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
 
   // ---------- fogueira ----------
   function abreFogo(f) {
@@ -337,7 +354,7 @@
   function atualizaMochila() { const s = J.save; $('h-dir').firstElementChild.classList.toggle('novo', C.RECEITAS.some((r) => r.tipo && r.tipo !== 'item' && J.pode(r) && !J.jaTem(r))); void s; }
   function vesteRetrato() { const c = $('retrato-c'), q = c.getContext('2d'); q.imageSmoothingEnabled = false; q.clearRect(0, 0, 34, 34); const im = D.img['h_' + J.save.roupa]; if (im) q.drawImage(im, 26, 12, 44, 44, -2, 0, 44, 44); montaMagias(); atualizaMochila(); }
   function montaMagias() { const m = $('h-magias'); m.innerHTML = ''; const s = J.save; [s.magias[0], s.magia2].forEach((id, i) => { if (!id) return; const d = el('div', 'mg'); d.style.setProperty('--cor', C.MAGIAS[id].cor); d.append(UI.ico(id), el('b', '', i ? 'F' : 'R'), el('s')); d.dataset.id = id; m.append(d); }); UI.zeraToque(); $('b-sina').hidden = !s.magias.length; }
-  const icUsar = (p) => (p.tipo === 'coleta' && p.o.m !== 'madeira' ? UI.item(p.o.m, 34) : UI.ico({ coleta: 'machado', fogo: 'fogueira', porta: 'sair', bau: 'bau', casa: 'casa', circulo: 'olho', pesca: 'gota', preso: 'cadeado', solta: 'cadeado', levanta: 'vida', fala: 'vida', morador: 'familia', crianca: 'familia', poco: 'gota', celeiro: 'fome', mercador: 'troca', varal: 'comer', horta: 'cesto' }[p.tipo] || 'mao'));
+  const icUsar = (p) => (p.tipo === 'coleta' && p.o.m !== 'madeira' ? UI.item(p.o.m, 34) : UI.ico({ coleta: 'machado', fogo: 'fogueira', porta: 'sair', bau: 'bau', casa: 'casa', circulo: 'olho', pesca: 'gota', preso: 'cadeado', solta: 'cadeado', levanta: 'vida', fala: 'vida', morador: 'familia', crianca: 'familia', escalar: 'pula', cavar: 'cesto', minerar: 'machado', poco: 'gota', celeiro: 'fome', mercador: 'troca', varal: 'comer', horta: 'cesto' }[p.tipo] || 'mao'));
   let vistas = '';
   function hud(dt) {
     hudT -= dt; if (hudT > 0) return; hudT = 0.06;
@@ -360,7 +377,7 @@
     const c = J.chefeAtivo; $('chefe').hidden = !c; $('h-meta').classList.toggle('some', !!c); if (c) { $('chefe-nome').textContent = c.T.nome; const b = $('b-chefe'); b.children[0].style.width = b.children[1].style.width = pc(c.hp, c.hpMax); }
     let p = modo === 'jogo' && h.estado === 'livre' && !acorda ? J.perto() : null; const u = $('usar');
     // colher ao passar: só o que é de mão, e só em paz
-    if (p && p.tipo === 'coleta' && p.o.m !== 'madeira' && UI.pref.coleta && Math.abs(p.o.x - h.x) < 20 && h.noChao && !J.emb && !J.raid && !J.inimigos.some((e) => e.vivo && e.estado !== 'vaga' && Math.abs(e.x - h.x) < 260)) { J.recolhe(p.o); p = null; }
+    if (p && p.tipo === 'coleta' && p.o.m !== 'madeira' && UI.pref.coleta && Math.abs(p.o.x - h.x) < 20 && h.noChao && !J.emb && !J.raid && !J.inimigos.some((e) => e.vivo && e.estado !== 'vaga' && Math.abs(e.x - h.x) < 260)) { J.colher(p.o, true); p = null; }
     if (p) { u.hidden = false; const t = rotulo(p); if (u.dataset.t !== t) { u.dataset.t = t; u.innerHTML = ''; const i = icUsar(p); u.append(i); if (!toque) u.append(el('b', '', 'E')); u.append(el('span', '', t)); u.classList.remove('surge'); void u.offsetWidth; u.classList.add('surge'); } } else u.hidden = true;
   }
 
@@ -382,6 +399,7 @@
       if (ev.code === 'KeyE') usar();
       if (ev.code === 'KeyT') J.proximaArma();
       if (ev.code === 'KeyV') J.tocha();
+      if (ev.code === 'KeyB') J.fincaTocha();
       if (ev.code === 'KeyM') abreMenu('mapa');
       if (/^Digit[1-9]$/.test(ev.code)) { const l = C.ORDEM_ARMAS.filter((a) => J.save.armas.includes(a)); if (l[+ev.code[5] - 1]) J.empunhar(l[+ev.code[5] - 1]); }
     }
@@ -455,7 +473,7 @@
   const FORA = ['vaga', 'volta', 'caido', 'morto', 'foge'];
   function musicaDaHora(dt) {
     musT -= dt; J.silencio = Math.max(0, (J.silencio || 0) - dt); if (musT > 0 || !window.Som) return; const passo = 0.25 - musT; musT = 0.25;
-    const h = J.heroi, A = F.atual; let m = 'floresta';
+    const h = J.heroi, A = F.atual; let m = (window.Som && Som.MUS[C.REGIOES[A.regiao].mus] && C.REGIOES[A.regiao].mus) || 'floresta';
     if (modo === 'morte' || h.estado === 'morto' || acorda) m = null;
     else if (J.chefeAtivo) m = 'chefao';
     else {
@@ -463,10 +481,10 @@
       let perto = 0; for (const e of J.inimigos) if (e.vivo && !FORA.includes(e.estado) && Math.abs(e.x - h.x) < 330 && Math.abs(e.y - h.y) < 150) perto += e.T.bruto ? 2 : 1;
       calor = J.emb || J.raid ? 6 : perto >= 2 ? Math.min(6, calor + passo * 4) : perto ? Math.max(0, calor - passo * 0.25) : Math.max(0, calor - passo * 1.3);
       tocando = calor > (tocando ? 0.4 : 3.2);
-      if (tocando) m = 'batalha';
+      if (tocando) m = J.raid ? 'cerco' : 'batalha';
       else if (J.silencio > 0) m = null;
       else if (h.estado === 'dorme' || modo === 'fogo') m = 'calma';
-      else if (A.id === 'lar' && !J.ehNoite()) m = 'calma';
+      else if (A.id === 'lar' && !J.ehNoite()) m = 'rio';
       else if (A.arena && J.inimigos.some((e) => e.T.chefe && e.vivo)) m = null; // antes do dono, só o vento
     }
     Som.musica(m);
@@ -485,7 +503,7 @@
       if (modo !== 'morte') hud(dt);
       if (modo === 'jogo' && !acorda) {
         const h = J.heroi, A = F.atual;
-        if (areaVista !== A.id) { areaVista = A.id; J.mostraArea(nomeArea(A.id)); if (window.Som) { Som.ambiente(C.REGIOES[A.regiao].amb); Som.prepara('batalha'); if (A.arena) Som.prepara('chefao'); } }
+        if (areaVista !== A.id) { areaVista = A.id; const cn = 'area_' + A.regiao, s0 = J.save; s0.cenas = s0.cenas || {}; if (!A.id.startsWith('covil') && CENAS[cn] && !CENAS[cn].titulo && !s0.cenas[cn]) { s0.cenas[cn] = 1; J.salvar(); modo = 'cena'; mostra(null); cena(cn, nomeArea(A.id), C.REGIOES[A.regiao].frase || '', () => { modo = 'jogo'; mostra(null); }); } J.mostraArea(nomeArea(A.id)); if (window.Som) { Som.ambiente(C.REGIOES[A.regiao].amb); Som.prepara('batalha'); if (A.arena) Som.prepara('chefao'); } }
         for (const p of A.placas) if (Math.abs(p.x - h.x) < 46 && Math.abs(p.y - h.y) < 70) dica(p.dica);
         if (J.save.fome < 25) dica('comer');
         if (window.Som) { Som.chuva(J.cl('chuva', 'tempestade') * (J.abrigado() ? 0.18 : 0.55)); let k = 0; for (const f of A.fogos) if (J.save.fogos[f.id]) k = Math.max(k, 1 - Math.abs(f.x - h.x) / 240); Som.fogueira(Math.max(0, k) * 0.6); }

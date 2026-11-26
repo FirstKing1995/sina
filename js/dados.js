@@ -180,12 +180,12 @@
 
   // ---------- regiões ----------
   C.REGIOES = {
-    floresta: { nome: 'Floresta Antiga', fundo: 'f_floresta', p: 'floresta', nevoa: '96,168,156', luz: [150, 172, 166], amb: 'brisa', ar: ['vagalume', 'vagalume', 'folha', 'esporo'], terra: [30, 22, 16] },
-    lobos: { nome: 'Serra dos Uivos', fundo: 'f_lobos', p: 'lobos', nevoa: '120,146,184', luz: [112, 124, 152], amb: 'noite', ar: ['neve', 'neve', 'nevoa'], terra: [22, 24, 30] },
-    cobras: { nome: 'Alagado das Presas', fundo: 'f_cobras', p: 'cobras', nevoa: '150,166,86', luz: [146, 146, 104], amb: 'rio', ar: ['esporo', 'vagalume', 'nevoa'], terra: [30, 27, 14] },
-    zumbis: { nome: 'Chão dos Enterrados', fundo: 'f_zumbis', p: 'zumbis', nevoa: '160,146,176', luz: [136, 124, 144], amb: 'cripta', ar: ['cinza', 'nevoa', 'cinza'], terra: [28, 23, 28] },
-    goblins: { nome: 'Barrancos do Fortim', fundo: 'f_goblins', p: 'goblins', nevoa: '200,142,100', luz: [178, 154, 132], amb: 'cinzas', ar: ['brasinha', 'cinza', 'brasinha'], terra: [36, 22, 14] },
-    vale: { nome: 'Vale do Rio Manso', fundo: 'f_vale', p: 'vale', nevoa: '150,166,140', luz: [160, 160, 138], amb: 'rio', ar: ['vagalume', 'folha', 'esporo', 'vagalume'], terra: [32, 25, 17] },
+    floresta: { frase: 'Onde o barro acordou.', nome: 'Floresta Antiga', fundo: 'f_floresta', p: 'floresta', nevoa: '96,168,156', luz: [150, 172, 166], amb: 'brisa', ar: ['vagalume', 'vagalume', 'folha', 'esporo'], terra: [30, 22, 16] },
+    lobos: { frase: 'O vento aqui tem dentes.', nome: 'Serra dos Uivos', fundo: 'f_lobos', p: 'lobos', nevoa: '120,146,184', luz: [112, 124, 152], amb: 'noite', mus: 'serra', ar: ['neve', 'neve', 'nevoa'], terra: [22, 24, 30] },
+    cobras: { frase: 'A água parada também respira.', nome: 'Alagado das Presas', fundo: 'f_cobras', p: 'cobras', nevoa: '150,166,86', luz: [146, 146, 104], amb: 'rio', mus: 'alagado', ar: ['esporo', 'vagalume', 'nevoa'], terra: [30, 27, 14] },
+    zumbis: { frase: 'Os mortos não ficaram deitados.', nome: 'Chão dos Enterrados', fundo: 'f_zumbis', p: 'zumbis', nevoa: '160,146,176', luz: [136, 124, 144], amb: 'cripta', mus: 'enterrados', ar: ['cinza', 'nevoa', 'cinza'], terra: [28, 23, 28] },
+    goblins: { frase: 'A fumaça vem de um fortim.', nome: 'Barrancos do Fortim', fundo: 'f_goblins', p: 'goblins', nevoa: '200,142,100', luz: [178, 154, 132], amb: 'cinzas', mus: 'fortim', ar: ['brasinha', 'cinza', 'brasinha'], terra: [36, 22, 14] },
+    vale: { frase: 'O rio que corre manso.', nome: 'Vale do Rio Manso', fundo: 'f_vale', p: 'vale', nevoa: '150,166,140', luz: [160, 160, 138], amb: 'rio', ar: ['vagalume', 'folha', 'esporo', 'vagalume'], terra: [32, 25, 17] },
   };
 
   // ---------- história ----------

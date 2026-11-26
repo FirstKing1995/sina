@@ -193,7 +193,7 @@
     const S = window.Som, h = J.heroi; if (!S || !S.bicho || !h) return; const A = F.atual, covil = A.id.startsWith('covil') || (J.abrigado && J.abrigado()), noite = J.ehNoite(), mau = J.cl('chuva', 'tempestade') > 0.4;
     somT -= dt; if (somT <= 0) {
       somT = rnd(1.8, 5.5); const pan = rnd(-0.8, 0.8), v = rnd(0.25, 0.8); let l;
-      if (covil) l = ['gota', 'gota', 'gota']; else if (mau) l = A.regiao === 'cobras' ? ['sapo', 'sapo'] : []; else l = { floresta: noite ? ['grilo', 'grilo', 'coruja', 'grilo'] : ['pio', 'pio', 'pio2', 'pio2', 'corvo'], vale: noite ? ['grilo', 'grilo', 'sapo', 'coruja'] : ['pio', 'pio2', 'pio', 'pio2'], lobos: noite ? ['coruja', 'sopro', 'sopro'] : ['corvo', 'sopro', 'sopro'], cobras: noite ? ['sapo', 'sapo', 'grilo'] : ['sapo', 'pio2', 'grilo', 'gota'], zumbis: ['corvo', 'coruja', 'sopro', 'gota'], goblins: noite ? ['grilo', 'coruja', 'sopro'] : ['corvo', 'sopro'] }[A.regiao] || [];
+      if (covil) l = ['gota', 'gota', 'gota', 'morcego']; else if (mau) l = A.regiao === 'cobras' ? ['sapo', 'sapo'] : []; else l = { floresta: noite ? ['grilo', 'grilo', 'coruja', 'grilo'] : ['pio', 'pio', 'pio2', 'pio2', 'corvo'], vale: noite ? ['grilo', 'grilo', 'sapo', 'coruja'] : ['pio', 'pio2', 'pio', 'pio2'], lobos: noite ? ['coruja', 'sopro', 'uivo', 'sopro'] : ['corvo', 'sopro', 'sopro'], cobras: noite ? ['sapo', 'sapo', 'grilo'] : ['sapo', 'pio2', 'grilo', 'gota'], zumbis: ['corvo', 'coruja', 'sopro', 'gota'], goblins: noite ? ['grilo', 'coruja', 'sopro'] : ['corvo', 'sopro'] }[A.regiao] || [];
       if (l.length && !J.chefeAtivo) S.bicho(um(l), v, pan);
     }
     // o coração, quando a vida está por um fio

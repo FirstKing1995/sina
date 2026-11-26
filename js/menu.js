@@ -106,7 +106,9 @@
         else {
           const m = it.v, K = C.COMER[m]; topoD(d, icMat(m, 64), C.MAT[m], s.inv[m] + ' na mochila');
           if (K) { num(d, [['Vida', '+' + (K.vida || 0)], ['Fome', '+' + (K.fome || 0)]].concat(K.cura ? [['Veneno', 'tira']] : [])); d.append(bt('Usar', () => { J.comer(m); pinta(); }, 'ir', 'comer')); }
-          if (m === 'tocha') d.append(bt(s.tochaAcesa ? 'Apagar (' + Math.ceil(s.tocha / 60) + ' min)' : 'Acender', () => { J.tocha(); pinta(); }, 'ir', 'tocha'));
+          if (m === 'tocha') { d.append(bt(s.tochaAcesa ? 'Apagar (' + Math.ceil(s.tocha / 60) + ' min)' : 'Acender', () => { J.tocha(); pinta(); }, 'ir', 'tocha')); d.append(bt('Fincar no chão aqui', () => { if (J.fincaTocha()) voltar(); }, '', 'fogueira'), el('p', 'nota', 'Fica acesa para sempre neste lugar. Tecla B.')); }
+          if (m === 'pa') d.append(el('p', '', 'Procure a terra fofa: um montinho de terra que brilha. Três batidas e o que estava enterrado sobe.'));
+          if (m === 'picareta') d.append(el('p', '', 'Os veios brilham na cara dos barrancos. Quatro batidas e sai ferro, às vezes prata. Volta a dar depois de três dias.'));
           const us = C.RECEITAS.filter((r) => r.custo[m]); if (us.length) { d.append(el('h3', '', 'Serve para')); const g2 = el('div', 'serve'); for (const r of us) { const x = el('button', 'chip'); x.append(icReceita(r, 24), document.createTextNode(nomeR(r))); x.onclick = () => { guardaEscolha.criar = r.id; filtro.criar = 'tudo'; UI.aba('criar'); }; g2.append(x); } d.append(g2); }
         }
       });

@@ -1,7 +1,7 @@
 // Teste longo: entradas aleatórias em todas as áreas, com bichos, clima, noite, armas e roupas sorteadas. node tools/lateral-longo.js [segundos por área]
 global.window = global; global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const L = __dirname + (require('fs').existsSync(__dirname + '/../js/motor.js') ? '/../js/' : '/../lateral/js/');
-for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila', 'cidade']) require(L + f + '.js');
+for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila', 'cidade', 'mundo']) require(L + f + '.js');
 const J = window.Jogo, F = window.Fase, C = window.Dados; J.semSalvar = true;
 const seg = +process.argv[2] || 60, R = (l) => l[Math.floor(Math.random() * l.length)]; let mortos = 0, abates = 0, emb = 0, raids = 0, baus = 0;
 J.aviso = (t) => { if (t === 'emboscadaFim') emb++; if (t === 'raidFim') raids++; };

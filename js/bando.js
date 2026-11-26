@@ -19,9 +19,9 @@
   const noite = () => (J.ehNoite && J.ehNoite() ? 1 : 0);
   // três jeitos de viver: o normal, o duro e o pesadelo
   C.NIVEIS = {
-    normal: { nome: 'Barro mole', hp: 1, dano: 1, manha: 0, cura: 1, volta: 1, desc: 'O caminho como foi pensado. Ainda assim, morrer é morrer.' },
-    duro: { nome: 'Barro duro', hp: 1.3, dano: 1.3, manha: 0.15, cura: 0.8, volta: 0.75, desc: 'Bichos mais fortes e espertos, comida cura menos, o bando volta antes.' },
-    pesadelo: { nome: 'Pesadelo', hp: 1.6, dano: 1.65, manha: 0.32, cura: 0.6, volta: 0.55, desc: 'Para quem já conhece tudo. Sem mira assistida, e um erro custa caro.' },
+    normal: { nome: 'Barro', grau: 'Fácil', hp: 1, dano: 1, manha: 0, cura: 1, volta: 1, desc: 'O caminho como foi pensado. Ainda assim, morrer é morrer.' },
+    duro: { nome: 'Pedra', grau: 'Médio', hp: 1.3, dano: 1.3, manha: 0.15, cura: 0.8, volta: 0.75, desc: 'Bichos mais fortes e espertos, comida cura menos, o bando volta antes.' },
+    pesadelo: { nome: 'Ferro', grau: 'Muito difícil', hp: 1.6, dano: 1.65, manha: 0.32, cura: 0.6, volta: 0.55, desc: 'Para quem já conhece tudo. Sem mira assistida, e um erro custa caro.' },
   };
   J.nv = () => C.NIVEIS[(J.save && J.save.nivel) || 'normal'] || C.NIVEIS.normal;
 

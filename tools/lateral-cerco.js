@@ -1,7 +1,7 @@
 // Noite de ataque na vila e na cidade, sem o herói lutar: quanto a defesa aguenta. node tools/lateral-cerco.js
 global.window = global; global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const L = __dirname + (require('fs').existsSync(__dirname + '/../js/motor.js') ? '/../js/' : '/../lateral/js/');
-for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila', 'cidade']) require(L + f + '.js');
+for (const f of ['dados', 'fase', 'motor', 'bando', 'clima', 'donos', 'lar', 'vila', 'cidade', 'mundo']) require(L + f + '.js');
 const J = window.Jogo, F = window.Fase; J.semSalvar = true; let av = [];
 J.aviso = (t, x) => av.push(t);
 function noite(nome, o, dia) {

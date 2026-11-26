@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=16' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=17' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -246,7 +246,10 @@
       case 'nasce': return ['nascer', Math.min(5, h.nq || 0)];
       case 'morto': return ['morte', Math.min(5, Math.floor(h.t * 6))];
       case 'dor': return ['dor', Math.min(2, Math.floor(h.t * 10))];
-      case 'colhe': return ['colher', Math.min(3, Math.floor(h.t * 10))];
+      case 'colhe': return ['colher', Math.min(3, Math.floor(h.t * (h.rapido ? 18 : 10)))];
+      case 'escala': return ['pulo', 1 + (Math.floor(h.andou / 12) % 2)];
+      case 'cava': { const f = (h.t % 0.42) / 0.42; return ['golpe3', f < 0.35 ? 1 : f < 0.6 ? 2 : 3]; }
+      case 'minera': { const f = (h.t % 0.36) / 0.36; return ['golpe1', f < 0.3 ? 1 : 2]; }
       case 'come': return ['magia', h.t < 0.3 ? 0 : 3];
       case 'rola': return h.noAr ? ['rola', 0] : ['rola', Math.min(5, Math.floor((h.t / 0.42) * 6))];
       case 'carga': return ['golpe1', h.t < 0.12 ? 0 : 1];
@@ -504,10 +507,25 @@
 
   // ---------- coisas do cenário ----------
   const COLETA = { galho: 'galhada', pedra: 'pedras', folha: 'planta', fibra: 'samambaia', fruta: 'frutas', osso: 'ossos' };
+  // árvores altas, terra fofa, veios e tochas fincadas
+  function desenhaMundo() {
+    const A = F.atual, E = A.extras, s = J.save, h = J.heroi; if (!E) return; const x0 = cam.x - 200, x1 = cam.x + D.VW + 200;
+    for (const a of E.arvores) {
+      if (a.x < x0 || a.x > x1) continue; const alt = a.y0 - a.y1, e = (alt + 90) / 304; prop('arvorao', a.x + 6, a.y0 + 4, { e, v: a.tx % 2 === 0 });
+      // o tronco tem cipó e marcas de garra: dá para subir
+      for (let y = a.y0 - 8; y > a.y1 + 4; y -= 7) { g.fillStyle = '#1a2a18'; g.fillRect(Math.round(a.x - 4 + Math.sin(y * 0.3) * 2), Math.round(y), 2, 5); g.fillStyle = '#4a7a3a'; g.fillRect(Math.round(a.x - 3 + Math.sin(y * 0.3) * 2), Math.round(y), 1, 4); }
+      if (Math.abs(h.x - a.x) < 80 && h.y > a.y1 + 20) { const k = 0.5 + 0.5 * Math.sin(tempo * 3); g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = '#ffe2a0'; g.globalAlpha = 0.5 * k; g.fillRect(Math.round(a.x - 1), Math.round(a.y1 - 20 - k * 4), 3, 3); g.fillRect(Math.round(a.x - 3), Math.round(a.y1 - 18 - k * 4), 7, 1); g.restore(); }
+      peca('ponte' in (A2.props || {}) ? 'lenha' : 'lenha', a.ninho, a.y1 + 4, { e: 0.4 }); brilhos.push([a.ninho, a.y1 - 6, 36, '255,226,160', 0.22]);
+    }
+    for (const m of E.montes) { if (m.x < x0 || m.x > x1) continue; const R = regiao(), cv = s.cavados && s.cavados[m.id]; if (cv) { g.fillStyle = 'rgba(0,0,0,0.55)'; g.beginPath(); g.ellipse(m.x, m.y + 1, 10, 3, 0, 0, 7); g.fill(); continue; } g.fillStyle = 'rgb(' + R.terra.map((v) => v + 26).join(',') + ')'; g.beginPath(); g.ellipse(m.x, m.y + 1, 12, 5, 0, Math.PI, 0); g.fill(); g.fillStyle = 'rgb(' + R.terra.map((v) => v + 46).join(',') + ')'; for (let i = 0; i < 5; i++) g.fillRect(Math.round(m.x - 8 + hash(m.tx + i) * 16), Math.round(m.y - 2 - hash(m.tx * 3 + i) * 3), 2, 1); const k = Math.max(0, Math.sin(tempo * 2.2 + m.x)); g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = k; g.fillStyle = '#ffe9b0'; g.fillRect(Math.round(m.x + 3), Math.round(m.y - 8), 1, 3); g.fillRect(Math.round(m.x + 2), Math.round(m.y - 7), 3, 1); g.restore(); }
+    for (const v of E.veios) { if (v.x < x0 || v.x > x1) continue; const usado = s.minados && s.minados[v.id] > s.dia - 3, c1 = v.prata ? '#dfe8f0' : '#d8904a', c2 = v.prata ? '#8a9aa8' : '#7a4a24'; for (let i = 0; i < 5; i++) { const px = Math.round(v.x - v.d * (2 + hash(i + v.y) * 9)), py = Math.round(v.y - 8 + hash(i * 7 + v.x) * 16); g.fillStyle = '#0a0806'; g.fillRect(px - 1, py - 1, 4, 4); g.fillStyle = usado ? '#3a3430' : c2; g.fillRect(px, py, 3, 3); if (!usado) { g.fillStyle = c1; g.fillRect(px, py, 2, 1); } } if (!usado) { const k = Math.max(0, Math.sin(tempo * 2.6 + v.y)); brilhos.push([v.x, v.y, 22, v.prata ? '200,220,240' : '255,170,90', 0.3 * k]); } }
+    for (const tx of J.fincadas()) { if (tx < x0 || tx > x1) continue; const y = F.chao(tx); lugar('tocha', tx, y + 4, { e: 0.7 }); brilhos.push([tx, y - 48, 150 + Math.sin(tempo * 9 + tx) * 6, '255,170,80', 0.9]); if (Math.random() < 0.1) J.poe({ tipo: 'brasa', x: tx + (Math.random() - 0.5) * 6, y: y - 52, vx: 0, vy: -26, vida: 0.7, max: 0.7, cor: '#ff9a40', tam: 1.2 }); }
+  }
   function desenhaColeta(c) {
     if (J.colhidos[c.id] > 0 || c.x < cam.x - 60 || c.x > cam.x + D.VW + 60) return;
     const p = COLETA[c.m];
-    if (c.m === 'madeira') { prop('arvore', c.x, c.y + 3, { e: 0.8 }); peca('cepo', c.x + 16, c.y + 2, { e: 0.8 }); if (c.talho) { g.fillStyle = '#e8c890'; g.fillRect(Math.round(c.x - 4), Math.round(c.y - 18), 4 + c.talho * 2, 3); } }
+    if (c.alto) { const b = Math.sin(tempo * 2.5 + c.x) * 1.5; peca('lenha', c.x, c.y + 3, { e: 0.36 }); itemEm(g, c.m, Math.round(c.x - 10), Math.round(c.y - 22 + b), 0.62); }
+    else if (c.m === 'madeira') { prop('arvore', c.x, c.y + 3, { e: 0.8 }); peca('cepo', c.x + 16, c.y + 2, { e: 0.8 }); if (c.talho) { g.fillStyle = '#e8c890'; g.fillRect(Math.round(c.x - 4), Math.round(c.y - 18), 4 + c.talho * 2, 3); } }
     else if (p) { prop(p, c.x, c.y + 2); if (c.m === 'fruta') for (let i = 0; i < 6; i++) { const x = c.x - 14 + hash(c.x + i) * 28, y = c.y - 8 - hash(c.x * 3 + i) * 22; g.fillStyle = '#1a0608'; g.fillRect(x - 1, y - 1, 4, 4); g.fillStyle = '#d83030'; g.fillRect(x, y, 2, 2); } }
     else itemEm(g, c.m, Math.round(c.x - 14), Math.round(c.y - 26), 0.82);
     const a = 0.5 + 0.5 * Math.sin(tempo * 3 + c.x);
@@ -781,7 +799,7 @@
     for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) if (i >= 0 && i * PED < F.W) g.drawImage(pedaco(i), 0, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8), i * PED * T, Math.max(0, oy), PED * T, Math.min(F.H * T - Math.max(0, oy), D.VH + 8));
     for (const d of A.decor) if (d.c === 1) { if (Math.abs(d.x - ox - D.VW / 2) < D.VW * 0.6 && A2.props[d.n]) contato(d.x, d.y - 1, A2.props[d.n][2] * d.e * 0.42); prop(d.n, d.x, d.y, d); if (d.n === 'cogumelos' && Math.abs(d.x - h.x) < D.VW) brilhos.push([d.x, d.y - 18, 54, '90,220,230', 0.5 + 0.15 * Math.sin(tempo * 2 + d.x)]); }
     if (D.vivo) { D.vivo.tapeteAtras(g); D.vivo.atras(g, brilhos); for (let i = Math.floor(ox / (PED * T)); i <= Math.floor((ox + D.VW) / (PED * T)); i++) { const pd = pedacos.get(i); if (pd && pd.luzes) for (const l of pd.luzes) brilhos.push([l[0], l[1], l[2] + Math.sin(tempo * 1.8 + l[0]) * 4, l[3], l[4]]); } }
-    desenhaLar(false); desenhaCerco(); desenhaBaus(); if (D.vivo) D.vivo.bichos(g, dt);
+    desenhaMundo(); desenhaLar(false); desenhaCerco(); desenhaBaus(); if (D.vivo) D.vivo.bichos(g, dt);
     for (const c of A.circulos) desenhaCirculo(c);
     for (const c of A.coleta) desenhaColeta(c);
     for (const f of A.fogos) { if (Math.abs(f.x - ox - D.VW / 2) > D.VW) continue; prop('fogo', f.x, f.y + 4); if (J.save.fogos[f.id] && (A.id !== 'lar' || !J.save.lar || J.save.lar.lenha > 0)) chama(f.x, f.y, h.estado === 'dorme' ? 0.95 : 1.1); else if (J.save.fogos[f.id]) brilhos.push([f.x, f.y - 8, 40, '255,120,60', 0.5]); }
