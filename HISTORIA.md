@@ -14,9 +14,9 @@ Floresta Antiga, os quatro caminhos (lobos, cobras, enterrados, goblins), o Vale
   acordou sozinha, como ele acordou. É a primeira esposa e a primeira prova de que ele não é o único a ser feito.
 - A vila começa com os quatro presos soltos dos acampamentos (ferreiro, curandeira, caçador, vigia).
 
-## Ato 2 · O caminho para o Forno (em andamento)
+## Ato 2 · O caminho para o Forno (pronto)
 
-Minas de Ferro, Mangue das Marés, Ruínas do Oleiro (prontas) e **O Forno** (falta).
+Minas de Ferro, Mangue das Marés, Ruínas do Oleiro e **O Forno** (prontos).
 
 O herói segue as pistas do deus que o moldou: as mãos de pedra vazias, a oficina, os moldes rejeitados.
 Ele acha que vai encontrar o deus no fundo do Forno.

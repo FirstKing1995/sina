@@ -112,7 +112,7 @@
     const dentro = (x) => a.escuros.some((q) => x > q.x0 - 30 && x < q.x1 + 30);
     const livre = (tx, larg) => { const y0 = a.topo[tx]; for (let k = -larg; k <= larg; k++) { const t = a.topo[Math.max(0, Math.min(W - 1, tx + k))]; if (Math.abs(t - y0) > 1) return false; } return true; };
     const perto = (x, l, d) => l.some((o) => Math.abs(o.x - x) < d);
-    const PLANTAS = { vale: ['samambaia', 'planta', 'pedras', 'frutas', 'tronco', 'planta'],  floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'], minas: ['pedras', 'pedrao', 'ossos', 'pedras', 'ossos2', 'tronco'], mangue: ['planta', 'samambaia', 'tronco', 'pedras', 'ossos', 'planta'], ruinas: ['pedras', 'pedrao', 'ossos2', 'pedras', 'pilar', 'ossos'] }[a.regiao];
+    const PLANTAS = { vale: ['samambaia', 'planta', 'pedras', 'frutas', 'tronco', 'planta'],  floresta: ['samambaia', 'planta', 'cogumelos', 'pedras', 'tronco', 'frutas'], lobos: ['pedras', 'pedrao', 'galhada', 'samambaia', 'ossos'], cobras: ['planta', 'samambaia', 'ninho', 'cogumelos', 'tronco', 'planta'], zumbis: ['lapide', 'lapide', 'ossos2', 'galhada', 'pilar', 'cogumelos'], goblins: ['totem', 'ossos', 'galhada', 'pedras', 'pedrao', 'ossos2'], minas: ['pedras', 'pedrao', 'ossos', 'pedras', 'ossos2', 'tronco'], mangue: ['planta', 'samambaia', 'tronco', 'pedras', 'ossos', 'planta'], ruinas: ['pedras', 'pedrao', 'ossos2', 'pedras', 'pilar', 'ossos'], forno: ['pedras', 'ossos', 'pedras', 'ossos2', 'tronco', 'pedrao'] }[a.regiao];
     for (let tx = 4; tx < W - 4; tx += 2 + Math.floor(r() * 4)) {
       const x = tx * T + 8;
       if (perto(x, a.portas, 110) || perto(x, a.circulos, 100) || perto(x, a.fogos, 46) || perto(x, a.coleta, 26) || perto(x, a.baus, 34)) continue;
@@ -120,7 +120,7 @@
       if (a.semMata && k < 0.5 && tx > a.semMata[0] && tx < a.semMata[1]) continue;
       if (k < 0.16 && (dentro(x) || perto(x, a.marcos, 120))) continue;
       if (dentro(x) && k > 0.5) continue;
-      if (k < 0.16 && livre(tx, 4) && a.regiao !== 'minas' && a.regiao !== 'ruinas') a.decor.push({ n: r() < (a.regiao === 'floresta' || a.regiao === 'cobras' || a.regiao === 'vale' ? 0.55 : 0.25) ? 'arvorao' : 'arvore', x, y: chao(tx) + 3, c: 0, e: 0.85 + r() * 0.3, v: r() < 0.5 });
+      if (k < 0.16 && livre(tx, 4) && a.regiao !== 'minas' && a.regiao !== 'ruinas' && a.regiao !== 'forno') a.decor.push({ n: r() < (a.regiao === 'floresta' || a.regiao === 'cobras' || a.regiao === 'vale' ? 0.55 : 0.25) ? 'arvorao' : 'arvore', x, y: chao(tx) + 3, c: 0, e: 0.85 + r() * 0.3, v: r() < 0.5 });
       else if (k < 0.62 && livre(tx, 1)) { const n = PLANTAS[Math.floor(r() * PLANTAS.length)]; a.decor.push({ n, x, y: chao(tx) + 2, c: 1, e: 0.8 + r() * 0.35, v: r() < 0.5 }); }
       else if (k < 0.7 && livre(tx, 1)) a.decor.push({ n: r() < 0.5 ? 'samambaia' : 'planta', x, y: chao(tx) + 10, c: 2, e: 1.3 + r() * 0.5, v: r() < 0.5 });
     }
@@ -129,6 +129,7 @@
 
   // quem aparece de cada espécie, conforme o quanto já se andou (k de 0 a 1)
   const VARIA = {
+    mutante: [['fundido', 0, 1], ['queimado', 0, 0.8], ['sentinela', 0.45, 0.25]],
     barro: [['boneco', 0, 1], ['pote', 0, 0.8], ['guardiao', 0.45, 0.22]],
     mare: [['caranguejo', 0, 1], ['afogado', 0.1, 0.6], ['guaiamum', 0.45, 0.22]],
     pedra: [['rastejante', 0, 1], ['minerador', 0.12, 0.6], ['golem', 0.3, 0.42], ['golem_ferro', 0.55, 0.2]],
@@ -211,7 +212,7 @@
   // ---------- um caminho ----------
   function caminho(id, semente, cfg) {
     const LAR = 1320, o = Obra(id, id, LAR, semente), esp = cfg.b;
-    o.plano(14).porta('volta', ['floresta', 'p_' + id], 'Voltar à clareira', null, -7); o.a.inicio = { x: 10 * T };
+    o.plano(14).porta('volta', cfg.entrada || ['floresta', 'p_' + id], cfg.entradaNome || 'Voltar à clareira', null, -7); o.a.inicio = { x: 10 * T };
     let k = 0, fogo = 0;
     let emb = 0, lug = 0;
     o.zona(cfg.zonas[0]);
@@ -256,6 +257,7 @@
     o.a.inimigos.push({ t: chefe.id, x: (x0 + 40) * T, tx: x0 + 40 });
     o.galho(x0 + 12, o.y - 5, 5); o.galho(x0 + 36, o.y - 5, 5);
     o.plano(12).circulo(chefe.magia, -4).plano(10);
+    if (chefe.desce) { o.plano(4).porta(chefe.desce[0], chefe.desce[1], chefe.desce[2], chefe.desce[4] || null, -3); o.a.portas[o.a.portas.length - 1].precisa = chefe.desce[3]; }
     return o.fim();
   }
   // ---------- o vale: onde alguém está perdido ----------
@@ -317,7 +319,9 @@
     minas: () => rochas(teto(caminho('minas', 77, { zonas: ['Boca da Mina', 'Galerias', [0.86, 0.86, 0.96], 'Veio Fundo', [1.08, 0.9, 0.8]], lug: ['O Elevador Caído', 'A corda foi cortada. Do lado de cima.', 'Refeitório dos Mineiros', 'Os pratos ainda estão na mesa. Cobertos de pó, não de comida.', 'Sala do Capataz', 'Uma lista de nomes. Todos riscados, menos o dele.'], elite: 'golem_ferro', b: 'pedra', bando: 3, outro: ['minerador', 1], terreno: ['ondula', 'ondula', 'sobe', 'desce', 'muro', 'vao', 'queda', 'vaoG'], pega: ['pedra', 'pedra', 'ferro', 'galho', 'osso'], fogos: ['Fogueira da Boca', 'Fogueira dos Trilhos', 'Fogueira do Poço Velho'], meio: ['floresta', 'p_minas'], meioNome: 'Saída para a clareira', cruza: ['floresta', 'p_minas'], cruzaNome: 'Poço de luz para a clareira', covil: 'O Fundo da Mina' }), 15)),
     mangue: () => caminho('mangue', 91, { zonas: ['Lama Rasa', 'Raízes Altas', [0.9, 1, 0.96], 'Boca do Rio', [1.05, 0.95, 0.85]], lug: ['O Barco Virado', 'O casco ainda tem um nome pintado. Ninguém lembra dele.', 'Palafitas dos Pescadores', 'As redes estão secando há anos.', 'Altar do Caboclo', 'Fumo, cachaça e espelhos. Algumas oferendas são de ontem.'], elite: 'guaiamum', b: 'mare', bando: 3, outro: ['afogado', 1], terreno: ['ondula', 'ondula', 'vao', 'desce', 'sobe', 'vaoG', 'ondula', 'queda'], pega: ['galho', 'fibra', 'carne', 'osso', 'fruta'], fogos: ['Fogueira da Lama', 'Fogueira das Palafitas', 'Fogueira do Barco'], meio: ['floresta', 'p_mangue'], meioNome: 'Saída para a clareira', cruza: ['floresta', 'p_mangue'], cruzaNome: 'Trilha de volta para a clareira', covil: 'O Altar do Caboclo' }),
     ruinas: () => caminho('ruinas', 103, { zonas: ['Pátio dos Cacos', 'Rua dos Fornos', [1.08, 0.95, 0.86], 'Oficina do Oleiro', [1.12, 1, 0.9]], lug: ['As Mãos Vazias', 'Duas estátuas ajoelhadas oferecem nada. Ou esperam alguma coisa.', 'Fila dos Fornos', 'Ainda quentes. Ninguém alimenta o fogo.', 'A Mesa do Oleiro', 'Barro fresco e marcas de dedos. Alguém trabalhou aqui ontem.'], elite: 'guardiao', b: 'barro', bando: 3, outro: ['pote', 1], terreno: ['ondula', 'sobe', 'desce', 'escada', 'vao', 'ondula', 'queda', 'muro'], pega: ['pedra', 'galho', 'fibra', 'osso', 'ferro'], fogos: ['Fogueira do Pátio', 'Fogueira dos Fornos', 'Fogueira da Oficina'], meio: ['floresta', 'p_ruinas'], meioNome: 'Saída para a clareira', cruza: ['floresta', 'p_ruinas'], cruzaNome: 'Trilha de volta para a clareira', covil: 'A Oficina do Oleiro' }),
-    covil_ruinas: () => covil('covil_ruinas', 'ruinas', 104, { id: 'molde', b: 'boneco', magia: 'cacos' }, 'A Oficina do Oleiro', ['ruinas', 'covil']),
+    forno: () => rochas(teto(caminho('forno', 117, { zonas: ['Boca do Forno', 'Tijolo que vira Ferro', [0.9, 0.95, 1.08], 'O Coração', [0.8, 1, 1.15]], lug: ['A Primeira Rachadura', 'Atrás do tijolo, uma parede lisa. Fria. Ninguém faz isso com barro.', 'Os Canos', 'Tubos grossos como troncos, levando calor para algum lugar lá embaixo.', 'A Porta Redonda', 'Letras gravadas no metal. Você não sabe ler. Ainda.'], elite: 'sentinela', b: 'mutante', bando: 3, outro: ['queimado', 1], terreno: ['ondula', 'sobe', 'desce', 'escada', 'vao', 'ondula', 'queda', 'muro'], pega: ['pedra', 'ferro', 'osso', 'galho', 'prata'], fogos: ['Fogueira da Boca', 'Fogueira dos Canos', 'Fogueira da Porta'], entrada: ['covil_ruinas', 'p_forno'], entradaNome: 'Subir à Oficina do Oleiro', meio: ['covil_ruinas', 'p_forno'], meioNome: 'Subir à Oficina', cruza: ['covil_ruinas', 'p_forno'], cruzaNome: 'Subir à Oficina', covil: 'O Coração do Forno' }), 15)),
+    covil_forno: () => teto(covil('covil_forno', 'forno', 118, { id: 'mutacao', b: 'fundido', magia: 'pulso', desce: ['antiga', ['covil_forno', 'volta'], 'A Porta Antiga', 8, 'metal'] }, 'O Coração do Forno', ['forno', 'covil']), 17),
+    covil_ruinas: () => covil('covil_ruinas', 'ruinas', 104, { id: 'molde', b: 'boneco', magia: 'cacos', desce: ['p_forno', ['forno', 'volta'], 'Descer ao Forno', 7] }, 'A Oficina do Oleiro', ['ruinas', 'covil']),
     covil_mangue: () => covil('covil_mangue', 'mangue', 92, { id: 'caboclo', b: 'caranguejo', magia: 'mare' }, 'O Altar do Caboclo', ['mangue', 'covil']),
     covil_minas: () => teto(covil('covil_minas', 'minas', 78, { id: 'capataz', b: 'golem', magia: 'ferro' }, 'O Fundo da Mina', ['minas', 'covil']), 17),
     vale, lar,

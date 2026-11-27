@@ -34,7 +34,7 @@
     const mem = J.memorias(), l = $('memorias'); l.innerHTML = '';
     if (mem.length) { l.append(el('h3', '', 'Os que vieram antes')); for (const x of mem.slice(0, 4)) l.append(el('p', '', x.nome + (x.titulo ? ', ' + x.titulo : '') + ' · ' + Math.max(1, Math.round(x.tempo / 60)) + ' min · ' + x.mortes + ' mortes')); }
   }
-  const nomeArea = (id) => (id === 'lar' ? (J.save && J.save.nomeVila) || 'Clareira do Rio' : F.IDS.includes(id) ? (id.startsWith('covil_') ? { covil_lobos: 'Toca do Alfa', covil_cobras: 'Ninho da Rainha', covil_zumbis: 'A Cripta Fechada', covil_goblins: 'O Fortim', covil_minas: 'O Fundo da Mina', covil_mangue: 'O Altar do Caboclo', covil_ruinas: 'A Oficina do Oleiro' }[id] : C.REGIOES[id].nome) : '');
+  const nomeArea = (id) => (id === 'lar' ? (J.save && J.save.nomeVila) || 'Clareira do Rio' : F.IDS.includes(id) ? (id.startsWith('covil_') ? { covil_lobos: 'Toca do Alfa', covil_cobras: 'Ninho da Rainha', covil_zumbis: 'A Cripta Fechada', covil_goblins: 'O Fortim', covil_minas: 'O Fundo da Mina', covil_mangue: 'O Altar do Caboclo', covil_ruinas: 'A Oficina do Oleiro', covil_forno: 'O Coração do Forno' }[id] : C.REGIOES[id].nome) : '');
 
   // ---------- nascimento ----------
   let nas = null;
@@ -111,6 +111,22 @@
     return true;
   }
   J.cena = cena;
+  // ---------- a primeira verdade: no fundo do Forno não há deus, há uma porta dos antigos ----------
+  const VERDADE1 = [
+    ['A porta é de metal liso', 'Nenhum barro fez isto. Nenhuma mão de pedra.'],
+    ['Do outro lado, luzes que ainda piscam', 'Vidro, ferro, letras gravadas. E uma cidade inteira, quebrada, sob um céu cinza.'],
+    ['Você não é o primeiro', 'É o primeiro deste mundo, deste tempo. Houve outros, muito antes. Construíram tudo isso.'],
+    ['Só ficaram as ruínas', 'O Forno nunca foi um forno. Era uma máquina deles. E ela ainda está ligada.'],
+    ['A primeira verdade', 'Agora você sabe o que perguntar: quem eram eles, e o que os destruiu.'],
+  ];
+  J.primeiraVerdade = function () {
+    const s = J.save, h = J.heroi; if (!h || modo !== 'jogo') return;
+    if (s.verdade1) { sussurra('A porta está aberta. O Mundo de Antes espera do outro lado. (Ato 3: em breve)', 5); return; }
+    s.verdade1 = 1; s.cenas = s.cenas || {}; J.salvar(); h.vx = 0;
+    const conta = () => { VERDADE1.forEach(([a, b], i) => setTimeout(() => conquista(a, b, i === 4 ? '#70e0d0' : '#e8d0a0'), 400 + i * 200)); setTimeout(() => J.mostraArea('Fim do Ato 2', 'Ato 3 · O Mundo de Antes (em breve)'), 1200); };
+    if (CENAS.verdade1) { modo = 'cena'; mostra(null); cena('verdade1', 'A primeira verdade', 'No fundo do Forno não havia deus.', () => { modo = 'jogo'; mostra(null); conta(); }); }
+    else { J.clarao = 0.8; conta(); }
+  };
   // o chefe que tem vídeo mostra ele na primeira vez que acorda; a luta começa quando o vídeo acaba
   const acordaChefe0 = J.acordaChefe;
   J.acordaChefe = function (e) {
@@ -217,6 +233,7 @@
     if (p.tipo === 'pesca') { J.pesca(); return; }
     if (p.tipo === 'crianca') { abreFilho(p.o.p); return; }
     if (p.tipo === 'coleta') J.colher(p.o);
+    else if (p.tipo === 'porta' && p.o.id === 'antiga') { if (J.save.chefes.mutacao) J.primeiraVerdade(); else sussurra('Metal liso, frio, sem maçaneta. Enquanto o coração da máquina bater, ela não abre.', 5); }
     else if (p.tipo === 'porta') { if (p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa) { sussurra('Raízes vivas fecham a passagem. Elas só soltam para quem derrubou ' + p.o.precisa + ' donos dos caminhos.', 5); return; } if (J.hum && J.hum.caida) { sussurra('Você não vai deixá-la caída aqui.', 3); return; } viajar(p.o); }
     else if (p.tipo === 'circulo') J.aprende(p.o.magia);
     else if (p.tipo === 'fogo') {
@@ -252,7 +269,7 @@
     const v = $('veu'); v.classList.add('ver'); solta();
     setTimeout(() => { J.entrarArea(p.para[0], p.para[1]); D.centrar(); areaVista = null; D.quadro(0.016); setTimeout(() => { v.classList.remove('ver'); viajando = false; }, 220); }, 420);
   }
-  const rotulo = (p) => J.rotuloMundo(p) || (p.tipo === 'preso' ? 'Quebrar a jaula' : p.tipo === 'morador' ? (p.o.id === 'fam' ? 'Conversar' : 'Falar com ' + J.save.vila[p.o.id].nome) : p.tipo === 'poco' ? 'Beber do poço' : p.tipo === 'celeiro' ? 'Abrir o celeiro' : p.tipo === 'mercador' ? 'Trocar com o mercador' : p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? (F.atual.regiao === 'minas' ? 'Soltar a escora velha' : 'Cortar a árvore') : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
+  const rotulo = (p) => J.rotuloMundo(p) || (p.tipo === 'preso' ? 'Quebrar a jaula' : p.tipo === 'morador' ? (p.o.id === 'fam' ? 'Conversar' : 'Falar com ' + J.save.vila[p.o.id].nome) : p.tipo === 'poco' ? 'Beber do poço' : p.tipo === 'celeiro' ? 'Abrir o celeiro' : p.tipo === 'mercador' ? 'Trocar com o mercador' : p.tipo === 'bau' ? 'Abrir o baú' : p.tipo === 'levanta' ? 'Levantar' : p.tipo === 'solta' ? 'Quebrar a jaula' : p.tipo === 'varal' ? 'Mexer no varal' : p.tipo === 'horta' ? 'Colher a horta' : p.tipo === 'pesca' ? 'Pescar' : p.tipo === 'crianca' ? 'Falar com ' + p.o.p.nome : p.tipo === 'casa' ? (J.save.lar.casa.n ? 'Cuidar do lar' : 'Levantar uma casa') : p.tipo === 'fala' ? 'Falar com ' + J.save.hum.nome : p.tipo === 'coleta' && p.o.m === 'madeira' ? (F.atual.regiao === 'minas' ? 'Soltar a escora velha' : 'Cortar a árvore') : p.tipo === 'porta' && p.o.id === 'antiga' ? (J.save.verdade1 ? 'A Porta Antiga (aberta)' : 'Tocar a Porta Antiga') : p.tipo === 'porta' && p.o.precisa && Object.keys(J.save.chefes).length < p.o.precisa ? 'Passagem fechada por raízes' : p.tipo === 'coleta' ? 'Colher ' + C.MAT[p.o.m].toLowerCase() : p.tipo === 'porta' ? p.o.nome : p.tipo === 'circulo' ? 'Tocar o círculo' : J.save.fogos[p.o.id] ? 'Deitar e dormir' : 'Acender e dormir (2 galhos)');
 
   // ---------- fogueira ----------
   function abreFogo(f) {

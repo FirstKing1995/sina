@@ -239,7 +239,11 @@
   const MOLDE = Object.assign({}, GURGO, { ritmo: [0.6, 0.46, 0.3], cor: '#e09060', virada: ['pote', 'pote'], golpes: Object.assign({}, GURGO.golpes, {
     bando: { peso: (c) => (c.fase >= 2 && capangas() < 1 && c.dist > 120 ? 1.2 : 0), cd: 18, f(e, dt) { e.vx = 0; e.qf = 4; if (passou(e, dt, 0.5)) { som('fogo', 1, 0.6); treme(6); chama(e, e.fase === 3 ? ['boneco', 'pote', 'boneco'] : ['pote', 'boneco']); } return e.t > 1.1; } },
   }) });
-  const DONOS = { alfa: ALFA, rainha: RAINHA, carcereiro: CARC, chefe: GURGO, capataz: CAPATAZ, caboclo: CABOCLO, molde: MOLDE };
+  // o Coração Mutado: luta como o Gurgo, chama os fundidos e o chão treme de energia
+  const MUTACAO = Object.assign({}, GURGO, { ritmo: [0.58, 0.44, 0.28], cor: '#70e0d0', virada: ['fundido', 'fundido'], golpes: Object.assign({}, GURGO.golpes, {
+    bando: { peso: (c) => (c.fase >= 2 && capangas() < 1 && c.dist > 120 ? 1.2 : 0), cd: 17, f(e, dt) { e.vx = 0; e.qf = 4; if (passou(e, dt, 0.5)) { som('magia', 1, 0.5); treme(8); chama(e, e.fase === 3 ? ['fundido', 'queimado', 'fundido'] : ['fundido', 'queimado']); } return e.t > 1.1; } },
+  }) });
+  const DONOS = { alfa: ALFA, rainha: RAINHA, carcereiro: CARC, chefe: GURGO, capataz: CAPATAZ, caboclo: CABOCLO, molde: MOLDE, mutacao: MUTACAO };
   J.DONOS = DONOS;
 
   // ---------- escolher e encadear ----------

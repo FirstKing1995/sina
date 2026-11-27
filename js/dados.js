@@ -101,9 +101,10 @@
 
   // ---------- espécies e títulos ----------
   C.ESPECIES = {
-    barro: { nome: 'Gente de barro', um: 'boneco', cor: '#d08a5a' }, mare: { nome: 'Gente da maré', um: 'caranguejo', cor: '#7fc0b0' }, pedra: { nome: 'Gente de pedra', um: 'golem', cor: '#d0a070' }, lobo: { nome: 'Lobos', um: 'lobo', cor: '#9fb4d0' }, cobra: { nome: 'Cobras', um: 'cobra', cor: '#b8c060' }, zumbi: { nome: 'Zumbis', um: 'zumbi', cor: '#b8a0c8' }, goblin: { nome: 'Goblins', um: 'goblin', cor: '#d8a060' },
+    mutante: { nome: 'Mutantes', um: 'queimado', cor: '#70e0d0' }, barro: { nome: 'Gente de barro', um: 'boneco', cor: '#d08a5a' }, mare: { nome: 'Gente da maré', um: 'caranguejo', cor: '#7fc0b0' }, pedra: { nome: 'Gente de pedra', um: 'golem', cor: '#d0a070' }, lobo: { nome: 'Lobos', um: 'lobo', cor: '#9fb4d0' }, cobra: { nome: 'Cobras', um: 'cobra', cor: '#b8c060' }, zumbi: { nome: 'Zumbis', um: 'zumbi', cor: '#b8a0c8' }, goblin: { nome: 'Goblins', um: 'goblin', cor: '#d8a060' },
   };
   C.TITULOS = {
+    mutante: [[25, 'Apaga-brasa', '+12% de dano nos mutantes'], [100, 'Sobrevivente', '+30% de dano neles'], [250, 'Imune', 'a casca deles não segura mais os seus golpes']],
     barro: [[25, 'Quebra-potes', '+12% de dano na gente de barro'], [100, 'Ceramista', '+30% de dano neles'], [250, 'Irmão de Barro', 'a casca deles não segura mais os seus golpes']],
     mare: [[25, 'Catador', '+12% de dano na gente da maré'], [100, 'Pescador', '+30% de dano neles, e a maré alta não te deixa lento'], [250, 'Filho da Maré', 'a casca deles não segura mais os seus golpes']],
     pedra: [[25, 'Quebra-pedra', '+12% de dano na gente de pedra'], [100, 'Mineiro', 'Pele de Pedra: os golpes deles tiram 20% menos de você'], [250, 'Coração de Ferro', 'a casca deles não segura mais os seus golpes']],
@@ -119,6 +120,7 @@
     vento: { nome: 'Passo do Vento', custo: 30, espera: 8, cor: '#9fd8ff', desc: 'Por 6 segundos, corra e esquive sem gastar vigor.' },
     espinhos: { nome: 'Espinhos da Mata', custo: 34, espera: 2, cor: '#a8d060', desc: 'Três espinhos que atravessam a fila toda.' },
     folego: { nome: 'Fôlego da Terra', custo: 48, espera: 16, cor: '#ffe39a', desc: 'A terra devolve um terço da sua vida.' },
+    pulso: { nome: 'Pulso', custo: 40, espera: 10, cor: '#70e0d0', desc: 'Magia e máquina juntas: uma onda de energia que fere e derruba tudo em volta.' },
     cacos: { nome: 'Cacos', custo: 30, espera: 6, cor: '#e09060', desc: 'Joga um leque de cacos quentes para a frente.' },
     mare: { nome: 'Maré', custo: 34, espera: 16, cor: '#7fd0c0', desc: 'A água lava: cura 30, tira o veneno e empurra quem estiver perto.' },
     ferro: { nome: 'Pele de Ferro', custo: 36, espera: 14, cor: '#d8a070', desc: 'Por 6 segundos, os golpes tiram metade e não derrubam você.' },
@@ -127,6 +129,10 @@
 
   // ---------- caderno do caçador: [o que é, o que faz, como cair em cima] ----------
   C.BICHOS = {
+    fundido: ['Barro, bicho e ferro que a máquina juntou.', 'Rasteja rápido e salta mordendo. A placa das costas segura golpe fraco.', 'Golpe forte ou machado: a placa racha.'],
+    queimado: ['Era gente. A máquina queimou o resto.', 'Bate duas vezes e o toque queima por um tempo.', 'Não troque golpes: bata e saia.'],
+    sentinela: ['Uma máquina dos antigos que ainda cumpre ordens.', 'Atira de longe, duas vezes, e recua.', 'Feche a distância: de perto ela é lenta.'],
+    mutacao: ['O que ficou tempo demais perto do coração da máquina.', 'Salta, chama os fundidos e solta pulsos de energia.', 'Depois do pulso ele fica aberto.'],
     boneco: ['Um homem que o Oleiro começou e largou.', 'Lento, bate com o braço comprido e levanta depois de cair.', 'Termine com golpe forte, senão ele se junta de novo.'],
     pote: ['Uma ânfora velha que aprendeu a andar.', 'Salta mordendo com a boca quebrada.', 'Um golpe bem dado e ela vira caco.'],
     guardiao: ['Guardava a oficina. Ainda guarda.', 'Escudo na frente e estocada longa de lança.', 'Gaste o escudo com golpe pesado ou pegue por trás.'],
@@ -168,6 +174,11 @@
   // vel px/s, alcance do golpe, prep: aviso, golpe: duração, recua: descanso, firme: golpes até cambalear
   // reflexo: chance de reagir ao seu golpe; flanco: vontade de ir às suas costas; finta: golpe falso; bruto: não recua
   C.TIPOS = {
+    // os primeiros mutantes: o que a energia da máquina do Forno fez com barro, bicho e ferro
+    fundido: { nome: 'Fundido', esp: 'mutante', spr: 'fundido', hp: 52, dano: 15, vel: 98, visao: 250, alcance: 58, prep: 0.32, golpe: 0.24, recua: 0.5, firme: 4, reflexo: 0.45, casca: true, salta: 230, w: 30, h: 24, cai: { ferro: 0.6, pedra: 0.4 }, passo: 7 },
+    queimado: { nome: 'Queimado', esp: 'mutante', spr: 'queimado', hp: 70, dano: 18, vel: 64, visao: 270, alcance: 52, prep: 0.42, golpe: 0.24, recua: 0.45, firme: 5, levanta: 0.25, veneno: 6, seguidos: 2, avanco: 120, w: 22, h: 58, cai: { trapo: 0.5, osso: 0.4, ferro: 0.3 }, passo: 9, tinta: 'rgba(255,120,40,0.18)' },
+    sentinela: { nome: 'Sentinela antiga', esp: 'mutante', spr: 'sentinela', hp: 170, dano: 20, vel: 54, visao: 380, alcance: 300, prep: 0.6, golpe: 0.2, recua: 0.6, firme: 10, reflexo: 0.5, rajada: true, atira: 'flechaI', distancia: 190, w: 26, h: 62, cai: { ferro: 2, prata: 0.6 }, passo: 10 },
+    mutacao: { nome: 'O Coração Mutado', esp: 'mutante', spr: 'mutacao', hp: 1080, dano: 25, vel: 66, visao: 520, alcance: 70, prep: 0.54, golpe: 0.28, recua: 0.6, firme: 13, w: 52, h: 100, chefe: true, seguidos: 2, poder: 'salto', chama: 'mutante', chamaL: ['fundido', 'queimado', 'fundido'], cai: { ferro: 8, prata: 5 }, passo: 10, magia: 'pulso' },
     // a gente de barro das Ruínas do Oleiro: os que não deram certo
     boneco: { nome: 'Boneco rejeitado', esp: 'barro', spr: 'boneco', hp: 66, dano: 17, vel: 58, visao: 260, alcance: 54, prep: 0.46, golpe: 0.24, recua: 0.45, firme: 4, levanta: 0.35, avanco: 110, w: 22, h: 58, cai: { pedra: 0.6, fibra: 0.4, osso: 0.2 }, passo: 9 },
     pote: { nome: 'Pote que anda', esp: 'barro', spr: 'pote', hp: 30, dano: 12, vel: 96, visao: 230, alcance: 58, prep: 0.3, golpe: 0.24, recua: 0.5, firme: 2, reflexo: 0.4, salta: 240, w: 22, h: 26, cai: { pedra: 0.5, prata: 0.08 }, passo: 6 },
@@ -215,6 +226,7 @@
 
   // ---------- regiões ----------
   C.REGIOES = {
+    forno: { frase: 'Quente demais para ser só barro.', nome: 'O Forno', fundo: 'f_forno', p: 'forno', nevoa: '150,82,62', luz: [118, 86, 76], amb: 'mina', mus: 'forno', ar: ['brasinha', 'cinza', 'brasinha'], terra: [34, 20, 16], semArvores: true, fundo0: 0.42 },
     ruinas: { frase: 'Aqui ele aprendeu a fazer você. Mas estas paredes são mais velhas que ele.', nome: 'Ruínas do Oleiro', fundo: 'f_ruinas', p: 'ruinas', nevoa: '170,134,108', luz: [124, 106, 94], amb: 'cinzas', mus: 'ruinas', ar: ['cinza', 'brasinha', 'cinza'], terra: [40, 26, 18], semArvores: true },
     mangue: { frase: 'A água sobe duas vezes por dia. Os mortos, uma vez só.', nome: 'Mangue das Marés', fundo: 'f_mangue', p: 'mangue', nevoa: '104,132,124', luz: [104, 122, 116], amb: 'rio', mus: 'mangue', ar: ['vagalume', 'nevoa', 'esporo'], terra: [26, 30, 24] },
     minas: { frase: 'Ninguém subiu de volta.', nome: 'Minas de Ferro', fundo: 'f_minas', p: 'minas', nevoa: '92,84,96', luz: [96, 90, 104], amb: 'mina', mus: 'minas', ar: ['cinza', 'cinza', 'brasinha'], terra: [24, 20, 22], semArvores: true, fundo0: 0.3 },

@@ -10,7 +10,7 @@
   const cam = (D.cam = { x: 0, y: 0, olha: 0 });
   let tempo = 0, noiteK = 0;
   const img = {}; // nome -> imagem
-  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=28' + (n ? '&t=' + n : ''); });
+  const carregaImg = (src, n) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => { if ((n || 0) < 3) setTimeout(() => carregaImg(src, (n || 0) + 1).then(ok), 700); else { console.warn('faltou', src); ok(null); } }; i.src = src + '?v=29' + (n ? '&t=' + n : ''); });
 
   D.iniciar = function (canvas) {
     cv = canvas; ctx = cv.getContext('2d');
@@ -134,7 +134,7 @@
     });
   }
   // neblina rasteira: uma faixa fina que respira na altura dos pés (cemitério, alagado, vale, serra)
-  const NEB = { mangue: 0.3, zumbis: 0.32, cobras: 0.26, vale: 0.16, lobos: 0.14, minas: 0.12 };
+  const NEB = { forno: 0.14, mangue: 0.3, zumbis: 0.32, cobras: 0.26, vale: 0.16, lobos: 0.14, minas: 0.12 };
   function neblinaChao(A, ox) {
     const R = regiao(), k = NEB[A.regiao]; if (!k) return;
     const t = guarda('nch' + R.nevoa, 2, 32, (q, w, h) => { const gr = q.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(' + R.nevoa + ',0)'); gr.addColorStop(0.7, 'rgba(' + R.nevoa + ',1)'); gr.addColorStop(1, 'rgba(' + R.nevoa + ',0.5)'); q.fillStyle = gr; q.fillRect(0, 0, w, h); });
@@ -240,7 +240,7 @@
     for (const [lx, tp, d] of ladeiras) for (let i = 0; i < L; i++) { const px = d > 0 ? lx * T + T - 1 - i : lx * T + i, k = i / L, yy = Math.round((tp - 1) * T + T * (k * k * (3 - 2 * k))); q.drawImage(at, p[0] + (((x0 + lx) * T + px) % LARG + LARG) % LARG, p[1], 1, 40, px, yy - SUP + 1, 1, 40); }
     // o chão de cada caminho tem a sua marca: neve, cinza, osso, lama, cascalho
     const marca = F.atual.regiao;
-    if (['lobos', 'goblins', 'zumbis', 'cobras', 'minas', 'mangue', 'ruinas'].includes(marca)) for (let lx = 0; lx < PED; lx++) {
+    if (['lobos', 'goblins', 'zumbis', 'cobras', 'minas', 'mangue', 'ruinas', 'forno'].includes(marca)) for (let lx = 0; lx < PED; lx++) {
       const tx = x0 + lx; if (tx >= F.W) break;
       for (let ty = 1; ty < F.H; ty++) {
         if (!(solido(tx, ty) && !solido(tx, ty - 1) && F.tile(tx, ty - 1) !== 3)) continue;
@@ -249,6 +249,7 @@
           const r = hash(tx * T + px + ty * 977), r2 = hash(tx * 131 + px * 7 + ty), x = lx * T + px;
           if (marca === 'lobos') { const gx = tx * T + px, hh = 1 + Math.floor(r * 1.6) + Math.max(0, Math.round(2.6 * Math.sin(gx * 0.09) + 1.4 * Math.sin(gx * 0.23 + 1.3))); q.fillStyle = 'rgba(214,224,238,0.92)'; q.fillRect(x, y0 - 3 - hh, 1, hh); q.fillStyle = 'rgba(150,164,190,0.7)'; q.fillRect(x, y0 - 3, 1, 1); if (r2 < 0.12) { q.fillStyle = 'rgba(226,234,246,0.85)'; q.fillRect(x, y0 - 6 - Math.floor(r2 * 60), 1, 1); } }
           else if (marca === 'goblins') { if (r < 0.3) { q.fillStyle = r < 0.12 ? 'rgba(46,40,38,0.85)' : 'rgba(96,88,82,0.7)'; q.fillRect(x, y0 - 3 + Math.floor(r2 * 3), 1, 1); } if (r2 < 0.015) { q.fillStyle = 'rgba(255,140,60,0.9)'; q.fillRect(x, y0 - 3, 1, 1); } }
+          else if (marca === 'forno') { if (r < 0.1) { q.fillStyle = r < 0.04 ? 'rgba(255,140,60,0.9)' : 'rgba(60,50,52,0.9)'; q.fillRect(x, y0 - 3, 2, 2); } if (r2 < 0.012) { q.fillStyle = 'rgba(112,224,208,0.9)'; q.fillRect(x, y0 - 2, 1, 1); } }
           else if (marca === 'ruinas') { if (r < 0.06) { q.fillStyle = r < 0.03 ? 'rgba(196,110,70,0.95)' : 'rgba(160,84,52,0.95)'; q.fillRect(x, y0 - 3, 2 + Math.floor(r2 * 3), 2); q.fillStyle = 'rgba(70,36,24,0.8)'; q.fillRect(x, y0 - 1, 2, 1); } else if (r < 0.3) { q.fillStyle = 'rgba(120,80,60,0.5)'; q.fillRect(x, y0 - 3, 1, 1); } }
           else if (marca === 'zumbis') { if (r < 0.035) { q.fillStyle = 'rgba(206,200,184,0.9)'; q.fillRect(x, y0 - 3, 2 + Math.floor(r2 * 2), 1); q.fillStyle = 'rgba(120,114,104,0.8)'; q.fillRect(x, y0 - 2, 2, 1); } else if (r < 0.22) { q.fillStyle = 'rgba(150,140,156,0.35)'; q.fillRect(x, y0 - 3, 1, 1); } }
           else if (marca === 'cobras' || marca === 'mangue') { q.fillStyle = 'rgba(14,22,8,0.3)'; q.fillRect(x, y0 - 3, 1, 4); if (r < 0.09) { q.fillStyle = 'rgba(190,220,150,0.32)'; q.fillRect(x, y0 - 3, 1 + Math.floor(r2 * 3), 1); } }
@@ -626,6 +627,7 @@
   }
   function desenhaPorta(p) {
     if (p.x < cam.x - 140 || p.x > cam.x + D.VW + 140) return;
+    if (p.d === 'metal') { portaAntiga(p); return; }
     const alvo = C.REGIOES[F.area ? (F.IDS.includes(p.para[0]) ? regDe(p.para[0]) : F.atual.regiao) : F.atual.regiao];
     prop(p.d === 'arco' ? 'arco' : 'caverna', p.x, p.y + 8, { e: p.d === 'arco' ? 1 : 0.92 });
     const h = p.d === 'arco' ? 70 : 58, gr = g.createRadialGradient(p.x, p.y - h * 0.5, 2, p.x, p.y - h * 0.5, 40);
@@ -634,6 +636,35 @@
     brilhos.push([p.x, p.y - 34, 76, alvo.nevoa, 0.55]);
   }
   const regDe = (id) => id.replace('covil_', '');
+  // a porta dos antigos: metal liso, redonda, com luzes que ainda piscam (abre depois da primeira verdade)
+  function portaAntiga(p) {
+    const x = Math.round(p.x), y = Math.round(p.y) + 2, R = 34, aberta = !!(J.save && J.save.verdade1);
+    g.save();
+    g.fillStyle = '#1c1a1e'; g.fillRect(x - R - 10, y - R * 2 - 14, R * 2 + 20, R * 2 + 14);
+    g.fillStyle = '#2e2c32'; g.fillRect(x - R - 8, y - R * 2 - 12, R * 2 + 16, 6); g.fillRect(x - R - 8, y - R * 2 - 12, 6, R * 2 + 12); g.fillRect(x + R + 2, y - R * 2 - 12, 6, R * 2 + 12);
+    const cy = y - R - 2;
+    if (aberta) { const gr = g.createRadialGradient(x, cy, 2, x, cy, R); gr.addColorStop(0, 'rgba(220,255,250,0.95)'); gr.addColorStop(0.5, 'rgba(112,224,208,0.6)'); gr.addColorStop(1, 'rgba(40,90,90,0.2)'); g.fillStyle = gr; g.beginPath(); g.arc(x, cy, R - 2, 0, Math.PI * 2); g.fill(); }
+    // as duas metades da porta (abertas, recolhidas para os lados)
+    const abre = aberta ? R * 0.85 : 0;
+    for (const lado of [-1, 1]) {
+      g.save(); g.beginPath(); g.arc(x, cy, R, 0, Math.PI * 2); g.clip();
+      g.fillStyle = '#302e36'; g.fillRect(lado < 0 ? x - R - abre : x + abre, cy - R, R, R * 2);
+      g.fillStyle = '#46444c'; g.fillRect(lado < 0 ? x - R - abre : x + abre, cy - R, R, 3);
+      g.fillStyle = '#222026'; for (let k = -2; k <= 2; k++) g.fillRect(lado < 0 ? x - R - abre + 4 : x + abre + 4, cy + k * 12, R - 8, 2);
+      g.restore();
+    }
+    g.strokeStyle = '#6e6c76'; g.lineWidth = 3; g.beginPath(); g.arc(x, cy, R, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = '#26242a'; g.lineWidth = 1; g.beginPath(); g.arc(x, cy, R + 3, 0, Math.PI * 2); g.stroke();
+    // luzes em volta: piscam fora de ordem, como se ainda contassem alguma coisa
+    for (let k = 0; k < 10; k++) {
+      const an = -Math.PI / 2 + k * Math.PI * 2 / 10, liga = aberta || Math.sin(tempo * (1.3 + k * 0.37) + k * 2.1) > 0.2;
+      g.fillStyle = liga ? '#8ff8e8' : '#1f4a48'; g.fillRect(Math.round(x + Math.cos(an) * (R + 6)) - 1, Math.round(cy + Math.sin(an) * (R + 6)) - 1, 3, 3);
+    }
+    // letras gravadas em cima (ninguém sabe ler)
+    g.fillStyle = 'rgba(150,220,214,0.55)'; for (let k = 0; k < 9; k++) if ((k * 7) % 3 !== 1) g.fillRect(x - 26 + k * 6, y - R * 2 - 8, 4, k % 2 ? 2 : 3);
+    g.restore();
+    brilhos.push([x, cy, aberta ? 140 : 46, '112,224,208', aberta ? 0.9 : 0.22]);
+  }
   function desenhaCirculo(c) {
     if (c.x < cam.x - 140 || c.x > cam.x + D.VW + 140) return;
     const sabe = J.save.magias.includes(c.magia), preso = F.atual.arena && !J.save.chefes[F.atual.arena.chefe];
